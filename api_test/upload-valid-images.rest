@@ -1,0 +1,10 @@
+
+POST http://cdrrmo-tandag.com/api/v1/valid-images/107  HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "img_valid_id": # required|image|mimes:jpg,png,jpeg|max:2048
+    "img_selfie": # required|image|mimes:jpg,png,jpeg|max:2048
+}
+

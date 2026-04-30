@@ -1,0 +1,18 @@
+
+
+### Get News
+GET http://127.0.0.1:8000/api/v1/news
+Content-Type: application/json
+Accept: application/json
+
+
+### Get Safety Tips
+GET https://cdrrmo-tandag.com//api/v1/safety-tips
+Content-Type: application/json
+Accept: application/json
+
+
+### Get Emergency Preparedness
+GET http://127.0.0.1:8000/api/v1/emergency-preparedness
+Content-Type: application/json
+Accept: application/json

@@ -1,0 +1,295 @@
+/**
+ * Guest authentication — desktop-first layout, then stack for smaller viewports.
+ * Uses --cdrrmo-* from app.css.
+ */
+
+/* ------------------------------------------------------------------------- */
+/* Desktop-first base (wide split: brand | form)                              */
+/* ------------------------------------------------------------------------- */
+
+.auth-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    background: var(--cdrrmo-surface, #f0f9ff);
+}
+
+.auth-shell__brand {
+    position: relative;
+    display: flex;
+    flex: 0 0 46%;
+    max-width: 42rem;
+    min-width: min(22rem, 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 3.5rem 3rem 3.5rem 3.5rem;
+    overflow: hidden;
+    background: linear-gradient(
+        145deg,
+        var(--cdrrmo-800, #075985) 0%,
+        var(--cdrrmo-700, #0369a1) 45%,
+        var(--cdrrmo-900, #0c4a6e) 100%
+    );
+    color: #fff;
+}
+
+.auth-shell__brand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 70% 50% at 20% 20%, rgba(255, 255, 255, 0.12), transparent 55%),
+        radial-gradient(
+            ellipse 50% 40% at 90% 80%,
+            color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 35%, transparent),
+            transparent 60%
+        );
+    pointer-events: none;
+}
+
+.auth-shell__brand-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 26rem;
+}
+
+.auth-shell__brand-title {
+    font-size: 2.125rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 1.25rem 0 0;
+    line-height: 1.15;
+}
+
+.auth-shell__brand-sub {
+    font-size: 1.05rem;
+    font-weight: 600;
+    opacity: 0.88;
+    margin: 0.35rem 0 1.25rem;
+}
+
+.auth-shell__brand-lead {
+    font-size: 1.02rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.86);
+    margin-bottom: 1.5rem;
+}
+
+.auth-shell__bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.auth-shell__bullets li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-shell__bullets i {
+    font-size: 1.2rem;
+    opacity: 0.92;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+
+.auth-shell__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+    padding: 2.5rem 3rem 2.5rem 2.5rem;
+}
+
+/* Constrains form + chrome to a comfortable reading width on large screens */
+.auth-shell__content {
+    width: 100%;
+    max-width: 28rem;
+}
+
+.auth-shell__mobile-brand {
+    display: none;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-shell__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cdrrmo-700, #0369a1);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    width: fit-content;
+}
+
+.auth-shell__back:hover {
+    color: var(--cdrrmo-800, #075985);
+}
+
+.auth-card {
+    background: var(--cdrrmo-surface-raised, #fff);
+    border-radius: 1.25rem;
+    padding: 2.25rem 2.25rem 2.5rem;
+    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 12%, transparent);
+    box-shadow: 0 24px 56px color-mix(in srgb, var(--cdrrmo-800, #075985) 14%, transparent);
+}
+
+.auth-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--cdrrmo-900, #0c4a6e);
+    margin: 0 0 0.4rem;
+}
+
+.auth-lead {
+    font-size: 1rem;
+    color: var(--cdrrmo-ink-muted, #64748b);
+    margin: 0 0 1.5rem;
+    line-height: 1.55;
+}
+
+.auth-footer-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent);
+}
+
+.auth-link {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cdrrmo-700, #0369a1);
+    text-decoration: none;
+}
+
+.auth-link:hover {
+    color: var(--cdrrmo-800, #075985);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.auth-alert {
+    border-radius: 0.65rem;
+    font-size: 0.9rem;
+}
+
+.auth-shell__fine {
+    margin-top: 2rem;
+    font-size: 0.82rem;
+}
+
+.auth-shell__mobile-brand-text {
+    line-height: 1.25;
+}
+
+.auth-shell__mobile-brand-text strong {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--cdrrmo-900, #0c4a6e);
+}
+
+.auth-shell__mobile-brand-text span {
+    font-size: 0.82rem;
+    color: var(--cdrrmo-ink-muted, #64748b);
+}
+
+/* Extra-large desktops: slightly wider form column */
+@media (min-width: 1440px) {
+    .auth-shell__content {
+        max-width: 30rem;
+    }
+
+    .auth-shell__brand {
+        flex-basis: 44%;
+        padding: 4rem 4rem 4rem 4.5rem;
+    }
+
+    .auth-shell__brand-inner {
+        max-width: 28rem;
+    }
+
+    .auth-shell__main {
+        padding: 3rem 4rem 3rem 3rem;
+    }
+
+    .auth-title {
+        font-size: 1.875rem;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/* Smaller viewports: stack, compact typography                               */
+/* ------------------------------------------------------------------------- */
+
+@media (max-width: 991.98px) {
+    .auth-shell {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .auth-shell__brand {
+        display: none;
+    }
+
+    .auth-shell__mobile-brand {
+        display: flex;
+    }
+
+    .auth-shell__main {
+        justify-content: flex-start;
+        align-items: stretch;
+        padding: 1.35rem 1.15rem 2rem;
+        flex: 1;
+    }
+
+    .auth-shell__content {
+        max-width: none;
+    }
+
+    .auth-card {
+        padding: 1.65rem 1.45rem 1.85rem;
+        border-radius: 1.1rem;
+        box-shadow: 0 16px 40px color-mix(in srgb, var(--cdrrmo-800, #075985) 11%, transparent);
+    }
+
+    .auth-title {
+        font-size: 1.45rem;
+    }
+
+    .auth-lead {
+        font-size: 0.92rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .auth-shell__back {
+        margin-bottom: 1.15rem;
+        font-size: 0.85rem;
+    }
+
+    .auth-shell__fine {
+        margin-top: 1.35rem;
+        font-size: 0.78rem;
+    }
+}

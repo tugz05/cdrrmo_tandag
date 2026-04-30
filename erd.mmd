@@ -1,0 +1,160 @@
+erDiagram
+    users ||--|{ user_valid_ids : uploads
+    users ||--|{ report_messages : makes
+    users ||--|{ report_calls : makes
+    users ||--|{ news : admin_creates
+    users ||--|{ tips : admin_makes
+    users ||--|| feedbacks : makes
+    users ||--|{ user_roles : has
+    users ||--|{ user_permissions : has
+    users ||--|{ user_logs : contains
+    report_messages ||--|{ report_images : contains
+    roles ||--|{ user_roles : has
+    permissions ||--|{ user_permissions : has
+
+    users {
+        int id PK
+        string fname
+        string mname "null"
+        string lname
+        enum suffix "null"
+        datetime confirmed_at "null"
+        string image
+        decimal latitude "10, 8" 
+        decimal longitude "11, 8" 
+        %% other columns here...
+        timestamps created_at
+        timestamps updated_at
+        timestamps deleted_at
+
+        %% enum suffix (Jr|Sr|I|II|III|IV|V)      
+    }1 
+
+    user_valid_ids {
+        int id PK
+        int user_id FK
+        string filename 
+    }
+
+    reports {
+        int id PK
+        int user_id FK "null"
+        decimal latitude "10, 8, null"
+        decimal longitude "11, 8, null"
+        string details "null"
+        string status "pending|in_progress|rescued|canceled|failed"
+        datetime call_started_at
+        datetime call_ended_at
+        string type "voip|message"
+        timestamps created_at
+        timestamps updated_at
+        timestamps deleted_at
+
+        %% status (pending|in_progress|rescued|canceled|failed)
+    }
+
+    report_images {
+        int id PK
+        int report_messages_id FK "null"
+        string filename
+    }
+
+    %% report_calls {
+    %%     int id PK
+    %%     int user_id FK "null"
+    %%     decimal latitude "10, 8 (optional field)"
+    %%     decimal longitude "11, 8 (optional field)"
+    %%     string details "null"
+    %%     datetime duration "null"
+    %%     string status
+    %%     timestamps created_at
+    %%     timestamps updated_at
+    %%     timestamps deleted_at
+
+    %%     %% status (pending|in_progress|rescued|canceled|failed)
+    %% }
+
+    news {
+        int id PK
+        int user_id FK "null"
+        string bg_image "null"
+        string title
+        string content
+        timestamps created_at
+        timestamps updated_at
+        timestamps deleted_at 
+    }
+
+    tips {
+        int id PK
+        int user_id FK "null"
+        string title "null"
+        string content
+        enum type 
+        timestamps created_at
+        timestamps updated_at
+        timestamps deleted_at
+
+        %% enum type (sefety|emergency) 
+    }
+
+    feedbacks {
+        itn id PK
+        int user_id FK
+        string content
+        timestamps created_at
+        timestamps updated_at
+    }
+    
+    legal_documents {
+        int id PK
+        string title
+        enum type
+        string content
+        timestamps created_at
+        timestamps updated_at
+        timestamps deleted_at
+
+        %% enum type (about|terms|privacy)
+    }
+
+    roles {
+        int id PK 
+        string name
+        string display_name "null"
+        string description "null"
+        timestamps created_at
+        timestamps updated_at
+    }
+
+    permissions {
+        int id PK
+        string display_name "null"
+        string description "null"
+        timestamps created_at
+        timestamps updated_at
+    }
+
+    user_roles {
+        int user_id FK
+        int role_id FK
+    }
+    
+    user_permissions {
+        int user_id FK 
+        itn permission_id FK
+    }
+
+    user_logs {
+        int id PK
+        int user_id "null" 
+        string email "null"
+        string name "null"
+        string subject "null"
+        string url "null" 
+        string method
+        string ip 
+        string agent "null"
+        timestamps created_at
+        timestamps updated_at
+    }

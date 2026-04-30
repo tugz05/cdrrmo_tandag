@@ -1,0 +1,72 @@
+dependencies:
+  flutter_twilio_voice: latest_version
+  http: latest_version
+
+
+
+// main.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_twilio_voice/flutter_twilio_voice.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  String _token = '';
+  String _identity = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeTwilio();
+  }
+
+  Future<void> _initializeTwilio() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://your-laravel-url/api/twilio/token'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _token = data['token'];
+          _identity = data['identity'];
+        });
+
+        FlutterTwilioVoice.instance.init(token: _token);
+      } else {
+        throw Exception('Failed to fetch token');
+      }
+    } catch (e) {
+      print("Error initializing Twilio: $e");
+    }
+  }
+
+  void _makeCall() {
+    FlutterTwilioVoice.instance.call(to: 'client:admin_user'); // Call admin
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: Text('Twilio VoIP')),
+        body: Center(
+          child: ElevatedButton(
+            onPressed: _makeCall,
+            child: Text('Call Admin'),
+          ),
+        ),
+      ),
+    );
+  }
+}

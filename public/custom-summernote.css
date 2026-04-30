@@ -1,0 +1,22 @@
+@media (prefers-color-scheme: dark) {
+    .note-editor .note-toolbar .note-style .dropdown-style h1,
+    .note-editor .note-toolbar .note-style .dropdown-style h2,
+    .note-editor .note-toolbar .note-style .dropdown-style h3,
+    .note-editor .note-toolbar .note-style .dropdown-style h4,
+    .note-editor .note-toolbar .note-style .dropdown-style h5,
+    .note-editor .note-toolbar .note-style .dropdown-style h6,
+    .note-editor .note-toolbar .note-style .dropdown-style p,
+    .note-popover .popover-content .note-style .dropdown-style h1,
+    .note-popover .popover-content .note-style .dropdown-style h2,
+    .note-popover .popover-content .note-style .dropdown-style h3,
+    .note-popover .popover-content .note-style .dropdown-style h4,
+    .note-popover .popover-content .note-style .dropdown-style h5,
+    .note-popover .popover-content .note-style .dropdown-style h6,
+    .note-popover .popover-content .note-style .dropdown-style p {
+      color: #000;
+    }
+}
+
+.note-editor {
+  background-color: white;
+}

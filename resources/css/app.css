@@ -1,0 +1,79 @@
+/**
+ * CDRRMO global palette — light blue system colors.
+ * Use var(--cdrrmo-*) or semantic aliases in components and public CSS.
+ */
+:root {
+    /* Scale (sky / light blue) */
+    --cdrrmo-50: #f0f9ff;
+    --cdrrmo-100: #e0f2fe;
+    --cdrrmo-200: #bae6fd;
+    --cdrrmo-300: #7dd3fc;
+    --cdrrmo-400: #38bdf8;
+    --cdrrmo-500: #0ea5e9;
+    --cdrrmo-600: #0284c7;
+    --cdrrmo-700: #0369a1;
+    --cdrrmo-800: #075985;
+    --cdrrmo-900: #0c4a6e;
+    --cdrrmo-950: #082f49;
+
+    /* Semantic */
+    --cdrrmo-primary: var(--cdrrmo-600);
+    --cdrrmo-primary-hover: var(--cdrrmo-700);
+    --cdrrmo-primary-muted: var(--cdrrmo-100);
+    --cdrrmo-accent: var(--cdrrmo-500);
+    --cdrrmo-accent-soft: var(--cdrrmo-200);
+    --cdrrmo-surface: var(--cdrrmo-50);
+    --cdrrmo-surface-raised: #ffffff;
+    --cdrrmo-border: color-mix(in srgb, var(--cdrrmo-600) 12%, transparent);
+    --cdrrmo-ink: var(--cdrrmo-900);
+    --cdrrmo-ink-muted: #64748b;
+    --cdrrmo-sidebar: linear-gradient(180deg, var(--cdrrmo-800) 0%, var(--cdrrmo-900) 100%);
+    --cdrrmo-sidebar-border: var(--cdrrmo-600);
+    --cdrrmo-on-primary: #ffffff;
+}
+
+/* Bootstrap 5.3+ theme tokens (primary = light blue) */
+:root,
+[data-bs-theme="light"] {
+    --bs-primary: #0284c7;
+    --bs-primary-rgb: 2, 132, 199;
+    --bs-link-color: #0369a1;
+    --bs-link-hover-color: #075985;
+    --bs-body-bg: var(--cdrrmo-50);
+    --bs-body-color: var(--cdrrmo-900);
+    --bs-border-color: #cbd5e1;
+    --bs-secondary-color: #64748b;
+}
+
+body {
+    background-color: var(--cdrrmo-surface);
+    color: var(--cdrrmo-ink);
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--cdrrmo-primary);
+    --bs-btn-border-color: var(--cdrrmo-primary);
+    --bs-btn-hover-bg: var(--cdrrmo-primary-hover);
+    --bs-btn-hover-border-color: var(--cdrrmo-primary-hover);
+    --bs-btn-active-bg: var(--cdrrmo-800);
+    --bs-btn-active-border-color: var(--cdrrmo-800);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--cdrrmo-primary);
+    --bs-btn-border-color: var(--cdrrmo-primary);
+    --bs-btn-hover-bg: var(--cdrrmo-primary);
+    --bs-btn-hover-border-color: var(--cdrrmo-primary);
+}
+
+.text-primary {
+    color: var(--cdrrmo-primary) !important;
+}
+
+.bg-primary {
+    background-color: var(--cdrrmo-primary) !important;
+}
+
+.border-primary {
+    border-color: var(--cdrrmo-primary) !important;
+}

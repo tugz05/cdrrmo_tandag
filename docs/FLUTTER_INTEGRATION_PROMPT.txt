@@ -1,0 +1,172 @@
+================================================================================
+PROMPT / SPEC FOR FLUTTER DEVELOPER — CDRRMO MOBILE APP (LARAVEL API BACKEND)
+================================================================================
+
+Use this document as the product/technical brief when implementing voice-call
+flows, operator availability, and related API integration in Flutter.
+
+Base URL: replace with your deployment, e.g. https://your-domain.com
+All API examples below use prefix:  {BASE}/api/v1
+
+--------------------------------------------------------------------------------
+1) PURPOSE
+--------------------------------------------------------------------------------
+
+Before a resident starts a voice call to the operations center, the app must
+know whether at least one staff member (admin / super admin) is ONLINE and
+AVAILABLE to answer. The backend enforces the same rules when storing the call
+location report and on the Twilio voice webhook so users cannot bypass checks.
+
+--------------------------------------------------------------------------------
+2) CALL FLOW (RECOMMENDED ORDER)
+--------------------------------------------------------------------------------
+
+Step A — Lightweight capacity check (poll sparingly; see section 5).
+    GET  /api/v1/call/availability
+
+Step B — If can_connect is true, acquire geolocation (if required by UX).
+
+Step C — Store caller location and create the CALL report (required before/during
+    Twilio connect per existing Laravel flow).
+    POST /api/v1/caller-details/set-location
+    Body (JSON): user_id, latitude, longitude, accuracy (optional)
+
+Step D — Obtain Twilio Client token and initiate outbound VoIP to the operator
+    identity configured on the server (see section 6). Your project may already
+    use flutter_twilio_voice or similar; align with Laravel Twilio configuration.
+
+Step E — After the operator answers / call lifecycle (if your app participates):
+    POST /api/v1/call/started   { "report_id": <id> }
+    POST /api/v1/call/ended     { "report_id": <id> }
+
+Note: /call/started and /call/ended are used by the admin web client today;
+confirm with backend whether the mobile app must call these or only the web UI.
+
+--------------------------------------------------------------------------------
+3) ENDPOINT: CALL AVAILABILITY (FOR FLUTTER)
+--------------------------------------------------------------------------------
+
+GET  /api/v1/call/availability
+Headers: Accept: application/json
+Auth: none (public endpoint)
+
+Rate limit: 120 requests per minute per IP (do not poll every second; see §5).
+
+HTTP status:
+  • 200 — at least one operator can take a call right now.
+  • 503 — no operator available (all busy or none online).
+
+JSON body (both 200 and 503 include the same keys for parsing convenience):
+
+  can_connect          bool    — primary flag for UI/logic
+  available_operators    int     — count of online + available staff
+  total_operators        int     — count of users with admin roles (configured)
+  code                   string  — "OK" or "ALL_OPERATORS_BUSY"
+  message                string  — human-readable message for dialogs/snackbars
+
+Example success (200):
+  {
+    "can_connect": true,
+    "available_operators": 1,
+    "total_operators": 3,
+    "code": "OK",
+    "message": "An operator is available to take your call."
+  }
+
+Example unavailable (503):
+  {
+    "can_connect": false,
+    "available_operators": 0,
+    "total_operators": 3,
+    "code": "ALL_OPERATORS_BUSY",
+    "message": "All emergency operators are currently busy. Please try again in a few minutes or use a text report if available."
+  }
+
+Flutter UX when 503 or can_connect == false:
+  • Show message from `message` or a localized equivalent.
+  • Do NOT proceed to Twilio connect or set-location for voice if policy is
+    “calls only when operators available.”
+  • Optionally offer text-based reporting if the app implements POST /report
+    (requires auth:sanctum).
+
+--------------------------------------------------------------------------------
+4) ENDPOINT: STORE LOCATION (CALL REPORT)
+--------------------------------------------------------------------------------
+
+POST  /api/v1/caller-details/set-location
+Headers: Content-Type: application/json, Accept: application/json
+Body:
+  {
+    "user_id": <int>,
+    "latitude": <number>,
+    "longitude": <number>,
+    "accuracy": <number optional>
+  }
+
+Success (200):
+  {
+    "success": true,
+    "message": "Caller location stored successfully",
+    "report_id": <int>
+  }
+
+Failure — all operators busy (503):
+  {
+    "success": false,
+    "code": "ALL_OPERATORS_BUSY",
+    "message": "All emergency operators are currently busy. Please try again in a few minutes or use a text report if your app supports it."
+  }
+
+Important: The backend rejects creating the report when no operator is available,
+so the user does not create orphaned reports when capacity is zero.
+
+--------------------------------------------------------------------------------
+5) OPTIMIZATION / BULK TRAFFIC (GUIDANCE FOR FLUTTER)
+--------------------------------------------------------------------------------
+
+• Poll GET /call/availability at modest intervals (e.g. every 10–30 seconds while
+  on the “call emergency” screen), NOT every frame or every second.
+• Back off when receiving HTTP 429 (rate limit) or network errors.
+• The server caches availability briefly (~2 seconds default, configurable via
+  Laravel env CALL_AVAILABILITY_CACHE_SECONDS) to absorb many simultaneous
+  clients checking capacity.
+
+--------------------------------------------------------------------------------
+6) TWILIO TOKEN (REFERENCE)
+--------------------------------------------------------------------------------
+
+The admin SPA obtains tokens from:
+  GET {BASE}/twilio/token?identity=<string>
+
+Flutter apps typically need a similar token endpoint secured appropriately for
+mobile users (coordinate with backend — may require Sanctum token or a dedicated
+mobile endpoint). Do not hardcode secrets; use env on server side only.
+
+Twilio Programmable Voice webhook:
+  POST {BASE}/twilio/voice
+If no operator is available, the server returns TwiML that plays a busy message
+and hangs up — still handle failures gracefully on the client.
+
+--------------------------------------------------------------------------------
+7) BACKEND SEMANTICS (FOR CONTEXT ONLY)
+--------------------------------------------------------------------------------
+
+• Operators = Laravel users with roles: admin, super_admin (Laratrust).
+• “Online” = staff dashboard loaded, Twilio device ready, heartbeat sent within
+  CALL_STAFF_HEARTBEAT_TTL seconds (default 90).
+• “Busy” = staff answered an incoming call until call finished callback marks
+  available again.
+
+--------------------------------------------------------------------------------
+8) OTHER PUBLIC CONTENT APIs (OPTIONAL)
+--------------------------------------------------------------------------------
+
+GET /api/v1/news
+GET /api/v1/safety-tips
+GET /api/v1/emergency-preparedness
+
+Posts include featured image URL field bg_image (required for published items).
+
+--------------------------------------------------------------------------------
+END OF PROMPT
+================================================================================

@@ -1,0 +1,15 @@
+
+
+POST http://127.0.0.1:8000/api/v1/report  HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+id=1,
+&user_id=2
+&latitude=-79.17353400
+&longitude=-79.17353400
+&details=Some message
+&address=Tandag City
+&type=Message
+
+###
