@@ -33,7 +33,12 @@
         <button type="button" id="btnCall" disabled>Call admin</button>
         <button type="button" id="btnHangup" disabled>Hang up</button>
     </p>
-    <small>Open the admin dashboard in another tab; an operator must be online (heartbeat) for the call to connect.</small>
+    <small>
+        When you place a call here, Twilio rings the <strong>admin app</strong> (<code>/admin/*</code>): the Inertia layout
+        (<code>AuthenticatedLayout.vue</code>) registers the same <code>ADMIN_IDENTITY</code> client and shows an incoming-call modal,
+        desktop notification (if allowed), tab title flash, and vibration where supported. Keep an operator dashboard tab open,
+        click once so voice loads, and ensure heartbeat / availability rules pass so TwiML can dial that client.
+    </small>
 
     @php
         $qs = request()->query();

@@ -11,7 +11,7 @@ import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 /** @twilio/voice-sdk version is pinned in package.json — keep in sync with caller-page.js / receiver-page.js */
 import { Device } from '@twilio/voice-sdk';
-import { applyTwilioOutputDevices } from '@/utils/twilioVoiceAudio.js';
+import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from '@/utils/twilioVoiceAudio.js';
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
@@ -134,12 +134,25 @@ function tryResumeAudioContext() {
     }
 }
 
-/** One combined gesture: unlock AudioContext + fetch token + build Voice SDK Device (stops pre-gesture AudioContext spam). */
+/** One combined gesture: mic permission + unlock AudioContext + fetch token + build Voice SDK Device (stops pre-gesture AudioContext spam). */
 function attachTwilioVoiceAfterUserGesture() {
-    const once = () => {
+    const once = async () => {
         if (twilioVoiceBootstrapped) {
             return;
         }
+        const identity = twilioAdminIdentity.value;
+        if (!identity) {
+            console.error('[Twilio] ADMIN_IDENTITY is empty — set ADMIN_IDENTITY in .env and run php artisan config:clear.');
+            return;
+        }
+
+        try {
+            await primeMicrophoneForTwilio();
+        } catch (e) {
+            console.error('[Twilio] Microphone required for voice — allow access and click again:', e);
+            return;
+        }
+
         twilioVoiceBootstrapped = true;
         window.removeEventListener('pointerdown', once, true);
         window.removeEventListener('keydown', once, true);
@@ -148,18 +161,14 @@ function attachTwilioVoiceAfterUserGesture() {
         if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
         }
-        const identity = twilioAdminIdentity.value;
-        if (!identity) {
-            console.error('[Twilio] ADMIN_IDENTITY is empty — set ADMIN_IDENTITY in .env and run php artisan config:clear.');
-            twilioVoiceBootstrapped = false;
-            return;
-        }
         fetch('/twilio/token?identity=' + encodeURIComponent(identity))
             .then(res => res.json())
             .then(data => setupTwilio(data.token))
             .catch(err => {
                 console.error('Token fetch error:', err);
                 twilioVoiceBootstrapped = false;
+                window.addEventListener('pointerdown', once, true);
+                window.addEventListener('keydown', once, true);
             });
     };
 
@@ -235,12 +244,22 @@ function handleTwilioDeviceError(error) {
         lower.includes('devices not found') ||
         lower.includes('invalidargumenterror') ||
         lower.includes('notreadableerror') ||
-        lower.includes('no audio')
+        lower.includes('no audio') ||
+        lower.includes('microphone') ||
+        lower.includes('permission') ||
+        lower.includes('notallowederror')
     ) {
         console.warn(
             '[Twilio] Audio device:',
             msg || error,
-            '— Check speakers/headphones, OS sound output, and click anywhere on the page once if calls stay silent.'
+            '— Allow microphone for this site, check speakers/headphones, OS sound output, and click the page once if calls stay silent.'
+        );
+        return;
+    }
+    if (code === 31005 || lower.includes('gateway') && lower.includes('hangup')) {
+        console.warn(
+            '[Twilio] 31005 / gateway hangup — confirm microphone permission, public TwiML webhook URL, and admin Client registered (see laravel.log).',
+            error
         );
         return;
     }
@@ -309,6 +328,13 @@ async function setupTwilio(token) {
 async function answerCall() {
     if (activeCall) {
         stopIncomingTitleFlash();
+        try {
+            await primeMicrophoneForTwilio();
+        } catch (e) {
+            console.error('[Twilio] Cannot answer without microphone:', e);
+            callStatus.value = e && e.message ? e.message : 'Microphone permission is required to answer.';
+            return;
+        }
         await applyTwilioOutputDevices(device);
         tryResumeAudioContext();
         callStatus.value = 'Call in progress...';

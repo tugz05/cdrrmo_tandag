@@ -1,9 +1,12 @@
 /**
  * Caller test page — uses the same @twilio/voice-sdk as the admin SPA (see package.json).
  * Loaded only from resources/views/caller.blade.php via @vite.
+ *
+ * Outbound `device.connect({ params: { To: adminIdentity } })` hits Twilio → `/twilio/voice` → `<Dial><Client>`.
+ * Admin notification UI (modal, Notification API, title flash, vibrate) lives on `/admin/*` in AuthenticatedLayout.vue.
  */
 import { Device } from '@twilio/voice-sdk';
-import { applyTwilioOutputDevices } from './utils/twilioVoiceAudio.js';
+import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from './utils/twilioVoiceAudio.js';
 
 const cfg = window.__CALLER_CONFIG__ || {};
 const callerUserId = String(cfg.callerUserId ?? '5');
@@ -92,6 +95,7 @@ function signalingHint(code) {
             '• TwiML App Voice URL must be a public HTTPS URL that hits /twilio/voice — not http://127.0.0.1 or *.test (use ngrok/cloudflare tunnel and php artisan config:clear).\n' +
             '• laravel.log: “Twilio handleVoice request” = webhook OK. “blocked by staff presence” = open admin dashboard (heartbeat) or set CALL_REQUIRE_STAFF_PRESENCE_FOR_VOICE_TWIML=false for local tests.\n' +
             '• Admin Twilio.Device must be registered with identity exactly equal to ADMIN_IDENTITY (dashboard: click page once so voice loads).\n' +
+            '• Allow microphone for this site; blocked mic can break the audio pipeline and show as a gateway hangup.\n' +
             '• https://www.twilio.com/docs/voice/sdks/javascript#twiml-app'
         );
     }
@@ -165,6 +169,17 @@ function initDevice() {
                 }
                 device = null;
                 deviceReady = false;
+            }
+
+            try {
+                setStatus('Allow microphone when the browser asks…');
+                await primeMicrophoneForTwilio();
+            } catch (micErr) {
+                console.error(micErr);
+                setStatus(formatErr(micErr), 'error');
+                voiceBootstrapStarted = false;
+                btnStart.disabled = false;
+                return;
             }
 
             device = new Device(data.token, {
@@ -301,6 +316,14 @@ async function callAdmin() {
         });
 
         setStatus('Connecting to admin…');
+        try {
+            await primeMicrophoneForTwilio();
+        } catch (micErr) {
+            console.error(micErr);
+            setStatus(formatErr(micErr), 'error');
+            alert(formatErr(micErr));
+            return;
+        }
         await applyTwilioOutputDevices(device);
         activeCall = await device.connect({
             params: {
@@ -336,6 +359,14 @@ async function callAdmin() {
                 userId: parseInt(callerUserId, 10),
                 error: 'Location not available',
             });
+            try {
+                await primeMicrophoneForTwilio();
+            } catch (micErr) {
+                console.error(micErr);
+                setStatus(formatErr(micErr), 'error');
+                alert(formatErr(micErr));
+                return;
+            }
             await applyTwilioOutputDevices(device);
             activeCall = await device.connect({
                 params: {
