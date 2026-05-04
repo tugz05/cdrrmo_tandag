@@ -257,14 +257,21 @@ function handleTwilioDeviceError(error) {
         console.warn(
             '[Twilio] Audio device:',
             msg || error,
-            'â€” Allow microphone for this site, check speakers/headphones, OS sound output, and click the page once if calls stay silent.'
+            '- Allow microphone for this site, check speakers/headphones, OS sound output, and click the page once if calls stay silent.'
         );
         return;
     }
-    if (code === 31005 || lower.includes('gateway') && lower.includes('hangup')) {
+    if (code === 31005 || (lower.includes('gateway') && lower.includes('hangup'))) {
         console.warn(
-            '[Twilio] 31005 / gateway hangup â€” confirm microphone permission, public TwiML webhook URL, and admin Client registered (see laravel.log).',
+            '[Twilio] 31005 / gateway hangup - confirm microphone permission, public TwiML webhook URL, and admin Client registered (see laravel.log).',
             error
+        );
+        return;
+    }
+    if (code === 31603 || lower.includes('31603') || lower.includes('decline')) {
+        console.warn(
+            '[Twilio] 31603 Decline - callers dial unregistered Client identity. Confirm ADMIN_IDENTITY matches /twilio/token?identity= on admin dashboard.',
+            error,
         );
         return;
     }
@@ -274,7 +281,7 @@ function handleTwilioDeviceError(error) {
     }
     if (code === 31007 || lower.includes('client version not supported')) {
         console.error(
-            '[Twilio] Voice SDK is outdated or blocked â€” rebuild frontend assets and ensure @twilio/voice-sdk is bundled (not legacy v1 client).',
+            '[Twilio] Voice SDK is outdated or blocked - rebuild frontend assets and ensure @twilio/voice-sdk is bundled (not legacy v1 client).',
             error
         );
         return;
@@ -302,6 +309,13 @@ async function setupTwilio(token) {
         staffHeartbeat();
     });
 
+    device.on('unregistered', () => {
+        voicePipelineReady.value = false;
+        console.warn(
+            '[Twilio] Device unregistered - emergency voice will not ring until you click the page and Twilio registers again.',
+        );
+    });
+
     device.on('incoming', async call => {
         activeCall = call;
 
@@ -309,6 +323,9 @@ async function setupTwilio(token) {
             logTwilioErrorDetails('Incoming / active call', err);
             if (err && err.code === 31005) {
                 callStatus.value = 'Connection lost (31005). Check network, edge (TWILIO_VOICE_SDK_EDGE), and TwiML URL.';
+            } else if (err && err.code === 31603) {
+                callStatus.value =
+                    'Call declined (31603). Caller dialed an identity with no registered Twilio client - verify ADMIN_IDENTITY matches this dashboard.';
             }
             if (activeCall === call) {
                 endCall();

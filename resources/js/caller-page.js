@@ -110,6 +110,16 @@ function signalingHint(code) {
             '• https://www.twilio.com/docs/voice/sdks/javascript#twiml-app'
         );
     }
+    if (n === 31603) {
+        return (
+            '\n\n31603 (Decline — callee did not accept / not registered):\n' +
+            '• No Twilio Voice client is currently REGISTERED for the dialed identity (often ADMIN_IDENTITY). Heartbeat alone is not enough.\n' +
+            '• Operator: open /admin, click once to allow microphone, wait until the console logs Device registered / voice ready.\n' +
+            '• Token identity from /twilio/token?identity= must equal exactly what TwiML <Dial><Client> dials (case-sensitive).\n' +
+            '• Compare Twilio Debugger + laravel.log “client_identity” with .env ADMIN_IDENTITY.\n' +
+            '• See https://www.twilio.com/docs/api/errors/31603'
+        );
+    }
     return '';
 }
 
@@ -118,8 +128,24 @@ function setStatus(msg, kind) {
     statusEl.className = kind || '';
 }
 
+/** User-visible line for common outbound failures (31603 = dial target not registered on Twilio). */
+function shortMessageForCallErrorCode(code, dialTarget) {
+    const n = typeof code === 'number' ? code : parseInt(code, 10);
+    if (n === 31603) {
+        const target = dialTarget ? `"${dialTarget}"` : 'ADMIN_IDENTITY';
+        return (
+            `No dispatch client answered (31603). Twilio has no registered browser/app for ${target}. ` +
+            `Keep an admin tab open, click once to load voice, and confirm the token identity matches .env exactly (case-sensitive).`
+        );
+    }
+    if (n === 31005) {
+        return 'Connection lost (31005). Check network (networktest.twilio.com), TWILIO_VOICE_SDK_EDGE, webhook URL, then try again.';
+    }
+    return null;
+}
+
 /** Stabilize UI when the call leg errors (31005 = gateway / signaling lost). */
-function wireOutboundCallSession(call) {
+function wireOutboundCallSession(call, dialTargetForErrors) {
     if (!call) {
         return;
     }
@@ -128,11 +154,9 @@ function wireOutboundCallSession(call) {
     call.on('error', (err) => {
         logTwilioErrorDetails('Outbound call', err);
         const c = err && typeof err.code !== 'undefined' ? err.code : null;
-        if (c === 31005) {
-            setStatus(
-                'Connection lost (31005). Check network (networktest.twilio.com), TWILIO_VOICE_SDK_EDGE, webhook URL, and admin client online — then try again.',
-                'error',
-            );
+        const shortMsg = shortMessageForCallErrorCode(c, dialTargetForErrors);
+        if (shortMsg) {
+            setStatus(shortMsg, 'error');
         } else {
             setStatus(`Call error: ${formatErr(err)}${signalingHint(c)}`, 'error');
         }
@@ -375,18 +399,16 @@ async function callAdmin() {
         } catch (e) {
             logTwilioErrorDetails('device.connect', e);
             const c = e && typeof e.code !== 'undefined' ? e.code : null;
-            if (c === 31005) {
-                setStatus(
-                    'Could not start call (31005). Check network, edge setting, and Twilio configuration — then try again.',
-                    'error',
-                );
+            const shortMsg = shortMessageForCallErrorCode(c, dialIdentity);
+            if (shortMsg) {
+                setStatus(shortMsg, 'error');
             } else {
                 setStatus(`Could not connect: ${formatErr(e)}${signalingHint(c)}`, 'error');
             }
             return;
         }
         activeCall = call;
-        wireOutboundCallSession(call);
+        wireOutboundCallSession(call, dialIdentity);
 
         setStatus('Call in progress — speak when the admin answers.');
         btnHangup.disabled = false;
@@ -426,11 +448,9 @@ async function callAdmin() {
             } catch (e2) {
                 logTwilioErrorDetails('device.connect (fallback)', e2);
                 const c2 = e2 && typeof e2.code !== 'undefined' ? e2.code : null;
-                if (c2 === 31005) {
-                    setStatus(
-                        'Could not start call (31005). Check network, edge setting, and Twilio configuration — then try again.',
-                        'error',
-                    );
+                const shortMsg2 = shortMessageForCallErrorCode(c2, dialIdentity);
+                if (shortMsg2) {
+                    setStatus(shortMsg2, 'error');
                 } else {
                     setStatus(`Could not connect: ${formatErr(e2)}${signalingHint(c2)}`, 'error');
                 }
@@ -438,7 +458,7 @@ async function callAdmin() {
                 return;
             }
             activeCall = callFb;
-            wireOutboundCallSession(callFb);
+            wireOutboundCallSession(callFb, dialIdentity);
             setStatus('Call in progress (no location).');
             btnHangup.disabled = false;
             alert(`Call started but location could not be shared: ${formatErr(error)}`);
