@@ -17,16 +17,9 @@ import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioError
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
 /**
- * Twilio Voice JS SDK Client identity for this operator (sanitized user id).
- * Falls back to legacy admin_identity only when operator_client_identity is absent.
+ * Twilio Voice JS SDK Client identity — same as ADMIN_IDENTITY / TwiML {@code <Client>}.
  */
-const twilioOperatorIdentity = computed(() => {
-    const fromUser = String(page.props.twilio?.operator_client_identity ?? '').trim();
-    if (fromUser !== '') {
-        return fromUser;
-    }
-    return String(page.props.twilio?.admin_identity ?? '').trim();
-});
+const twilioOperatorIdentity = computed(() => String(page.props.twilio?.admin_identity ?? '').trim());
 const twilioVoiceSdkEdge = computed(() => String(page.props.twilio?.voice_sdk_edge ?? '').trim());
 const callStatus = ref('Someone is calling...');
 const isAnswering = ref(false);
@@ -182,7 +175,7 @@ function attachTwilioVoiceAfterUserGesture() {
 
         const identity = twilioOperatorIdentity.value;
         if (!identity) {
-            console.error('[Twilio] operator_client_identity is empty — set ADMIN_IDENTITY in .env for fallback or ensure you are logged in as admin.');
+            console.error('[Twilio] admin_identity is empty — set ADMIN_IDENTITY in .env.');
             return;
         }
 
@@ -214,7 +207,7 @@ async function bootstrapTwilioVoice({ source } = {}) {
 
     const identity = twilioOperatorIdentity.value;
     if (!identity) {
-        console.error('[Twilio] operator_client_identity is empty — set ADMIN_IDENTITY in .env for fallback or ensure you are logged in as admin.');
+        console.error('[Twilio] admin_identity is empty — set ADMIN_IDENTITY in .env.');
         return;
     }
 
@@ -222,7 +215,7 @@ async function bootstrapTwilioVoice({ source } = {}) {
     twilioVoiceBootstrapped = true;
 
     try {
-        const res = await fetch('/twilio/token?identity=' + encodeURIComponent(identity));
+        const res = await fetch('/twilio/token');
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
             throw new Error(data?.message || `Token request failed (HTTP ${res.status})`);
@@ -378,7 +371,7 @@ function handleTwilioDeviceError(error) {
     }
     if (code === 31603 || lower.includes('31603') || lower.includes('decline')) {
         console.warn(
-            '[Twilio] 31603 Decline — no registered Client for the dialed leg, or callee rejected. Operators register as their user id; callers use ring-group To from /api/v1/call/availability.',
+            '[Twilio] 31603 Decline — no registered Client for the dialed leg, or callee rejected. Operators register as ADMIN_IDENTITY; callers pass the same Client name as To (twilio_dial_identity from availability).',
             error,
         );
         return;

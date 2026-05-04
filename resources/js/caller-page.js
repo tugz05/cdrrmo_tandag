@@ -17,7 +17,6 @@ import {
 const cfg = window.__CALLER_CONFIG__ || {};
 const callerUserId = String(cfg.callerUserId ?? '5');
 const adminIdentity = cfg.adminIdentity != null ? String(cfg.adminIdentity) : '';
-const dispatchRingIdentity = cfg.dispatchRingIdentity != null ? String(cfg.dispatchRingIdentity) : 'dispatch';
 const voiceSdkEdge = String(cfg.voiceSdkEdge ?? '').trim();
 
 let device = null;
@@ -103,7 +102,7 @@ function signalingHint(code) {
         return (
             '\n\n31005 (gateway HANGUP):\n' +
             '• TwiML App Voice URL must be a public HTTPS URL that hits /twilio/voice — not http://127.0.0.1 or *.test (use ngrok/cloudflare tunnel and php artisan config:clear).\n' +
-            '• laravel.log: “Twilio handleVoice request” = webhook OK. “blocked by staff presence” = open admin dashboard (heartbeat) or set CALL_REQUIRE_STAFF_PRESENCE_FOR_VOICE_TWIML=false for local tests.\n' +
+            '• laravel.log: “Twilio handleVoice request” = webhook OK. Busy message = no voice-ready operators (isCallRoutingAllowed); open admin dashboard (heartbeat + twilio_voice_ready) or relax CALL_REQUIRE_VOICE_CLIENT_READY for local tests.\n' +
             '• Admin Twilio.Device must be registered with identity exactly equal to ADMIN_IDENTITY (dashboard: click page once so voice loads).\n' +
             '• Allow microphone for this site; blocked mic can break the audio pipeline and show as a gateway hangup.\n' +
             '• Match JWT region (TWILIO_VOICE_HOME_REGION), TwiML App account, and TWILIO_VOICE_SDK_EDGE — invalid edge breaks signaling (31005).\n' +
@@ -116,7 +115,7 @@ function signalingHint(code) {
             '\n\n31603 (Decline — callee did not accept / not registered):\n' +
             '• No Twilio Voice client is currently REGISTERED for the dialed identity (often ADMIN_IDENTITY). Heartbeat alone is not enough.\n' +
             '• Operator: open /admin, click once to allow microphone, wait until the console logs Device registered / voice ready.\n' +
-            '• Token identity for operators is their user id; callers use ring-group To from /api/v1/call/availability (default dispatch).\n' +
+            '• Token identity for operators is ADMIN_IDENTITY; callers use the same To from /api/v1/call/availability.\n' +
             '• Compare Twilio Debugger + laravel.log “client_identity” with .env ADMIN_IDENTITY.\n' +
             '• See https://www.twilio.com/docs/api/errors/31603'
         );
@@ -135,8 +134,8 @@ function shortMessageForCallErrorCode(code, dialTarget) {
     if (n === 31603) {
         const target = dialTarget ? `"${dialTarget}"` : 'ADMIN_IDENTITY';
         return (
-            `No dispatch client answered (31603). Twilio has no registered VoIP client for ${target}. ` +
-            `Operators use their user id as Client identity; callers use the ring-group To from availability (see TWILIO_DISPATCH_RING_GROUP). ` +
+            `No admin client answered (31603). Twilio has no registered VoIP client for ${target}. ` +
+            `Operators register the Voice SDK with ADMIN_IDENTITY (same as twilio_dial_identity from availability). ` +
             `Keep an admin tab open, click once so voice registers, and confirm heartbeats include twilio_voice_ready.`
         );
     }
@@ -348,9 +347,7 @@ async function callAdmin() {
         btnCall.disabled = false;
         return;
     }
-    const dialIdentity = String(
-        avail.body?.twilio_dial_identity || dispatchRingIdentity || adminIdentity || '',
-    ).trim();
+    const dialIdentity = String(avail.body?.twilio_dial_identity || adminIdentity || '').trim();
     if (!dialIdentity) {
         setStatus('Server is not configured: missing Twilio dial identity (ADMIN_IDENTITY).', 'error');
         btnCall.disabled = false;

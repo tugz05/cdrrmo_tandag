@@ -25,16 +25,15 @@ class CallAvailabilityController extends Controller
             ]);
 
             if ($failOpen) {
-                $adminId = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
-                $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+                $adminRaw = trim((string) config('services.twilio.admin_identity'));
+                $adminId = TwilioClientIdentity::sanitize($adminRaw !== '' ? $adminRaw : (string) config('services.twilio.admin_identity'));
                 $snap = [
                     'can_connect' => true,
                     'available_operators' => 1,
                     'total_operators' => 1,
                     'block_reason' => null,
                     'heartbeat_ttl_seconds' => (int) config('call.staff_heartbeat_ttl', 90),
-                    'operator_twilio_client_identity' => $dispatchRing,
-                    'dispatch_twilio_client_identity' => $dispatchRing,
+                    'operator_twilio_client_identity' => $adminId,
                     'voice_ready_operator_twilio_identities' => [],
                     'legacy_admin_twilio_client_identity' => $adminId,
                     'require_voice_client_ready' => (bool) config('call.require_voice_client_ready', true),
@@ -57,7 +56,7 @@ class CallAvailabilityController extends Controller
                     ? 'An operator is available to take your call.'
                     : 'All emergency operators are currently busy. Please try again in a few minutes or use a text report if available.',
                 'twilio_dial_identity' => $snap['operator_twilio_client_identity'] ?? '',
-                'twilio_note' => 'Pass twilio_dial_identity as device.connect params.To (VoIP Client). Server expands this ring-group name to every voice-ready operator; each operator registers Twilio Voice SDK with their own user id.',
+                'twilio_note' => 'Pass twilio_dial_identity as device.connect params.To (VoIP Client). Server TwiML dials ADMIN_IDENTITY; operators register the Voice SDK with that same Client name.',
             ]
         );
 

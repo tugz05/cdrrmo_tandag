@@ -39,15 +39,8 @@ class HandleInertiaRequests extends Middleware
                 'isSuperAdmin' => $request->user() && $request->user()->hasRole('super_admin'),
             ],
             'twilio' => [
-                /** Legacy shared Client name; fallback when TwiML cannot resolve voice-ready operators. */
+                /** Twilio Voice Client name for operators and TwiML `<Dial><Client>` (ADMIN_IDENTITY). */
                 'admin_identity' => TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity')),
-                /**
-                 * VoIP Client identity for this session: sanitized auth user id for admins.
-                 * Must match /twilio/token when logged in (ring-group dialing targets this identity).
-                 */
-                'operator_client_identity' => ($request->user() && $request->user()->hasRole(['admin', 'super_admin']))
-                    ? TwilioClientIdentity::sanitize((string) $request->user()->getAuthIdentifier())
-                    : null,
                 /** Voice SDK edge / signaling region — empty means SDK default. */
                 'voice_sdk_edge' => (string) config('services.twilio.voice_sdk_edge'),
             ],

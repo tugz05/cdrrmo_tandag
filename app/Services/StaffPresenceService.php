@@ -104,14 +104,14 @@ class StaffPresenceService
         }
 
         $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
-        $adminClientIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
-        $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+        $adminRaw = trim((string) config('services.twilio.admin_identity'));
+        $adminClientIdentity = TwilioClientIdentity::sanitize($adminRaw !== '' ? $adminRaw : (string) config('services.twilio.admin_identity'));
         $requireVoice = (bool) config('call.require_voice_client_ready', true);
 
         $resolutionHint = match ($blockReason) {
             'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
             'NO_OPERATOR_ONLINE' => ($requireVoice
-                ? 'No dispatch operator is voice-ready: each operator opens /admin so Twilio Voice JS SDK registers with their user id, and heartbeats send twilio_voice_ready after Device emits registered. Outbound calls use connect param To='.$dispatchRing.' (TWILIO_DISPATCH_RING_GROUP); TwiML rings all ready operators. Legacy ADMIN_IDENTITY ('.$adminClientIdentity.') is only a fallback if none are listed at dial time. Flutter: POST twilio_voice_ready when Voice registers, or set CALL_REQUIRE_VOICE_CLIENT_READY=false only if you accept possible 31603.'
+                ? 'No operator is voice-ready: open /admin so Twilio Voice JS SDK registers with ADMIN_IDENTITY ('.$adminClientIdentity.'), and heartbeats send twilio_voice_ready after Device emits registered. Outbound VoIP uses connect param To equal to that same Client name. Flutter: POST twilio_voice_ready when Voice registers, or set CALL_REQUIRE_VOICE_CLIENT_READY=false only if you accept possible 31603.'
                 : 'No operator has a fresh presence heartbeat. Web: keep /admin open. Mobile: POST /api/v1/staff/heartbeat.'),
             default => '',
         };
@@ -122,9 +122,8 @@ class StaffPresenceService
             'total_operators' => $total,
             'block_reason' => $blockReason,
             'heartbeat_ttl_seconds' => $ttl,
-            /** Value for device.connect({ params: { To } }) — expanded server-side to all voice-ready operator Client identities. */
-            'operator_twilio_client_identity' => $dispatchRing,
-            'dispatch_twilio_client_identity' => $dispatchRing,
+            /** Value for device.connect({ params: { To } }) — must match TwiML `<Client>` (ADMIN_IDENTITY). */
+            'operator_twilio_client_identity' => $adminClientIdentity,
             'voice_ready_operator_twilio_identities' => $voiceReadyIds,
             'legacy_admin_twilio_client_identity' => $adminClientIdentity,
             'require_voice_client_ready' => $requireVoice,
