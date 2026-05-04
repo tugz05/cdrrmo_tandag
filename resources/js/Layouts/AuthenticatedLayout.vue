@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import SideBar from './SideBar.vue';
 import Footer from './Footer.vue';
@@ -9,7 +9,7 @@ import { toggleModal } from '@/Helpers/JModal';
 import JButton from '@/Components/JButton.vue';
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-/** @twilio/voice-sdk version is pinned in package.json — keep in sync with caller-page.js / receiver-page.js */
+/** @twilio/voice-sdk version is pinned in package.json â€” keep in sync with caller-page.js / receiver-page.js */
 import { Device } from '@twilio/voice-sdk';
 import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from '@/utils/twilioVoiceAudio.js';
 import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioErrorDetails } from '@/utils/twilioVoiceSdk.js';
@@ -62,7 +62,7 @@ function startIncomingTitleFlash() {
     let on = false;
     incomingTitleFlashTimer = window.setInterval(() => {
         on = !on;
-        document.title = on ? `Incoming call — ${base}` : base;
+        document.title = on ? `Incoming call â€” ${base}` : base;
     }, 900);
 }
 
@@ -70,7 +70,7 @@ function notifyIncomingVoiceCall(displayName) {
     const body = displayName ? `${displayName} is calling` : 'Incoming emergency voice call';
     try {
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            const n = new Notification('CDRRMO — Voice call', {
+            const n = new Notification('CDRRMO â€” Voice call', {
                 body,
                 tag: 'cdrrmo-voice-incoming',
                 requireInteraction: true,
@@ -136,7 +136,7 @@ function tryResumeAudioContext() {
     }
 }
 
-/** One combined gesture: mic permission + unlock AudioContext + fetch token + build Voice SDK Device (stops pre-gesture AudioContext spam). */
+/** One combined gesture: unlock AudioContext + fetch token + register Voice SDK Device (microphone requested on answer). */
 function attachTwilioVoiceAfterUserGesture() {
     const once = async () => {
         if (twilioVoiceBootstrapped) {
@@ -144,14 +144,7 @@ function attachTwilioVoiceAfterUserGesture() {
         }
         const identity = twilioAdminIdentity.value;
         if (!identity) {
-            console.error('[Twilio] ADMIN_IDENTITY is empty — set ADMIN_IDENTITY in .env and run php artisan config:clear.');
-            return;
-        }
-
-        try {
-            await primeMicrophoneForTwilio();
-        } catch (e) {
-            console.error('[Twilio] Microphone required for voice — allow access and click again:', e);
+            console.error('[Twilio] ADMIN_IDENTITY is empty â€” set ADMIN_IDENTITY in .env and run php artisan config:clear.');
             return;
         }
 
@@ -164,8 +157,17 @@ function attachTwilioVoiceAfterUserGesture() {
             Notification.requestPermission().catch(() => {});
         }
         fetch('/twilio/token?identity=' + encodeURIComponent(identity))
-            .then(res => res.json())
-            .then(data => setupTwilio(data.token))
+            .then(async (res) => {
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data?.message || `Token request failed (HTTP ${res.status})`);
+                }
+                if (!data?.token) {
+                    throw new Error(data?.message || 'Token response missing "token"');
+                }
+                return data;
+            })
+            .then((data) => setupTwilio(data.token))
             .catch(err => {
                 console.error('Token fetch error:', err);
                 twilioVoiceBootstrapped = false;
@@ -196,7 +198,7 @@ function staffHeartbeat() {
     staffHeartbeatSeq += 1;
     const seq = staffHeartbeatSeq;
     const url = route('admin.staff.heartbeat');
-    logStaffPresence('info', `heartbeat #${seq} → POST`, url);
+    logStaffPresence('info', `heartbeat #${seq} â†’ POST`, url);
 
     axios
         .post(url)
@@ -206,7 +208,7 @@ function staffHeartbeat() {
         .catch((err) => {
             const status = err?.response?.status;
             const data = err?.response?.data;
-            console.warn('[StaffPresence] heartbeat failed — operators may show offline for voice routing', {
+            console.warn('[StaffPresence] heartbeat failed â€” operators may show offline for voice routing', {
                 seq,
                 url,
                 status: status ?? '(no response)',
@@ -215,13 +217,13 @@ function staffHeartbeat() {
                     status === 419
                         ? 'CSRF: refresh page or ensure XSRF-TOKEN cookie is set (same-site cookies).'
                         : status === 401 || status === 403
-                          ? 'Not authorized — session may have expired.'
+                          ? 'Not authorized â€” session may have expired.'
                           : 'See Network tab for full response.',
             });
         });
 }
 
-/** Presence for API availability — MUST NOT depend on Twilio Device registration (audio blocks / SDK errors would strand operators offline). */
+/** Presence for API availability â€” MUST NOT depend on Twilio Device registration (audio blocks / SDK errors would strand operators offline). */
 function startStaffPresenceHeartbeat() {
     const url = route('admin.staff.heartbeat');
     logStaffPresence(
@@ -255,13 +257,13 @@ function handleTwilioDeviceError(error) {
         console.warn(
             '[Twilio] Audio device:',
             msg || error,
-            '— Allow microphone for this site, check speakers/headphones, OS sound output, and click the page once if calls stay silent.'
+            'â€” Allow microphone for this site, check speakers/headphones, OS sound output, and click the page once if calls stay silent.'
         );
         return;
     }
     if (code === 31005 || lower.includes('gateway') && lower.includes('hangup')) {
         console.warn(
-            '[Twilio] 31005 / gateway hangup — confirm microphone permission, public TwiML webhook URL, and admin Client registered (see laravel.log).',
+            '[Twilio] 31005 / gateway hangup â€” confirm microphone permission, public TwiML webhook URL, and admin Client registered (see laravel.log).',
             error
         );
         return;
@@ -272,7 +274,7 @@ function handleTwilioDeviceError(error) {
     }
     if (code === 31007 || lower.includes('client version not supported')) {
         console.error(
-            '[Twilio] Voice SDK is outdated or blocked — rebuild frontend assets and ensure @twilio/voice-sdk is bundled (not legacy v1 client).',
+            '[Twilio] Voice SDK is outdated or blocked â€” rebuild frontend assets and ensure @twilio/voice-sdk is bundled (not legacy v1 client).',
             error
         );
         return;
@@ -293,6 +295,7 @@ async function setupTwilio(token) {
     attachTokenWillExpireHandler(device, twilioAdminIdentity.value);
 
     device.on('registered', async () => {
+        console.info('[Twilio] Admin Device registered for incoming calls as:', twilioAdminIdentity.value);
         await applyTwilioOutputDevices(device);
         voicePipelineReady.value = true;
         tryResumeAudioContext();
@@ -473,8 +476,8 @@ async function handleCallEnded(reportId) {
             class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
             role="status"
         >
-            Click or tap anywhere once to enable incoming emergency voice calls — required by your browser’s audio
-            policy.
+            Click or tap anywhere once to enable incoming emergency voice calls. Microphone permission is requested only
+            when you answer a call.
         </div>
         <div class="content">
             <SideBar />
