@@ -184,6 +184,10 @@ function destroyTwilioDevice() {
     if (!device) {
         return;
     }
+    if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+    }
     try {
         device.disconnectAll?.();
         device.destroy?.();
@@ -192,6 +196,7 @@ function destroyTwilioDevice() {
     }
     device = null;
     activeCall = null;
+    voicePipelineReady.value = false;
 }
 
 function staffHeartbeat() {
@@ -223,7 +228,7 @@ function staffHeartbeat() {
         });
 }
 
-/** Presence for API availability â€” MUST NOT depend on Twilio Device registration (audio blocks / SDK errors would strand operators offline). */
+/** Start POST /admin/staff/heartbeat on an interval. Call only after Twilio Device is registered so callers are not offered voice while no Client is online (avoids 31603). */
 function startStaffPresenceHeartbeat() {
     const url = route('admin.staff.heartbeat');
     logStaffPresence(
@@ -306,11 +311,15 @@ async function setupTwilio(token) {
         await applyTwilioOutputDevices(device);
         voicePipelineReady.value = true;
         tryResumeAudioContext();
-        staffHeartbeat();
+        startStaffPresenceHeartbeat();
     });
 
     device.on('unregistered', () => {
         voicePipelineReady.value = false;
+        if (heartbeatTimer) {
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = null;
+        }
         console.warn(
             '[Twilio] Device unregistered - emergency voice will not ring until you click the page and Twilio registers again.',
         );
@@ -407,7 +416,7 @@ onMounted(() => {
     if (!canAccessAdmin.value) {
         return;
     }
-    startStaffPresenceHeartbeat();
+    /** Do not start staff heartbeat until Twilio Device is registered (see startStaffPresenceHeartbeat in device.on("registered")). */
     attachTwilioVoiceAfterUserGesture();
 });
 

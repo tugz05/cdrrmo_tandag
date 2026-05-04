@@ -76,7 +76,7 @@ class StaffPresenceService
 
         $resolutionHint = match ($blockReason) {
             'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
-            'NO_OPERATOR_ONLINE' => 'No operator has a fresh presence heartbeat. Web: keep /admin/dashboard open (heartbeat every 30s). Mobile dispatch app: POST /api/v1/staff/heartbeat with an admin Bearer token at least that often. Twilio: the dispatch browser must register Voice Device with identity exactly equal to operator_twilio_client_identity (same as .env ADMIN_IDENTITY) or Twilio will return 31603 when mobile dials.',
+            'NO_OPERATOR_ONLINE' => 'No operator is available for voice. Web: open /admin and click or tap once so Twilio Voice registers; staff heartbeat (and "available" status) starts only after that. Mobile: POST /api/v1/staff/heartbeat does not register a browser Client by itself; for web callers, a dispatch browser must still be online with the same identity as .env ADMIN_IDENTITY or calls return 31603.',
             default => '',
         };
 
