@@ -417,8 +417,7 @@ class TwilioVoiceController extends Controller
             Log::info('Twilio dial status callback', $payload);
         }
 
-        // Twilio expects valid TwiML or empty 200; empty is sufficient.
-        return response('', 200);
+        return $this->emptyTwiMLResponse();
     }
 
     /**
@@ -437,7 +436,7 @@ class TwilioVoiceController extends Controller
             'From' => $request->input('From'),
         ]);
 
-        return response('', 200);
+        return $this->emptyTwiMLResponse();
     }
 
     /**
@@ -600,10 +599,28 @@ class TwilioVoiceController extends Controller
             return rtrim($override, '/');
         }
 
+        /*
+         * Behind TLS termination Laravel often sees http:// while Twilio must call https://.
+         * Prefer https APP_URL when set (embeds correct callback URLs in TwiML; helps avoid Twilio 11200).
+         */
+        $appUrl = trim((string) config('app.url', ''));
+        if ($appUrl !== '' && str_starts_with(strtolower($appUrl), 'https://')) {
+            $parts = parse_url($appUrl);
+            if (is_array($parts) && isset($parts['host'])) {
+                $scheme = isset($parts['scheme']) && is_string($parts['scheme']) ? $parts['scheme'] : 'https';
+                $host = $parts['host'];
+                $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+                return $scheme.'://'.$host.$port;
+            }
+        }
+
         return rtrim($request->getSchemeAndHttpHost(), '/');
     }
 
     /**
+     * Twilio may treat non-TwiML or missing Content-Type on Voice webhooks as delivery failures (error 11200).
+     *
      * @param  callable(VoiceResponse):void  $builder
      */
     protected function twimlResponse(callable $builder): Response
@@ -613,5 +630,15 @@ class TwilioVoiceController extends Controller
 
         return response((string) $response)
             ->header('Content-Type', 'text/xml; charset=utf-8');
+    }
+
+    /**
+     * Minimal valid TwiML for status callbacks (Dial action / Client status) so Content-Type is always correct.
+     */
+    protected function emptyTwiMLResponse(): Response
+    {
+        return $this->twimlResponse(static function (VoiceResponse $twiml): void {
+            // Empty <Response> — acknowledges webhook; see Twilio Dial `action` docs.
+        });
     }
 }
