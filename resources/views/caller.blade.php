@@ -111,6 +111,12 @@
                     '• Optional: set TWILIO_VOICE_HOME_REGION=us1 (or ie1, au1) if your account is regional.\n' +
                     '• Run php artisan config:clear. Local only: GET /twilio/token-debug?identity=5';
             }
+            if (n === 31005) {
+                return '\n\n31005 (gateway HANGUP) — Twilio ended the call after your TwiML App Voice URL ran.\n' +
+                    '• If you hear “application error”: Twilio could not load valid TwiML. Set the TwiML App’s Voice URL to a public HTTPS endpoint Twilio can POST to (use ngrok/Cloudflare Tunnel for local Laragon; *.test is not reachable from Twilio). Docs: https://www.twilio.com/docs/voice/sdks/javascript#twiml-app\n' +
+                    '• If TwiML loads but <Dial><Client> fails: keep the admin dashboard open so the JavaScript Device registers with the same identity as ADMIN_IDENTITY, with an operator online (heartbeat).\n' +
+                    '• Check storage/logs/laravel.log for “Twilio handleVoice request” — if missing on each call, the webhook never reached your server.';
+            }
             return '';
         }
 
@@ -302,7 +308,8 @@
                 activeCall.on('cancel', onCallEnded);
                 activeCall.on('error', function (err) {
                     console.error('Call error:', err);
-                    setStatus('Call error: ' + formatErr(err), 'error');
+                    var c = err && typeof err.code !== 'undefined' ? err.code : null;
+                    setStatus('Call error: ' + formatErr(err) + signalingHint(c), 'error');
                 });
 
                 setStatus('Call in progress — speak when the admin answers.');

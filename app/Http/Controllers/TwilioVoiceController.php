@@ -180,6 +180,13 @@ class TwilioVoiceController extends Controller
 
     public function handleVoice(Request $request)
     {
+        Log::info('Twilio handleVoice request', [
+            'CallSid' => $request->input('CallSid'),
+            'From' => $request->input('From'),
+            'To' => $request->input('To'),
+            'ApplicationSid' => $request->input('ApplicationSid'),
+        ]);
+
         try {
             $adminIdentity = (string) config('services.twilio.admin_identity');
 
