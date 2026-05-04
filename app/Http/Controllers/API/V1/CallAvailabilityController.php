@@ -21,6 +21,8 @@ class CallAvailabilityController extends Controller
                 'message' => $snap['can_connect']
                     ? 'An operator is available to take your call.'
                     : 'All emergency operators are currently busy. Please try again in a few minutes or use a text report if available.',
+                'twilio_dial_identity' => $snap['operator_twilio_client_identity'] ?? '',
+                'twilio_note' => 'Mobile outbound calls TwiML-dial this Client name; dispatch must register Twilio.Device with the same identity.',
             ]
         );
 

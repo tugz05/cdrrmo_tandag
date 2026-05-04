@@ -62,11 +62,32 @@ class StaffPresenceService
     {
         $total = $this->totalOperatorCount();
         $available = $this->availableOperatorCount();
+        $canConnect = $total > 0 && $available > 0;
+
+        $blockReason = null;
+        if ($total === 0) {
+            $blockReason = 'NO_ADMIN_ROLE_USERS';
+        } elseif (! $canConnect) {
+            $blockReason = 'NO_OPERATOR_ONLINE';
+        }
+
+        $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
+        $adminClientIdentity = (string) config('services.twilio.admin_identity');
+
+        $resolutionHint = match ($blockReason) {
+            'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
+            'NO_OPERATOR_ONLINE' => 'No operator has a fresh presence heartbeat. Web: keep /admin/dashboard open (heartbeat every 30s). Mobile dispatch app: POST /api/v1/staff/heartbeat with an admin Bearer token at least that often. Twilio: the dispatch browser must register Voice Device with identity exactly equal to operator_twilio_client_identity (same as .env ADMIN_IDENTITY) or Twilio will return 31603 when mobile dials.',
+            default => '',
+        };
 
         return [
-            'can_connect' => $total > 0 && $available > 0,
+            'can_connect' => $canConnect,
             'available_operators' => $available,
             'total_operators' => $total,
+            'block_reason' => $blockReason,
+            'heartbeat_ttl_seconds' => $ttl,
+            'operator_twilio_client_identity' => $adminClientIdentity,
+            'resolution_hint' => $resolutionHint,
         ];
     }
 

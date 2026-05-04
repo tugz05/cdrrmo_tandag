@@ -14,6 +14,7 @@ use App\Http\Controllers\API\V1\ReportController;
 use App\Http\Controllers\API\V1\UserUploadController;
 use App\Http\Controllers\API\V1\ValidImageController;
 use App\Http\Controllers\CallerInfoController;
+use App\Http\Controllers\StaffPresenceController;
 use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Resources\PostResource;
@@ -81,6 +82,10 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/voice/token', [TwilioVoiceController::class, 'tokenForMobile'])
             ->middleware('throttle:60,1');
+
+        /** Same presence as POST /admin/staff/heartbeat — use from Flutter dispatch so availability API can return 200 without the web dashboard. */
+        Route::post('/staff/heartbeat', [StaffPresenceController::class, 'heartbeat'])
+            ->middleware('throttle:120,1');
     });
 
     // Route::get('/twilio/token', [TwilioVoiceController::class, 'token']);

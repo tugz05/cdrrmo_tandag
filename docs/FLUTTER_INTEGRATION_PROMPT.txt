@@ -35,6 +35,12 @@ IMPORTANT — IN-APP CALLING ONLY (TWILIO VOIP):
 Step A — Lightweight capacity check (poll sparingly; see section 5).
     GET  /api/v1/call/availability
 
+    If you test mobile voice WITHOUT the web admin dashboard open, you MUST have
+    a dispatch client (Flutter or other) logged in as admin and calling:
+    POST /api/v1/staff/heartbeat  (Bearer admin Sanctum token, same interval as web ~30s)
+    Otherwise `can_connect` stays false (503) and Twilio may later return 31603
+    because no `<Dial><Client>` target is registered.
+
 Step B — If can_connect is true, acquire geolocation (if required by UX).
 
 Step C — Store caller location (send Authorization: Bearer <token> so user_id is
@@ -90,17 +96,29 @@ HTTP status:
 
 JSON body (both 200 and 503 include the same keys for parsing convenience):
 
-  can_connect          bool    — primary flag for UI/logic
-  available_operators    int     — count of online + available staff
-  total_operators        int     — count of users with admin roles (configured)
-  code                   string  — "OK" or "ALL_OPERATORS_BUSY"
-  message                string  — human-readable message for dialogs/snackbars
+  can_connect                        bool    — primary flag for UI/logic
+  available_operators                int     — count of online + available staff
+  total_operators                    int     — count of users with admin roles (configured)
+  code                               string  — "OK" or "ALL_OPERATORS_BUSY"
+  message                            string  — human-readable message for dialogs/snackbars
+  block_reason                       string|null — "NO_ADMIN_ROLE_USERS" | "NO_OPERATOR_ONLINE" | null when OK
+  heartbeat_ttl_seconds              int     — heartbeats must arrive within this window (see CALL_STAFF_HEARTBEAT_TTL)
+  operator_twilio_client_identity    string  — must match dispatch Twilio Device.register identity (ADMIN_IDENTITY)
+  resolution_hint                    string  — non-empty when blocked; explains 503 / 31603 alignment
+  twilio_dial_identity               string  — same as operator_twilio_client_identity (use as connect `To`)
+  twilio_note                        string  — short reminder for integrators
 
 Example success (200):
   {
     "can_connect": true,
     "available_operators": 1,
     "total_operators": 3,
+    "block_reason": null,
+    "heartbeat_ttl_seconds": 90,
+    "operator_twilio_client_identity": "admin_user",
+    "resolution_hint": "",
+    "twilio_dial_identity": "admin_user",
+    "twilio_note": "Mobile outbound calls TwiML-dial this Client name; dispatch must register Twilio.Device with the same identity.",
     "code": "OK",
     "message": "An operator is available to take your call."
   }
@@ -110,6 +128,12 @@ Example unavailable (503):
     "can_connect": false,
     "available_operators": 0,
     "total_operators": 3,
+    "block_reason": "NO_OPERATOR_ONLINE",
+    "heartbeat_ttl_seconds": 90,
+    "operator_twilio_client_identity": "admin_user",
+    "resolution_hint": "No operator has a fresh presence heartbeat. Web: keep /admin/dashboard open ... Mobile dispatch: POST /api/v1/staff/heartbeat ...",
+    "twilio_dial_identity": "admin_user",
+    "twilio_note": "Mobile outbound calls TwiML-dial this Client name; dispatch must register Twilio.Device with the same identity.",
     "code": "ALL_OPERATORS_BUSY",
     "message": "All emergency operators are currently busy. Please try again in a few minutes or use a text report if available."
   }
@@ -120,6 +144,20 @@ Flutter UX when 503 or can_connect == false:
     “calls only when operators available.”
   • Optionally offer text-based reporting if the app implements POST /report
     (requires auth:sanctum).
+
+--------------------------------------------------------------------------------
+3b) ENDPOINT: STAFF HEARTBEAT (MOBILE DISPATCH / AUTOMATION)
+--------------------------------------------------------------------------------
+
+POST  /api/v1/staff/heartbeat
+Headers: Authorization: Bearer <sanctum_token_of_admin_or_super_admin>, Accept: application/json
+Auth: required (Sanctum)
+
+Success (200): { "status": "ok" }
+
+Call on the same cadence as the web dashboard (~30 seconds). This updates
+`staff_presences` so GET /call/availability can return 200 and Twilio voice
+webhooks can return connect TwiML instead of busy.
 
 --------------------------------------------------------------------------------
 4) ENDPOINT: STORE LOCATION (CALL REPORT)
@@ -180,12 +218,14 @@ Flutter (authenticated resident):
     {
       "identity": "42",
       "token": "<Twilio access token JWT>",
-      "dial_to": "<ADMIN_IDENTITY>"
+      "dial_to": "<ADMIN_IDENTITY>",
+      "operator_twilio_client_identity": "<same as dial_to>"
     }
 
   • Use `token` with the Twilio Voice SDK; `identity` is your Twilio client name.
-  • Pass `dial_to` as the `To` parameter when placing the outbound VoIP call to
+  • Pass `dial_to` (or `operator_twilio_client_identity`) as the `To` parameter when placing the outbound VoIP call to
     the operations center (same value as server env ADMIN_IDENTITY).
+  • If the dispatch UI is not registered with that exact Client identity, Twilio returns 31603 / SIP 603 decline.
 
 Admin / test pages (no Sanctum):
   GET  {BASE}/twilio/token?identity=<string>
@@ -201,10 +241,13 @@ TwiML webhook (Twilio calls your server):
 --------------------------------------------------------------------------------
 
 • Operators = Laravel users with roles: admin, super_admin (Laratrust).
-• “Online” = staff dashboard loaded, Twilio device ready, heartbeat sent within
-  CALL_STAFF_HEARTBEAT_TTL seconds (default 90).
+• “Online” = heartbeat sent within CALL_STAFF_HEARTBEAT_TTL seconds (default 90):
+  - Web: POST /admin/staff/heartbeat (session) from AuthenticatedLayout every 30s
+  - Mobile dispatch: POST /api/v1/staff/heartbeat (Bearer admin Sanctum token), same effect
 • “Busy” = staff answered an incoming call until call finished callback marks
   available again.
+• Twilio `<Dial><Client>` uses ADMIN_IDENTITY; the dispatch browser/app must
+  `Device.register` with that same string or inbound client dialing fails (31603).
 
 --------------------------------------------------------------------------------
 8) OTHER PUBLIC CONTENT APIs (OPTIONAL)

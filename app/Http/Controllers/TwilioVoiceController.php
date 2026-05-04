@@ -52,10 +52,14 @@ class TwilioVoiceController extends Controller
             ], 503);
         }
 
+        $operatorIdentity = (string) config('services.twilio.admin_identity');
+
         return response()->json([
             'identity' => $identity,
             'token' => $this->makeVoiceAccessToken($identity),
-            'dial_to' => config('services.twilio.admin_identity'),
+            /** TwiML `<Dial><Client>` target — dispatch must register Twilio with this exact Client name or calls get 31603. */
+            'dial_to' => $operatorIdentity,
+            'operator_twilio_client_identity' => $operatorIdentity,
         ]);
     }
 
