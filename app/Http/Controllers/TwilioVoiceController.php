@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Services\StaffPresenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 use Twilio\Jwt\AccessToken;
 use Twilio\Jwt\Grants\VoiceGrant;
 use Twilio\TwiML\VoiceResponse;
@@ -19,6 +22,13 @@ class TwilioVoiceController extends Controller
     public function generateToken(Request $request): JsonResponse
     {
         $identity = $request->query('identity', 'guest');
+
+        if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
+            return response()->json([
+                'message' => $configMessage,
+                'identity' => $identity,
+            ], 503);
+        }
 
         return response()->json([
             'identity' => $identity,
@@ -35,11 +45,65 @@ class TwilioVoiceController extends Controller
         $user = $request->user();
         $identity = (string) $user->getAuthIdentifier();
 
+        if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
+            return response()->json([
+                'message' => $configMessage,
+                'identity' => $identity,
+            ], 503);
+        }
+
         return response()->json([
             'identity' => $identity,
             'token' => $this->makeVoiceAccessToken($identity),
             'dial_to' => config('services.twilio.admin_identity'),
         ]);
+    }
+
+    /**
+     * Human-readable reason why Voice JWT cannot be built (empty .env, wrong key type, etc.).
+     * Missing or invalid values cause Twilio error 31000/53000 at device.register() in the browser.
+     */
+    protected function twilioVoiceConfigurationMessage(): ?string
+    {
+        $sid = (string) config('services.twilio.sid');
+        $apiKey = (string) config('services.twilio.api_key');
+        $apiSecret = (string) config('services.twilio.api_secret');
+        $twimlAppSid = (string) config('services.twilio.twiml_app_sid');
+
+        $issues = [];
+
+        if ($sid === '') {
+            $issues[] = 'TWILIO_ACCOUNT_SID is missing.';
+        } elseif (! str_starts_with($sid, 'AC')) {
+            $issues[] = 'TWILIO_ACCOUNT_SID must start with AC (Account SID).';
+        }
+
+        if ($apiKey === '') {
+            $issues[] = 'TWILIO_API_KEY is missing — create an API Key under Twilio Console → Account → API keys & tokens (not the Auth Token).';
+        } elseif (! str_starts_with($apiKey, 'SK')) {
+            $issues[] = 'TWILIO_API_KEY must start with SK (API Key SID). If you pasted the Auth Token (starts with letters other than SK), create an API Key instead.';
+        }
+
+        if ($apiSecret === '') {
+            $issues[] = 'TWILIO_API_SECRET is missing (the secret shown once when you create the API Key).';
+        }
+
+        if ($twimlAppSid === '') {
+            $issues[] = 'TWIML_APP_SID is missing — Twilio Console → Voice → TwiML Apps → Create → copy Application SID (starts with AP).';
+        } elseif (! str_starts_with($twimlAppSid, 'AP')) {
+            $issues[] = 'TWIML_APP_SID must start with AP (TwiML Application SID).';
+        }
+
+        $adminIdentity = (string) config('services.twilio.admin_identity');
+        if ($adminIdentity === '') {
+            $issues[] = 'ADMIN_IDENTITY is missing — pick a Twilio Client name for operators (must match the identity used when admins load /twilio/token).';
+        }
+
+        if ($issues === []) {
+            return null;
+        }
+
+        return implode(' ', $issues);
     }
 
     protected function makeVoiceAccessToken(string $identity): string
@@ -62,28 +126,69 @@ class TwilioVoiceController extends Controller
 
     public function handleVoice(Request $request)
     {
-        if (! $this->staffPresence->isCallRoutingAllowed()) {
-            $response = new VoiceResponse;
-            $response->say(
-                'All emergency operators are currently busy. Please try again later, or use text messaging in the application.',
-                ['voice' => 'alice']
-            );
-            $response->hangup();
+        try {
+            $adminIdentity = (string) config('services.twilio.admin_identity');
 
-            return response($response)->header('Content-Type', 'text/xml');
+            if ($adminIdentity === '') {
+                Log::warning('Twilio handleVoice: ADMIN_IDENTITY is not configured');
+
+                return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                    $twiml->say(
+                        'Server configuration error. Please contact the administrator.',
+                        ['voice' => 'alice']
+                    );
+                    $twiml->hangup();
+                });
+            }
+
+            if (! $this->staffPresence->isCallRoutingAllowed()) {
+                return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                    $twiml->say(
+                        'All emergency operators are currently busy. Please try again later, or use text messaging in the application.',
+                        ['voice' => 'alice']
+                    );
+                    $twiml->hangup();
+                });
+            }
+
+            $callerInfo = $request->input('callerInfo');
+            $customParams = [];
+            if ($callerInfo !== null && $callerInfo !== '') {
+                $customParams['callerInfo'] = is_string($callerInfo)
+                    ? $callerInfo
+                    : json_encode($callerInfo);
+            }
+
+            return $this->twimlResponse(function (VoiceResponse $twiml) use ($adminIdentity, $customParams): void {
+                $dial = $twiml->dial();
+                $dial->client($adminIdentity, $customParams);
+            });
+        } catch (Throwable $e) {
+            Log::error('Twilio handleVoice exception', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                $twiml->say(
+                    'A temporary error occurred. Please try again in a moment.',
+                    ['voice' => 'alice']
+                );
+                $twiml->hangup();
+            });
         }
+    }
 
+    /**
+     * @param  callable(VoiceResponse):void  $builder
+     */
+    protected function twimlResponse(callable $builder): Response
+    {
         $response = new VoiceResponse;
-        $dial = $response->dial();
+        $builder($response);
 
-        // Get caller info from the request parameters
-        $callerInfo = $request->input('callerInfo');
-
-        // Forward to admin with caller info as parameters
-        $dial->client(config('services.twilio.admin_identity'), [
-            'callerInfo' => $callerInfo,
-        ]);
-
-        return response($response)->header('Content-Type', 'text/xml');
+        return response((string) $response)
+            ->header('Content-Type', 'text/xml; charset=utf-8');
     }
 }

@@ -47,25 +47,66 @@
         const btnCall = document.getElementById('btnCall');
         const btnHangup = document.getElementById('btnHangup');
 
-        /** Safe string for any thrown value / Twilio error object */
+        /** Safe string for any thrown value / Twilio SDK error (ConnectionError hides fields from JSON.stringify) */
         function formatErr(e) {
-            if (e == null || e === '') {
-                return 'Unknown error';
+            if (e === undefined || e === null || e === '') {
+                return 'Signaling failed (31000): invalid JWT, wrong TWILIO_API_SECRET, or API Key not from same account as TWILIO_ACCOUNT_SID — verify .env and php artisan config:clear.';
             }
             if (typeof e === 'string') {
                 return e;
             }
-            if (typeof e.message === 'string' && e.message.length) {
-                return e.code != null ? ('[' + e.code + '] ' + e.message) : e.message;
-            }
-            if (e.originalError && typeof e.originalError.message === 'string') {
-                return e.originalError.message;
-            }
-            try {
-                return JSON.stringify(e);
-            } catch (_) {
+            if (typeof e !== 'object') {
                 return String(e);
             }
+            if (typeof e.cause !== 'undefined' && e.cause) {
+                return formatErr(e.cause);
+            }
+            var code = typeof e.code !== 'undefined' ? e.code : undefined;
+            var msg = typeof e.message === 'string' ? e.message : '';
+            var expl = typeof e.explanation === 'string' ? e.explanation : '';
+            var lines = [];
+            if (code != null && code !== '') {
+                lines.push('[' + code + ']');
+            }
+            if (msg) {
+                lines.push(msg);
+            }
+            if (expl && expl !== msg) {
+                lines.push(expl);
+            }
+            if (lines.length) {
+                return lines.join(' ');
+            }
+            if (typeof e.twilioError !== 'undefined' && e.twilioError) {
+                return formatErr(e.twilioError);
+            }
+            if (typeof e.originalError !== 'undefined' && e.originalError) {
+                return formatErr(e.originalError);
+            }
+            if (typeof e.toString === 'function') {
+                var ts = e.toString();
+                if (ts && ts !== '[object Object]') {
+                    return ts;
+                }
+            }
+            try {
+                var s = JSON.stringify(e);
+                if (s !== '{}') {
+                    return s;
+                }
+            } catch (_) { /* ignore */ }
+            if (e.name) {
+                return String(e.name);
+            }
+            return 'Unknown error — expand the red error object in DevTools → Console';
+        }
+
+        function signalingHint(code) {
+            var n = typeof code === 'number' ? code : parseInt(code, 10);
+            if (n === 31000 || n === 53000) {
+                return '\n\nFix: In Twilio Console create an API Key (SK…), set TWILIO_API_KEY + TWILIO_API_SECRET + TWILIO_ACCOUNT_SID + TWIML_APP_SID (AP…) in .env, run php artisan config:clear. API Key must belong to the same account as the Account SID.';
+            }
+            return '';
         }
 
         function setStatus(msg, kind) {
@@ -125,14 +166,33 @@
                     });
                 })
                 .then(async function (data) {
+                    if (device) {
+                        try {
+                            device.destroy();
+                        } catch (x) { /* ignore */ }
+                        device = null;
+                        deviceReady = false;
+                    }
+
                     device = new Twilio.Device(data.token, {
                         codecPreferences: ['opus', 'pcmu'],
-                        logLevel: 'error',
+                        logLevel: 'warn',
+                        closeProtection: true,
                     });
 
+                    /**
+                     * Twilio emits ConnectionError 31000 on "error" before/affecting register();
+                     * the register() promise sometimes rejects with undefined — do not duplicate UI from catch.
+                     */
                     device.on('error', function (err) {
-                        console.error('Device error:', err);
-                        setStatus('Twilio: ' + formatErr(err) + '\n(53000 often means bad token, wrong TwiML App SID, or network blocking WebSocket to Twilio.)', 'error');
+                        console.error('Twilio Device error:', err);
+                        var code = err && (err.code != null ? err.code : (err.twilioError && err.twilioError.code));
+                        var txt = 'Twilio: ' + formatErr(err) + signalingHint(code);
+                        setStatus(txt, 'error');
+                        voiceBootstrapStarted = false;
+                        btnStart.disabled = false;
+                        btnCall.disabled = true;
+                        deviceReady = false;
                     });
 
                     device.on('registered', function () {
@@ -141,12 +201,14 @@
                         btnCall.disabled = false;
                     });
 
-                    try {
-                        await device.register();
-                    } catch (e) {
-                        console.error(e);
-                        setStatus('Could not register with Twilio: ' + formatErr(e), 'error');
-                    }
+                    device.register().catch(function (rejectVal) {
+                        if (rejectVal !== undefined && rejectVal !== null) {
+                            console.error('device.register() rejected:', rejectVal);
+                            setStatus(formatErr(rejectVal) + signalingHint(rejectVal && rejectVal.code), 'error');
+                            voiceBootstrapStarted = false;
+                            btnStart.disabled = false;
+                        }
+                    });
                 })
                 .catch(function (err) {
                     console.error(err);
