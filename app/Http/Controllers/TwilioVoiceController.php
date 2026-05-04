@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\StaffPresenceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Twilio\Jwt\AccessToken;
 use Twilio\Jwt\Grants\VoiceGrant;
@@ -12,27 +13,51 @@ class TwilioVoiceController extends Controller
 {
     public function __construct(private StaffPresenceService $staffPresence) {}
 
-    public function generateToken(Request $request)
+    /**
+     * Public token URL (admin web + test pages). Identity is supplied in the query string.
+     */
+    public function generateToken(Request $request): JsonResponse
     {
         $identity = $request->query('identity', 'guest');
 
+        return response()->json([
+            'identity' => $identity,
+            'token' => $this->makeVoiceAccessToken($identity),
+        ]);
+    }
+
+    /**
+     * Mobile app (Flutter): Twilio client identity = authenticated user's id (string).
+     * Admin inbound UI parses `From` as `client:<id>` to load caller info.
+     */
+    public function tokenForMobile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $identity = (string) $user->getAuthIdentifier();
+
+        return response()->json([
+            'identity' => $identity,
+            'token' => $this->makeVoiceAccessToken($identity),
+            'dial_to' => config('services.twilio.admin_identity'),
+        ]);
+    }
+
+    protected function makeVoiceAccessToken(string $identity): string
+    {
         $token = new AccessToken(
-            env('TWILIO_ACCOUNT_SID'),
-            env('TWILIO_API_KEY'),
-            env('TWILIO_API_SECRET'),
+            config('services.twilio.sid'),
+            config('services.twilio.api_key'),
+            config('services.twilio.api_secret'),
             3600,
             $identity
         );
 
         $voiceGrant = new VoiceGrant;
-        $voiceGrant->setOutgoingApplicationSid(env('TWIML_APP_SID'));
+        $voiceGrant->setOutgoingApplicationSid(config('services.twilio.twiml_app_sid'));
         $voiceGrant->setIncomingAllow(true);
         $token->addGrant($voiceGrant);
 
-        return response()->json([
-            'identity' => $identity,
-            'token' => $token->toJWT(),
-        ]);
+        return $token->toJWT();
     }
 
     public function handleVoice(Request $request)
@@ -55,7 +80,7 @@ class TwilioVoiceController extends Controller
         $callerInfo = $request->input('callerInfo');
 
         // Forward to admin with caller info as parameters
-        $dial->client(env('ADMIN_IDENTITY'), [
+        $dial->client(config('services.twilio.admin_identity'), [
             'callerInfo' => $callerInfo,
         ]);
 

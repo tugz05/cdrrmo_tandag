@@ -37,6 +37,15 @@ class CallerInfoController extends Controller
             'accuracy' => 'nullable|numeric|min:0',
         ]);
 
+        $authenticated = $request->user('sanctum');
+        if ($authenticated !== null
+            && (int) $validated['user_id'] !== (int) $authenticated->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'user_id must match the authenticated user.',
+            ], 403);
+        }
+
         $report = Report::create([
             'user_id' => $validated['user_id'],
             'latitude' => $validated['latitude'],

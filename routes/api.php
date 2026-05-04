@@ -14,6 +14,7 @@ use App\Http\Controllers\API\V1\ReportController;
 use App\Http\Controllers\API\V1\UserUploadController;
 use App\Http\Controllers\API\V1\ValidImageController;
 use App\Http\Controllers\CallerInfoController;
+use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
@@ -77,6 +78,9 @@ Route::prefix('v1')->group(function () {
         Route::put('/password', [UserController::class, 'updatePassword']);
         Route::get('report-history', [ReportController::class, 'history']);
         Route::post('/report', [ReportController::class, 'store']);
+
+        Route::get('/voice/token', [TwilioVoiceController::class, 'tokenForMobile'])
+            ->middleware('throttle:60,1');
     });
 
     // Route::get('/twilio/token', [TwilioVoiceController::class, 'token']);

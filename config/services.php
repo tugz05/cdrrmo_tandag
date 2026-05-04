@@ -40,6 +40,7 @@ return [
         'api_key' => env('TWILIO_API_KEY'),
         'api_secret' => env('TWILIO_API_SECRET'),
         'twiml_app_sid' => env('TWIML_APP_SID'),
+        'admin_identity' => env('ADMIN_IDENTITY'),
     ],
 
 ];

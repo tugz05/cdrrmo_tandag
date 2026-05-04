@@ -37,15 +37,17 @@ Step A — Lightweight capacity check (poll sparingly; see section 5).
 
 Step B — If can_connect is true, acquire geolocation (if required by UX).
 
-Step C — Store caller location and create the CALL report (required before/during
-    Twilio connect per existing Laravel flow).
+Step C — Store caller location (send Authorization: Bearer <token> so user_id is
+    enforced to match the logged-in user):
     POST /api/v1/caller-details/set-location
     Body (JSON): user_id, latitude, longitude, accuracy (optional)
 
-Step D — Obtain Twilio Client token and initiate outbound VoIP to the operator
-    identity configured on the server (see section 6). Use the Twilio Voice SDK
-    from within the app only; align identities and TwiML application SID with
-    Laravel/Twilio env (TWILIO_*, TWIML_APP_SID, ADMIN_IDENTITY as applicable).
+Step D — Obtain Twilio Voice JWT and dial target, then initiate outbound VoIP:
+    GET   /api/v1/voice/token
+    Headers: Authorization: Bearer <sanctum_token>, Accept: application/json
+
+    Use response fields `token`, `identity`, and `dial_to` with the Twilio Voice
+    SDK: register with the JWT, then connect with params To = `dial_to`.
 
 Step E — After the operator answers / call lifecycle (if your app participates):
     POST /api/v1/call/started   { "report_id": <id> }
@@ -125,6 +127,9 @@ Flutter UX when 503 or can_connect == false:
 
 POST  /api/v1/caller-details/set-location
 Headers: Content-Type: application/json, Accept: application/json
+Optional: Authorization: Bearer <sanctum_token> — when present, user_id must
+match the authenticated user (recommended for Flutter).
+
 Body:
   {
     "user_id": <int>,
@@ -162,20 +167,34 @@ so the user does not create orphaned reports when capacity is zero.
   clients checking capacity.
 
 --------------------------------------------------------------------------------
-6) TWILIO TOKEN (REFERENCE)
+6) TWILIO VOICE TOKEN (MOBILE) & WEBHOOK
 --------------------------------------------------------------------------------
 
-The admin SPA obtains tokens from:
-  GET {BASE}/twilio/token?identity=<string>
+Flutter (authenticated resident):
+  GET  {BASE}/api/v1/voice/token
+  Headers:
+    Authorization: Bearer <sanctum_token>
+    Accept: application/json
 
-Flutter apps typically need a similar token endpoint secured appropriately for
-mobile users (coordinate with backend — may require Sanctum token or a dedicated
-mobile endpoint). Do not hardcode secrets; use env on server side only.
+  Response (200):
+    {
+      "identity": "42",
+      "token": "<Twilio access token JWT>",
+      "dial_to": "<ADMIN_IDENTITY>"
+    }
 
-Twilio Programmable Voice webhook:
+  • Use `token` with the Twilio Voice SDK; `identity` is your Twilio client name.
+  • Pass `dial_to` as the `To` parameter when placing the outbound VoIP call to
+    the operations center (same value as server env ADMIN_IDENTITY).
+
+Admin / test pages (no Sanctum):
+  GET  {BASE}/twilio/token?identity=<string>
+  (Restrict or remove on production if exposed.)
+
+TwiML webhook (Twilio calls your server):
   POST {BASE}/twilio/voice
-If no operator is available, the server returns TwiML that plays a busy message
-and hangs up — still handle failures gracefully on the client.
+  If no operator is available, the server returns TwiML that plays a busy message
+  and hangs up — still handle failures gracefully on the client.
 
 --------------------------------------------------------------------------------
 7) BACKEND SEMANTICS (FOR CONTEXT ONLY)

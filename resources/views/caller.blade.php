@@ -1,107 +1,230 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Caller</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Caller (test)</title>
     <script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.18.2/dist/twilio.min.js"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
+        #status { margin: 1rem 0; padding: .75rem 1rem; background: #f4f4f5; border-radius: 8px; font-size: .9rem; }
+        #status.error { background: #fef2f2; color: #991b1b; }
+        #status.ok { background: #ecfdf5; color: #065f46; }
+        button { padding: .5rem 1rem; margin-right: .5rem; cursor: pointer; }
+        button:disabled { opacity: .5; cursor: not-allowed; }
+        small { color: #71717a; display: block; margin-top: .5rem; }
+    </style>
 </head>
 <body>
-    <h1>Caller</h1>
-    <button onclick="call()">Call Admin</button>
+    <h1>Caller (test)</h1>
+    <p>
+        VoIP test page. Caller Twilio identity and <code>user_id</code> must match so the admin can load your profile
+        (<code>?user_id=</code> in the URL, default 5).
+    </p>
+
+    <div id="status">Initializing voice…</div>
+
+    <p>
+        <button type="button" id="btnCall" onclick="callAdmin()" disabled>Call admin</button>
+        <button type="button" id="btnHangup" onclick="hangUp()" disabled>Hang up</button>
+    </p>
+    <small>Open the admin dashboard in another tab; an operator must be online (heartbeat) for the call to connect.</small>
 
     <script>
-        let device;
-        let deviceReady = false;
+        const params = new URLSearchParams(window.location.search);
+        const callerUserId = String(params.get('user_id') || params.get('identity') || '5');
+        const adminIdentity = @json(config('services.twilio.admin_identity'));
 
-        fetch('/twilio/token?identity=5')
-            .then(res => res.json())
-            .then(async (data) => {
-                device = new Twilio.Device(data.token, {
-                    codecPreferences: ['opus', 'pcmu'],
-                    logLevel: 'error',
+        let device = null;
+        let deviceReady = false;
+        let activeCall = null;
+
+        const statusEl = document.getElementById('status');
+        const btnCall = document.getElementById('btnCall');
+        const btnHangup = document.getElementById('btnHangup');
+
+        function setStatus(msg, kind) {
+            statusEl.textContent = msg;
+            statusEl.className = kind || '';
+        }
+
+        function initDevice() {
+            if (!adminIdentity) {
+                setStatus('Server is not configured: set ADMIN_IDENTITY in .env', 'error');
+                return;
+            }
+
+            fetch('/twilio/token?identity=' + encodeURIComponent(callerUserId))
+                .then(function (res) {
+                    if (!res.ok) {
+                        throw new Error('Token HTTP ' + res.status);
+                    }
+                    return res.json();
+                })
+                .then(async function (data) {
+                    device = new Twilio.Device(data.token, {
+                        codecPreferences: ['opus', 'pcmu'],
+                        logLevel: 'error',
+                    });
+
+                    device.on('error', function (err) {
+                        console.error('Device error:', err);
+                        setStatus('Twilio: ' + (err.message || err), 'error');
+                    });
+
+                    device.on('registered', function () {
+                        deviceReady = true;
+                        setStatus('Ready. Twilio identity: ' + callerUserId + ' — you can call the admin.', 'ok');
+                        btnCall.disabled = false;
+                    });
+
+                    try {
+                        await device.register();
+                    } catch (e) {
+                        console.error(e);
+                        setStatus('Could not register with Twilio: ' + (e.message || e), 'error');
+                    }
+                })
+                .catch(function (err) {
+                    console.error(err);
+                    setStatus('Token request failed: ' + err.message, 'error');
+                });
+        }
+
+        initDevice();
+
+        async function storeLocation(callerData) {
+            const res = await fetch('/api/v1/caller-details/set-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: parseInt(callerData.userId, 10),
+                    latitude: callerData.latitude,
+                    longitude: callerData.longitude,
+                    accuracy: callerData.accuracy,
+                }),
+            });
+            const body = await res.json().catch(function () { return {}; });
+
+            if (res.status === 503) {
+                return { ok: false, busy: true, message: body.message || 'All operators are busy.' };
+            }
+            if (!res.ok) {
+                return { ok: false, busy: false, message: body.message || ('HTTP ' + res.status) };
+            }
+            return { ok: true, reportId: body.report_id, body: body };
+        }
+
+        async function callAdmin() {
+            if (!device || !deviceReady) {
+                alert('Voice is not ready yet. Wait a moment and try again.');
+                return;
+            }
+            if (!adminIdentity) {
+                alert('ADMIN_IDENTITY is not configured on the server.');
+                return;
+            }
+
+            btnCall.disabled = true;
+            setStatus('Getting location & creating call report…');
+
+            try {
+                const position = await new Promise(function (resolve, reject) {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0,
+                    });
                 });
 
-                device.on('error', error => console.error('Device Error:', error));
-                try {
-                    await device.register();
-                    deviceReady = true;
-                    console.log('Device registered');
-                } catch (e) {
-                    console.error('Device register failed:', e);
-                }
-            });
+                const callerData = {
+                    userId: parseInt(callerUserId, 10),
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                };
 
-
-            async function call() {
-                if (!device || !deviceReady) {
-                    alert('Voice is not ready yet. Wait a moment and try again.');
+                const stored = await storeLocation(callerData);
+                if (!stored.ok) {
+                    setStatus(stored.message, 'error');
+                    alert(stored.message);
+                    btnCall.disabled = false;
                     return;
                 }
-                try {
-                    const position = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
-                            enableHighAccuracy: true,
-                            timeout: 10000,
-                            maximumAge: 0
-                        });
-                    });
 
-                    const callerData = {
-                        userId: 1,
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                    };
-
-                    const response = await storeLocation(callerData)
-
-                    if (!response.success)
-                        return console('error storing location');
-
-                    await device.connect({
-                        params: {
-                            To: '{{ env("ADMIN_IDENTITY") }}',
-                        },
-                    });
-
-                } catch (error) {
-                    console.error("Error in call process:", error);
-
-                    await device.connect({
-                        params: {
-                            To: '{{ env("ADMIN_IDENTITY") }}',
-                            callerInfo: JSON.stringify({
-                                userId: 1,
-                                error: "Location not available"
-                            })
-                        }
-                    });
-
-                    alert("Call initiated but location couldn't be shared: " + error.message);
-                }
-            }
-
-            async function storeLocation(data) {
-                const response = await fetch('/api/v1/caller-details/set-location', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user_id: data.userId,
-                        latitude: data.latitude,
-                        longitude: data.longitude,
-                        accuracy: data.accuracy
-                    })
+                const callerInfo = JSON.stringify({
+                    userId: callerData.userId,
+                    reportId: stored.reportId,
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Failed to store location');
-                }
+                setStatus('Connecting to admin…');
+                activeCall = await device.connect({
+                    params: {
+                        To: adminIdentity,
+                        callerInfo: callerInfo,
+                    },
+                });
 
-                return response.json();
+                activeCall.on('disconnect', onCallEnded);
+                activeCall.on('cancel', onCallEnded);
+                activeCall.on('error', function (err) {
+                    console.error('Call error:', err);
+                    setStatus('Call error: ' + (err.message || err), 'error');
+                });
+
+                setStatus('Call in progress — speak when the admin answers.');
+                btnHangup.disabled = false;
+            } catch (error) {
+                console.error('Call flow error:', error);
+                setStatus('Falling back to call without location: ' + error.message, 'error');
+
+                try {
+                    const callerInfo = JSON.stringify({
+                        userId: parseInt(callerUserId, 10),
+                        error: 'Location not available',
+                    });
+                    activeCall = await device.connect({
+                        params: {
+                            To: adminIdentity,
+                            callerInfo: callerInfo,
+                        },
+                    });
+                    activeCall.on('disconnect', onCallEnded);
+                    activeCall.on('cancel', onCallEnded);
+                    setStatus('Call in progress (no location).');
+                    btnHangup.disabled = false;
+                    alert("Call started but location could not be shared: " + error.message);
+                } catch (e2) {
+                    setStatus('Could not connect: ' + (e2.message || e2), 'error');
+                    alert('Could not start call: ' + (e2.message || e2));
+                }
+            } finally {
+                if (!activeCall) {
+                    btnCall.disabled = false;
+                }
             }
+        }
+
+        function onCallEnded() {
+            activeCall = null;
+            btnHangup.disabled = true;
+            btnCall.disabled = false;
+            setStatus('Call ended. Ready to call again.', 'ok');
+        }
+
+        function hangUp() {
+            if (activeCall && typeof activeCall.disconnect === 'function') {
+                activeCall.disconnect();
+            } else if (device && typeof device.disconnectAll === 'function') {
+                device.disconnectAll();
+            }
+            onCallEnded();
+            setStatus('Hung up.', 'ok');
+        }
     </script>
 </body>
 </html>
