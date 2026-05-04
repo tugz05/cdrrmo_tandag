@@ -35,6 +35,8 @@ let sharedAudioContext = null;
 
 /** Twilio Voice SDK should initialize after a user gesture or Chrome spams AudioContext warnings (autoplay policy). */
 let twilioVoiceBootstrapped = false;
+let twilioSetupInFlight = false;
+let keepTwilioOnline = false;
 
 let staffHeartbeatSeq = 0;
 
@@ -139,16 +141,12 @@ function tryResumeAudioContext() {
 /** One combined gesture: unlock AudioContext + fetch token + register Voice SDK Device (microphone requested on answer). */
 function attachTwilioVoiceAfterUserGesture() {
     const once = async () => {
-        if (twilioVoiceBootstrapped) {
-            return;
-        }
         const identity = twilioAdminIdentity.value;
         if (!identity) {
             console.error('[Twilio] ADMIN_IDENTITY is empty â€” set ADMIN_IDENTITY in .env and run php artisan config:clear.');
             return;
         }
 
-        twilioVoiceBootstrapped = true;
         window.removeEventListener('pointerdown', once, true);
         window.removeEventListener('keydown', once, true);
 
@@ -156,28 +154,84 @@ function attachTwilioVoiceAfterUserGesture() {
         if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
         }
-        fetch('/twilio/token?identity=' + encodeURIComponent(identity))
-            .then(async (res) => {
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data?.message || `Token request failed (HTTP ${res.status})`);
-                }
-                if (!data?.token) {
-                    throw new Error(data?.message || 'Token response missing "token"');
-                }
-                return data;
-            })
-            .then((data) => setupTwilio(data.token))
-            .catch(err => {
-                console.error('Token fetch error:', err);
-                twilioVoiceBootstrapped = false;
-                window.addEventListener('pointerdown', once, true);
-                window.addEventListener('keydown', once, true);
-            });
+        // If we are not registered yet, use this user gesture to bootstrap voice.
+        if (!voicePipelineReady.value && !twilioSetupInFlight) {
+            await bootstrapTwilioVoice({ source: 'user_gesture' });
+        }
     };
 
     window.addEventListener('pointerdown', once, true);
     window.addEventListener('keydown', once, true);
+}
+
+async function bootstrapTwilioVoice({ source } = {}) {
+    if (!canAccessAdmin.value) {
+        return;
+    }
+    if (voicePipelineReady.value) {
+        return;
+    }
+    if (twilioSetupInFlight) {
+        return;
+    }
+
+    const identity = twilioAdminIdentity.value;
+    if (!identity) {
+        console.error('[Twilio] ADMIN_IDENTITY is empty â€” set ADMIN_IDENTITY in .env and run php artisan config:clear.');
+        return;
+    }
+
+    twilioSetupInFlight = true;
+    twilioVoiceBootstrapped = true;
+
+    try {
+        const res = await fetch('/twilio/token?identity=' + encodeURIComponent(identity));
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data?.message || `Token request failed (HTTP ${res.status})`);
+        }
+        if (!data?.token) {
+            throw new Error(data?.message || 'Token response missing "token"');
+        }
+        await setupTwilio(data.token);
+    } catch (err) {
+        console.error('[Twilio] bootstrap failed', { source }, err);
+        twilioVoiceBootstrapped = false;
+    } finally {
+        twilioSetupInFlight = false;
+    }
+}
+
+function beaconVoiceReadyFalse() {
+    if (!canAccessAdmin.value) {
+        return;
+    }
+    if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') {
+        return;
+    }
+    let csrf = '';
+    try {
+        csrf = String(document?.querySelector?.('meta[name=\"csrf-token\"]')?.getAttribute?.('content') ?? '').trim();
+    } catch {
+        csrf = '';
+    }
+    if (!csrf) {
+        return;
+    }
+    let url;
+    try {
+        url = route('admin.staff.heartbeat');
+    } catch {
+        return;
+    }
+    try {
+        const fd = new FormData();
+        fd.append('_token', csrf);
+        fd.append('twilio_voice_ready', '0');
+        navigator.sendBeacon(url, fd);
+    } catch {
+        /* ignore */
+    }
 }
 
 function destroyTwilioDevice() {
@@ -336,6 +390,12 @@ async function setupTwilio(token) {
         console.warn(
             '[Twilio] Device unregistered - emergency voice will not ring until you click the page and Twilio registers again.',
         );
+        // Best-effort auto-reconnect while the dashboard is open (prevents 31603 for callers).
+        if (keepTwilioOnline) {
+            window.setTimeout(() => {
+                bootstrapTwilioVoice({ source: 'auto_reconnect' });
+            }, 1500);
+        }
     });
 
     device.on('incoming', async call => {
@@ -430,15 +490,32 @@ onMounted(() => {
         return;
     }
     /** Do not start staff heartbeat until Twilio Device is registered (see startStaffPresenceHeartbeat in device.on("registered")). */
+    keepTwilioOnline = true;
+    // Register ASAP so callers don't see 31603 just because the admin tab never received a click.
+    bootstrapTwilioVoice({ source: 'auto_mount' });
     attachTwilioVoiceAfterUserGesture();
+    try {
+        window.addEventListener('beforeunload', beaconVoiceReadyFalse);
+        window.addEventListener('pagehide', beaconVoiceReadyFalse);
+    } catch {
+        /* ignore */
+    }
 });
 
 onUnmounted(() => {
+    keepTwilioOnline = false;
     if (heartbeatTimer) {
         clearInterval(heartbeatTimer);
         heartbeatTimer = null;
     }
     destroyTwilioDevice();
+    beaconVoiceReadyFalse();
+    try {
+        window.removeEventListener('beforeunload', beaconVoiceReadyFalse);
+        window.removeEventListener('pagehide', beaconVoiceReadyFalse);
+    } catch {
+        /* ignore */
+    }
 });
 
 
