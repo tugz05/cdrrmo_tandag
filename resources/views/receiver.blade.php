@@ -11,11 +11,14 @@
     <div id="status">Waiting for call...</div>
     <button id="endCall" style="display:none">End Call</button>
 
-    <script>
-        window.__RECEIVER_CONFIG__ = @json([
+    @php
+        $receiverPageConfig = [
             'adminIdentity' => (string) config('services.twilio.admin_identity'),
             'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
-        ]);
+        ];
+    @endphp
+    <script>
+        window.__RECEIVER_CONFIG__ = @json($receiverPageConfig);
     </script>
 </body>
 </html>

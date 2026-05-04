@@ -43,13 +43,14 @@
     @php
         $qs = request()->query();
         $callerId = $qs['user_id'] ?? $qs['identity'] ?? '5';
-    @endphp
-    <script>
-        window.__CALLER_CONFIG__ = @json([
+        $callerPageConfig = [
             'callerUserId' => (string) $callerId,
             'adminIdentity' => (string) config('services.twilio.admin_identity'),
             'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
-        ]);
+        ];
+    @endphp
+    <script>
+        window.__CALLER_CONFIG__ = @json($callerPageConfig);
     </script>
 </body>
 </html>
