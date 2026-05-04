@@ -183,12 +183,6 @@ Flutter apps typically need a similar token endpoint secured appropriately for
 mobile users (coordinate with backend — may require Sanctum token or a dedicated
 mobile endpoint). Do not hardcode secrets; use env on server side only.
 
-<<<<<<< HEAD
-=======
-Reminder: tokens feed the in-app Voice SDK only — never substitute opening the
-native phone dialer for emergency routing (see §2).
-
->>>>>>> 328d54f (new release)
 Twilio Programmable Voice webhook:
   POST {BASE}/twilio/voice
 If no operator is available, the server returns TwiML that plays a busy message
@@ -199,19 +193,8 @@ and hangs up — still handle failures gracefully on the client.
 --------------------------------------------------------------------------------
 
 • Operators = Laravel users with roles: admin, super_admin (Laratrust).
-<<<<<<< HEAD
 • “Online” = staff dashboard loaded, Twilio device ready, heartbeat sent within
   CALL_STAFF_HEARTBEAT_TTL seconds (default 90).
-=======
-• “Online” (counts toward availability) = staff have an authenticated admin page
-  open that POSTs /admin/staff/heartbeat on load and every ~30s. Heartbeats are
-  independent of Twilio Device “ready” so browser audio policy / headset errors
-  do not strand operators as “offline” for the Flutter availability API.
-• For answering incoming VoIP on the web dashboard, Twilio still needs a working
-  mic/output and usually a user gesture to unlock AudioContext — console warnings
-  like “AudioContext was not allowed to start” are browser restrictions; presence
-  can still show online while you fix audio permissions / HTTPS / headset.
->>>>>>> 328d54f (new release)
 • “Busy” = staff answered an incoming call until call finished callback marks
   available again.
 
