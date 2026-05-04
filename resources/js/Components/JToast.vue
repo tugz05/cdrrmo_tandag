@@ -7,6 +7,11 @@ import { showToast } from '@/Helpers/JHelper';
 const page = usePage()
 const toastMessage = ref('')
 
+/** Inertia shared `flash` may be absent during edge navigations — avoid throwing in watchers. */
+function flashProp(key) {
+    return page.props.flash?.[key]
+}
+
 const JToast = {
     SUCCESS: 'success',
     WARNING: 'warning',
@@ -21,27 +26,32 @@ onMounted(() => {
     resetRoute()
 })
 
-watch(() => page.props.flash.success, (message) => {
+watch(() => flashProp('success'), (message) => {
     setToastMessage(JToast.SUCCESS, message)
-    page.props.flash.success = null    
+    if (page.props.flash) {
+        page.props.flash.success = null
+    }
     // resetRoute()
 })
 
-watch(() => page.props.flash.warning, (message) => {
+watch(() => flashProp('warning'), (message) => {
     setToastMessage(JToast.WARNING, message)
-    page.props.flash.warning = null
-    console.log('executed')
+    if (page.props.flash) {
+        page.props.flash.warning = null
+    }
 
     // resetRoute()
 })
 
-watch(() => page.props.flash.danger, (message) => {
+watch(() => flashProp('danger'), (message) => {
     setToastMessage(JToast.DANGER, message)
-    page.props.flash.danger = null
+    if (page.props.flash) {
+        page.props.flash.danger = null
+    }
 })
 
 
-watch(() => page.props.flash.restore, (routeMessage) => {
+watch(() => flashProp('restore'), (routeMessage) => {
     if (routeMessage === null)
         return
     
