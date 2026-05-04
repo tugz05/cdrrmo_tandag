@@ -400,7 +400,14 @@ class TwilioVoiceController extends Controller
         $response = new VoiceResponse;
         $builder($response);
 
-        return response((string) $response)
+        $xml = (string) $response;
+        // Twilio 12100: "<?xml must be first in document" if anything is echoed before TwiML (e.g. blank line before <?php in a loaded routes file).
+        if (str_starts_with($xml, "\xEF\xBB\xBF")) {
+            $xml = substr($xml, 3);
+        }
+        $xml = ltrim($xml, " \t\n\r\0\x0B");
+
+        return response($xml)
             ->header('Content-Type', 'text/xml; charset=utf-8');
     }
 
