@@ -49,6 +49,9 @@ let keepTwilioOnline = false;
 
 let staffHeartbeatSeq = 0;
 
+/** Dedupe pointer/key listeners when re-attaching after Device unregistered. */
+let twilioGestureBootstrapHandler = null;
+
 let incomingTitleFlashTimer = null;
 let savedDocumentTitleBeforeFlash = '';
 
@@ -130,7 +133,26 @@ function logStaffPresence(level, ...args) {
     fn('[StaffPresence]', ...args);
 }
 
-function tryResumeAudioContext() {
+/**
+ * Resume our optional helper AudioContext only if it already exists (must not create here — no user gesture).
+ */
+function resumeSharedAudioContextOnly() {
+    try {
+        if (!sharedAudioContext || typeof sharedAudioContext.resume !== 'function') {
+            return;
+        }
+        if (sharedAudioContext.state === 'suspended') {
+            sharedAudioContext.resume().catch(() => {});
+        }
+    } catch {
+        /* ignore */
+    }
+}
+
+/**
+ * Create/resume helper AudioContext — call only from a user gesture stack (pointerdown, Answer click, etc.).
+ */
+function createSharedAudioContextAfterUserGesture() {
     try {
         const Ctor = window.AudioContext || window.webkitAudioContext;
         if (!Ctor) {
@@ -139,9 +161,7 @@ function tryResumeAudioContext() {
         if (!sharedAudioContext) {
             sharedAudioContext = new Ctor();
         }
-        if (sharedAudioContext.state === 'suspended' && typeof sharedAudioContext.resume === 'function') {
-            sharedAudioContext.resume().catch(() => {});
-        }
+        resumeSharedAudioContextOnly();
     } catch {
         /* ignore */
     }
@@ -149,17 +169,24 @@ function tryResumeAudioContext() {
 
 /** One combined gesture: unlock AudioContext + fetch token + register Voice SDK Device (microphone requested on answer). */
 function attachTwilioVoiceAfterUserGesture() {
+    if (twilioGestureBootstrapHandler) {
+        window.removeEventListener('pointerdown', twilioGestureBootstrapHandler, true);
+        window.removeEventListener('keydown', twilioGestureBootstrapHandler, true);
+        twilioGestureBootstrapHandler = null;
+    }
+
     const once = async () => {
+        window.removeEventListener('pointerdown', once, true);
+        window.removeEventListener('keydown', once, true);
+        twilioGestureBootstrapHandler = null;
+
         const identity = twilioOperatorIdentity.value;
         if (!identity) {
             console.error('[Twilio] operator_client_identity is empty — set ADMIN_IDENTITY in .env for fallback or ensure you are logged in as admin.');
             return;
         }
 
-        window.removeEventListener('pointerdown', once, true);
-        window.removeEventListener('keydown', once, true);
-
-        tryResumeAudioContext();
+        createSharedAudioContextAfterUserGesture();
         if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
         }
@@ -169,6 +196,7 @@ function attachTwilioVoiceAfterUserGesture() {
         }
     };
 
+    twilioGestureBootstrapHandler = once;
     window.addEventListener('pointerdown', once, true);
     window.addEventListener('keydown', once, true);
 }
@@ -385,7 +413,6 @@ async function setupTwilio(token) {
         console.info('[Twilio] Admin Device registered for incoming VoIP Client:', twilioOperatorIdentity.value);
         await applyTwilioOutputDevices(device);
         voicePipelineReady.value = true;
-        tryResumeAudioContext();
         startStaffPresenceHeartbeat();
     });
 
@@ -399,11 +426,10 @@ async function setupTwilio(token) {
         console.warn(
             '[Twilio] Device unregistered - emergency voice will not ring until you click the page and Twilio registers again.',
         );
-        // Best-effort auto-reconnect while the dashboard is open (prevents 31603 for callers).
         if (keepTwilioOnline) {
             window.setTimeout(() => {
-                bootstrapTwilioVoice({ source: 'auto_reconnect' });
-            }, 1500);
+                attachTwilioVoiceAfterUserGesture();
+            }, 500);
         }
     });
 
@@ -456,6 +482,7 @@ async function setupTwilio(token) {
 async function answerCall() {
     if (activeCall) {
         stopIncomingTitleFlash();
+        createSharedAudioContextAfterUserGesture();
         try {
             await primeMicrophoneForTwilio();
         } catch (e) {
@@ -464,7 +491,7 @@ async function answerCall() {
             return;
         }
         await applyTwilioOutputDevices(device);
-        tryResumeAudioContext();
+        resumeSharedAudioContextOnly();
         callStatus.value = 'Call in progress...';
         isAnswering.value = true;
         showAnswerButton.value = false;
@@ -500,8 +527,7 @@ onMounted(() => {
     }
     /** Do not start staff heartbeat until Twilio Device is registered (see startStaffPresenceHeartbeat in device.on("registered")). */
     keepTwilioOnline = true;
-    // Register ASAP so callers don't see 31603 just because the admin tab never received a click.
-    bootstrapTwilioVoice({ source: 'auto_mount' });
+    /** Do not register Twilio.Device on mount — Chrome blocks AudioContext without a user gesture (autoplay policy). */
     attachTwilioVoiceAfterUserGesture();
     try {
         window.addEventListener('beforeunload', beaconVoiceReadyFalse);
@@ -513,6 +539,11 @@ onMounted(() => {
 
 onUnmounted(() => {
     keepTwilioOnline = false;
+    if (twilioGestureBootstrapHandler) {
+        window.removeEventListener('pointerdown', twilioGestureBootstrapHandler, true);
+        window.removeEventListener('keydown', twilioGestureBootstrapHandler, true);
+        twilioGestureBootstrapHandler = null;
+    }
     if (heartbeatTimer) {
         clearInterval(heartbeatTimer);
         heartbeatTimer = null;
@@ -601,8 +632,8 @@ async function handleCallEnded(reportId) {
             class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
             role="status"
         >
-            Click or tap anywhere once to enable incoming emergency voice calls. Microphone permission is requested only
-            when you answer a call.
+            Click or tap anywhere once (or press a key) to connect Twilio voice for incoming emergency calls.
+            The browser requires this before audio can start; the microphone is only requested when you answer.
         </div>
         <div class="content">
             <SideBar />

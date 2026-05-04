@@ -34,6 +34,7 @@ export function sanitizeClientDialIdentity(identity) {
  * @param {string} [overrides.edge] e.g. singapore, ashburn, sydney — must match regional deployment
  * @param {string} [overrides.logLevel]
  * @param {boolean} [overrides.closeProtection]
+ * @param {boolean} [overrides.disableAudioContextSounds] default true — set false only if you need Web Audio ringback and can init only after a gesture
  */
 export function createTwilioDeviceOptions(overrides = {}) {
     const { edge, logLevel = 'warn', closeProtection } = overrides;
@@ -63,6 +64,12 @@ export function createTwilioDeviceOptions(overrides = {}) {
         logLevel: logLevelNumber,
         // Twilio JS SDK: improves error specificity (avoids many failures surfacing only as 31005).
         enableImprovedSignalingErrorPrecision: true,
+        /*
+         * Use HTMLAudioElement for incoming/ring sounds instead of Web Audio API where possible.
+         * Reduces Chrome "AudioContext was not allowed to start" spam when Device is created without a gesture.
+         * @see https://www.twilio.com/docs/voice/sdks/javascript/twiliodevice
+         */
+        disableAudioContextSounds: overrides.disableAudioContextSounds !== false,
     };
     if (typeof closeProtection === 'boolean') {
         out.closeProtection = closeProtection;
