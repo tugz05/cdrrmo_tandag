@@ -16,8 +16,17 @@ import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioError
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
-/** Same string TwilioVoiceController uses for Dial Client; must match .env ADMIN_IDENTITY (never hardcode). */
-const twilioAdminIdentity = computed(() => String(page.props.twilio?.admin_identity ?? '').trim());
+/**
+ * Twilio Voice JS SDK Client identity for this operator (sanitized user id).
+ * Falls back to legacy admin_identity only when operator_client_identity is absent.
+ */
+const twilioOperatorIdentity = computed(() => {
+    const fromUser = String(page.props.twilio?.operator_client_identity ?? '').trim();
+    if (fromUser !== '') {
+        return fromUser;
+    }
+    return String(page.props.twilio?.admin_identity ?? '').trim();
+});
 const twilioVoiceSdkEdge = computed(() => String(page.props.twilio?.voice_sdk_edge ?? '').trim());
 const callStatus = ref('Someone is calling...');
 const isAnswering = ref(false);
@@ -141,9 +150,9 @@ function tryResumeAudioContext() {
 /** One combined gesture: unlock AudioContext + fetch token + register Voice SDK Device (microphone requested on answer). */
 function attachTwilioVoiceAfterUserGesture() {
     const once = async () => {
-        const identity = twilioAdminIdentity.value;
+        const identity = twilioOperatorIdentity.value;
         if (!identity) {
-            console.error('[Twilio] ADMIN_IDENTITY is empty â€” set ADMIN_IDENTITY in .env and run php artisan config:clear.');
+            console.error('[Twilio] operator_client_identity is empty — set ADMIN_IDENTITY in .env for fallback or ensure you are logged in as admin.');
             return;
         }
 
@@ -175,9 +184,9 @@ async function bootstrapTwilioVoice({ source } = {}) {
         return;
     }
 
-    const identity = twilioAdminIdentity.value;
+    const identity = twilioOperatorIdentity.value;
     if (!identity) {
-        console.error('[Twilio] ADMIN_IDENTITY is empty â€” set ADMIN_IDENTITY in .env and run php artisan config:clear.');
+        console.error('[Twilio] operator_client_identity is empty — set ADMIN_IDENTITY in .env for fallback or ensure you are logged in as admin.');
         return;
     }
 
@@ -341,7 +350,7 @@ function handleTwilioDeviceError(error) {
     }
     if (code === 31603 || lower.includes('31603') || lower.includes('decline')) {
         console.warn(
-            '[Twilio] 31603 Decline - callers dial unregistered Client identity. Confirm ADMIN_IDENTITY matches /twilio/token?identity= on admin dashboard.',
+            '[Twilio] 31603 Decline — no registered Client for the dialed leg, or callee rejected. Operators register as their user id; callers use ring-group To from /api/v1/call/availability.',
             error,
         );
         return;
@@ -370,10 +379,10 @@ async function setupTwilio(token) {
             logLevel: 'error',
         }),
     );
-    attachTokenWillExpireHandler(device, twilioAdminIdentity.value);
+    attachTokenWillExpireHandler(device, twilioOperatorIdentity.value);
 
     device.on('registered', async () => {
-        console.info('[Twilio] Admin Device registered for incoming calls as:', twilioAdminIdentity.value);
+        console.info('[Twilio] Admin Device registered for incoming VoIP Client:', twilioOperatorIdentity.value);
         await applyTwilioOutputDevices(device);
         voicePipelineReady.value = true;
         tryResumeAudioContext();
@@ -407,7 +416,7 @@ async function setupTwilio(token) {
                 callStatus.value = 'Connection lost (31005). Check network, edge (TWILIO_VOICE_SDK_EDGE), and TwiML URL.';
             } else if (err && err.code === 31603) {
                 callStatus.value =
-                    'Call declined (31603). Caller dialed an identity with no registered Twilio client - verify ADMIN_IDENTITY matches this dashboard.';
+                    'Call declined (31603). Caller may be using a stale dial target, or no operator had Twilio Voice registered.';
             }
             if (activeCall === call) {
                 endCall();

@@ -5,7 +5,7 @@ import { Device } from '@twilio/voice-sdk';
 import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from './utils/twilioVoiceAudio.js';
 import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioErrorDetails } from './utils/twilioVoiceSdk.js';
 
-const adminIdentity = window.__RECEIVER_CONFIG__?.adminIdentity ?? '';
+const operatorIdentity = String(window.__RECEIVER_CONFIG__?.operatorIdentity ?? '').trim();
 const voiceSdkEdge = String(window.__RECEIVER_CONFIG__?.voiceSdkEdge ?? '').trim();
 
 let device;
@@ -16,7 +16,7 @@ const statusEl = document.getElementById('status');
 const endBtn = document.getElementById('endCall');
 
 async function startReceiverAfterGesture() {
-    if (bootstrapStarted || !adminIdentity) {
+    if (bootstrapStarted || !operatorIdentity) {
         return;
     }
     bootstrapStarted = true;
@@ -33,7 +33,7 @@ async function startReceiverAfterGesture() {
 
     try {
         statusEl.textContent = 'Loading token…';
-        const res = await fetch(`/twilio/token?identity=${encodeURIComponent(adminIdentity)}`);
+        const res = await fetch(`/twilio/token?identity=${encodeURIComponent(operatorIdentity)}`);
         const data = await res.json();
         if (!res.ok || !data.token) {
             throw new Error(data.message || 'Token response invalid');
@@ -46,7 +46,7 @@ async function startReceiverAfterGesture() {
                 logLevel: 'error',
             }),
         );
-        attachTokenWillExpireHandler(device, adminIdentity);
+        attachTokenWillExpireHandler(device, operatorIdentity);
 
         device.on('registered', async () => {
             console.log('Receiver registered');
@@ -81,8 +81,8 @@ async function startReceiverAfterGesture() {
     }
 }
 
-if (!adminIdentity) {
-    statusEl.textContent = 'ADMIN_IDENTITY is not configured on the server.';
+if (!operatorIdentity) {
+    statusEl.textContent = 'No operator identity: add ?identity=USER_ID to the URL, log in as admin, or set ADMIN_IDENTITY in .env.';
 } else {
     statusEl.textContent = 'Click anywhere on this page once to allow the microphone and connect to Twilio.';
     window.addEventListener(

@@ -25,6 +25,7 @@ class TwilioVoiceController extends Controller
     {
         $adminIdentityRaw = (string) config('services.twilio.admin_identity');
         $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
+        $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
 
         $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
         $requireVoiceReady = (bool) config('call.require_voice_client_ready', true);
@@ -48,6 +49,7 @@ class TwilioVoiceController extends Controller
                 'twiml_app_sid' => (string) config('services.twilio.twiml_app_sid'),
                 'admin_identity_raw' => $adminIdentityRaw,
                 'admin_identity_sanitized' => $adminIdentity,
+                'dispatch_ring_group_client_name' => $dispatchRing,
                 'voice_home_region' => (string) config('services.twilio.voice_home_region'),
                 'voice_sdk_edge' => (string) config('services.twilio.voice_sdk_edge'),
             ],
@@ -65,7 +67,12 @@ class TwilioVoiceController extends Controller
      */
     public function generateToken(Request $request): JsonResponse
     {
-        $identity = TwilioClientIdentity::sanitize((string) $request->query('identity', 'guest'));
+        $user = $request->user();
+        if ($user && $user->hasRole(['admin', 'super_admin'])) {
+            $identity = TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
+        } else {
+            $identity = TwilioClientIdentity::sanitize((string) $request->query('identity', 'guest'));
+        }
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -96,14 +103,17 @@ class TwilioVoiceController extends Controller
             ], 503);
         }
 
-        $operatorIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
+        $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+        $legacyAdmin = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
 
         return response()->json([
             'identity' => $identity,
             'token' => $this->makeVoiceAccessToken($identity),
-            /** TwiML `<Dial><Client>` target — dispatch must register Twilio with this exact Client name or calls get 31603. */
-            'dial_to' => $operatorIdentity,
-            'operator_twilio_client_identity' => $operatorIdentity,
+            /** Pass as `device.connect({ params: { To: dial_to } })` — expanded on `/twilio/voice` to all voice-ready operators. */
+            'dial_to' => $dispatchRing,
+            'operator_twilio_client_identity' => $dispatchRing,
+            'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(),
+            'legacy_admin_twilio_client_identity' => $legacyAdmin,
         ]);
     }
 
@@ -144,7 +154,7 @@ class TwilioVoiceController extends Controller
 
         $adminIdentity = (string) config('services.twilio.admin_identity');
         if ($adminIdentity === '') {
-            $issues[] = 'ADMIN_IDENTITY is missing — pick a Twilio Client name for operators (must match the identity used when admins load /twilio/token).';
+            $issues[] = 'ADMIN_IDENTITY is missing — used as a fallback Twilio Client name when no voice-ready operators are found at dial time; set it in .env (often a shared test identity).';
         }
 
         if ($issues === []) {
@@ -301,39 +311,51 @@ class TwilioVoiceController extends Controller
                 $customParams['callerInfo'] = $callerInfoStr;
             }
 
-            $requestedToRaw = trim((string) $request->input('To', ''));
-            $requestedTo = $requestedToRaw !== '' ? TwilioClientIdentity::sanitize($requestedToRaw) : '';
-            $clientIdentity = $requestedTo !== '' ? $requestedTo : $adminIdentity;
+            $ringGroupIdentity = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+            $clientIdentities = $this->resolveOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
+
+            if ($clientIdentities === []) {
+                Log::warning('Twilio handleVoice: no Client identities to dial');
+
+                return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                    $twiml->say(
+                        'No emergency operator is available to take this call. Please try again later.',
+                        ['voice' => 'alice']
+                    );
+                    $twiml->hangup();
+                });
+            }
 
             Log::info('Twilio handleVoice dial', [
-                'client_identity' => $clientIdentity,
-                'from_To_param' => $requestedToRaw !== '',
-                'to_raw' => $requestedToRaw,
+                'client_identities' => $clientIdentities,
+                'from_To_param' => trim((string) $request->input('To', '')) !== '',
+                'to_raw' => $request->input('To'),
                 'admin_identity_config' => (string) config('services.twilio.admin_identity'),
                 'admin_identity_sanitized' => $adminIdentity,
+                'dispatch_ring_group' => $ringGroupIdentity,
             ]);
 
-            return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentity, $customParams): void {
+            return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentities, $customParams): void {
                 $dial = $twiml->dial('', [
                     'timeout' => 60,
                     'answerOnBridge' => true,
-                    // Lets us log why the dial leg failed (e.g. 603/31603 decline) in laravel.log.
                     // Relative so Twilio posts back to the same public host that served /twilio/voice (ignores APP_URL).
                     'action' => '/twilio/voice/dial-status',
                     'method' => 'POST',
                 ]);
-                // Custom data must be <Parameter> children per Twilio Voice docs — not XML attributes on <Client>,
-                // or Twilio may fail the call with a generic "application error" prompt.
-                $client = $dial->client($clientIdentity, [
+                $clientAttrs = [
                     'statusCallbackEvent' => 'initiated ringing answered completed',
                     'statusCallback' => '/twilio/voice/client-status',
                     'statusCallbackMethod' => 'POST',
-                ]);
-                foreach ($customParams as $name => $value) {
-                    $client->parameter([
-                        'name' => (string) $name,
-                        'value' => (string) $value,
-                    ]);
+                ];
+                foreach ($clientIdentities as $clientIdentity) {
+                    $client = $dial->client($clientIdentity, $clientAttrs);
+                    foreach ($customParams as $name => $value) {
+                        $client->parameter([
+                            'name' => (string) $name,
+                            'value' => (string) $value,
+                        ]);
+                    }
                 }
             });
         } catch (Throwable $e) {
@@ -403,6 +425,46 @@ class TwilioVoiceController extends Controller
         ]);
 
         return response('', 200);
+    }
+
+    /**
+     * Resolve which Twilio Voice Client identities to ring for this outbound parent call.
+     * Per Twilio VoIP docs, multiple Client nouns under one Dial ring simultaneously until one answers.
+     *
+     * @return list<string>
+     */
+    protected function resolveOutboundDialClientIdentities(Request $request, string $adminIdentity, string $ringGroupIdentity): array
+    {
+        $requestedToRaw = trim((string) $request->input('To', ''));
+        $requestedTo = $requestedToRaw !== '' ? TwilioClientIdentity::sanitize($requestedToRaw) : '';
+
+        $broadcast = $requestedTo === ''
+            || $requestedTo === $ringGroupIdentity
+            || ($adminIdentity !== '' && $requestedTo === $adminIdentity);
+
+        if ($broadcast) {
+            $targets = $this->staffPresence->voiceReadyOperatorIdentities();
+            if ($targets !== []) {
+                return $targets;
+            }
+
+            return $adminIdentity !== '' ? [$adminIdentity] : [];
+        }
+
+        $ready = $this->staffPresence->voiceReadyOperatorIdentities();
+        if (in_array($requestedTo, $ready, true)) {
+            return [$requestedTo];
+        }
+
+        Log::notice('Twilio handleVoice: To not in voice-ready set; using ring group', [
+            'requested_to' => $requestedTo,
+        ]);
+
+        if ($ready !== []) {
+            return $ready;
+        }
+
+        return $adminIdentity !== '' ? [$adminIdentity] : [];
     }
 
     /**

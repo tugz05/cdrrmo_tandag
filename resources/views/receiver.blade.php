@@ -13,8 +13,16 @@
 
     @php
         use App\Support\TwilioClientIdentity;
+        $idFromQuery = request()->query('identity');
+        if (is_string($idFromQuery) && trim($idFromQuery) !== '') {
+            $operatorIdentity = TwilioClientIdentity::sanitize($idFromQuery);
+        } elseif (auth()->check() && auth()->user()->hasRole(['admin', 'super_admin'])) {
+            $operatorIdentity = TwilioClientIdentity::sanitize((string) auth()->id());
+        } else {
+            $operatorIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
+        }
         $receiverPageConfig = [
-            'adminIdentity' => TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity')),
+            'operatorIdentity' => $operatorIdentity,
             'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
         ];
     @endphp

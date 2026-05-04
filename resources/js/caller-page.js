@@ -17,6 +17,7 @@ import {
 const cfg = window.__CALLER_CONFIG__ || {};
 const callerUserId = String(cfg.callerUserId ?? '5');
 const adminIdentity = cfg.adminIdentity != null ? String(cfg.adminIdentity) : '';
+const dispatchRingIdentity = cfg.dispatchRingIdentity != null ? String(cfg.dispatchRingIdentity) : 'dispatch';
 const voiceSdkEdge = String(cfg.voiceSdkEdge ?? '').trim();
 
 let device = null;
@@ -115,7 +116,7 @@ function signalingHint(code) {
             '\n\n31603 (Decline — callee did not accept / not registered):\n' +
             '• No Twilio Voice client is currently REGISTERED for the dialed identity (often ADMIN_IDENTITY). Heartbeat alone is not enough.\n' +
             '• Operator: open /admin, click once to allow microphone, wait until the console logs Device registered / voice ready.\n' +
-            '• Token identity from /twilio/token?identity= must equal exactly what TwiML <Dial><Client> dials (case-sensitive).\n' +
+            '• Token identity for operators is their user id; callers use ring-group To from /api/v1/call/availability (default dispatch).\n' +
             '• Compare Twilio Debugger + laravel.log “client_identity” with .env ADMIN_IDENTITY.\n' +
             '• See https://www.twilio.com/docs/api/errors/31603'
         );
@@ -134,8 +135,9 @@ function shortMessageForCallErrorCode(code, dialTarget) {
     if (n === 31603) {
         const target = dialTarget ? `"${dialTarget}"` : 'ADMIN_IDENTITY';
         return (
-            `No dispatch client answered (31603). Twilio has no registered browser/app for ${target}. ` +
-            `Keep an admin tab open, click once to load voice, and confirm the token identity matches .env exactly (case-sensitive).`
+            `No dispatch client answered (31603). Twilio has no registered VoIP client for ${target}. ` +
+            `Operators use their user id as Client identity; callers use the ring-group To from availability (see TWILIO_DISPATCH_RING_GROUP). ` +
+            `Keep an admin tab open, click once so voice registers, and confirm heartbeats include twilio_voice_ready.`
         );
     }
     if (n === 31005) {
@@ -346,7 +348,9 @@ async function callAdmin() {
         btnCall.disabled = false;
         return;
     }
-    const dialIdentity = String(avail.body?.twilio_dial_identity || adminIdentity || '').trim();
+    const dialIdentity = String(
+        avail.body?.twilio_dial_identity || dispatchRingIdentity || adminIdentity || '',
+    ).trim();
     if (!dialIdentity) {
         setStatus('Server is not configured: missing Twilio dial identity (ADMIN_IDENTITY).', 'error');
         btnCall.disabled = false;

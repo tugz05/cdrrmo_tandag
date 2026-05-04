@@ -30,10 +30,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | When true, /twilio/voice returns busy audio + hangup if no operator has a
-    | fresh heartbeat (same rule as set-location). When false, TwiML still dials
-    | ADMIN_IDENTITY — for local Client-to-Client tests without the admin
-    | dashboard heartbeat. The Twilio.Device for that identity must still be
-    | registered or the Client leg will fail (often seen as 31005).
+    | fresh heartbeat (same rule as set-location). When false, TwiML still resolves
+    | dial targets (ring group → voice-ready operator Client identities, or
+    | ADMIN_IDENTITY fallback) — for local Client-to-Client tests without the admin
+    | dashboard heartbeat. At least one Twilio Voice client must still be registered
+    | or the Client leg will fail (often seen as 31005).
     |
     */
     'require_staff_presence_for_voice_twiml' => filter_var(
@@ -73,5 +74,25 @@ return [
         env('CALL_REQUIRE_VOICE_CLIENT_READY', true),
         FILTER_VALIDATE_BOOL
     ),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Outbound VoIP ring group (Twilio <Client>)
+    |--------------------------------------------------------------------------
+    |
+    | Callers (browser / mobile) pass this as device.connect({ params: { To } }).
+    | Twilio posts it to /twilio/voice; the app expands it to every voice-ready
+    | operator identity (each admin registers as their user id) so multiple
+    | operators do not share one Client name (which caused 31603 / declines).
+    |
+    */
+    'dispatch_ring_group_client_name' => (string) env('TWILIO_DISPATCH_RING_GROUP', 'dispatch'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Max <Client> legs per <Dial> (TwiML size / Twilio limits)
+    |--------------------------------------------------------------------------
+    */
+    'max_simultaneous_client_dials' => (int) env('CALL_MAX_SIMULTANEOUS_CLIENT_DIALS', 20),
 
 ];

@@ -30,13 +30,16 @@ class StaffPresenceService
     }
 
     /**
-     * Online = fresh heartbeat, not in an active call (state available).
+     * Twilio Client identities (sanitized user ids) for operators who may receive
+     * an inbound emergency VoIP call right now.
+     *
+     * @return list<string>
      */
-    public function availableOperatorCount(): int
+    public function voiceReadyOperatorIdentities(): array
     {
         $ids = $this->operatorUserIds();
         if ($ids === []) {
-            return 0;
+            return [];
         }
 
         $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
@@ -54,7 +57,27 @@ class StaffPresenceService
                 ->where('voice_client_ready_at', '>=', $cutoff);
         }
 
-        return (int) $q->count();
+        $rawIds = $q->orderBy('user_id')->pluck('user_id')->all();
+
+        $seen = [];
+        $out = [];
+        foreach ($rawIds as $id) {
+            $san = TwilioClientIdentity::sanitize((string) $id);
+            if (isset($seen[$san])) {
+                continue;
+            }
+            $seen[$san] = true;
+            $out[] = $san;
+        }
+
+        $max = max(1, (int) config('call.max_simultaneous_client_dials', 20));
+
+        return array_slice($out, 0, $max);
+    }
+
+    public function availableOperatorCount(): int
+    {
+        return count($this->voiceReadyOperatorIdentities());
     }
 
     public function isCallRoutingAllowed(): bool
@@ -69,7 +92,8 @@ class StaffPresenceService
     public function getAvailabilitySnapshot(): array
     {
         $total = $this->totalOperatorCount();
-        $available = $this->availableOperatorCount();
+        $voiceReadyIds = $this->voiceReadyOperatorIdentities();
+        $available = count($voiceReadyIds);
         $canConnect = $total > 0 && $available > 0;
 
         $blockReason = null;
@@ -81,12 +105,13 @@ class StaffPresenceService
 
         $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
         $adminClientIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
+        $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
         $requireVoice = (bool) config('call.require_voice_client_ready', true);
 
         $resolutionHint = match ($blockReason) {
             'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
             'NO_OPERATOR_ONLINE' => ($requireVoice
-                ? 'No dispatch operator is voice-ready: an admin must open /admin, click once so Twilio.Device registers, and heartbeats must include twilio_voice_ready (browser sends this after registration). Raw ADMIN_IDENTITY in .env is normalized to this Twilio Client name: '.$adminClientIdentity.'. Flutter: POST twilio_voice_ready true when Voice registers, or set CALL_REQUIRE_VOICE_CLIENT_READY=false only if you accept possible 31603.'
+                ? 'No dispatch operator is voice-ready: each operator opens /admin so Twilio Voice JS SDK registers with their user id, and heartbeats send twilio_voice_ready after Device emits registered. Outbound calls use connect param To='.$dispatchRing.' (TWILIO_DISPATCH_RING_GROUP); TwiML rings all ready operators. Legacy ADMIN_IDENTITY ('.$adminClientIdentity.') is only a fallback if none are listed at dial time. Flutter: POST twilio_voice_ready when Voice registers, or set CALL_REQUIRE_VOICE_CLIENT_READY=false only if you accept possible 31603.'
                 : 'No operator has a fresh presence heartbeat. Web: keep /admin open. Mobile: POST /api/v1/staff/heartbeat.'),
             default => '',
         };
@@ -97,7 +122,11 @@ class StaffPresenceService
             'total_operators' => $total,
             'block_reason' => $blockReason,
             'heartbeat_ttl_seconds' => $ttl,
-            'operator_twilio_client_identity' => $adminClientIdentity,
+            /** Value for device.connect({ params: { To } }) — expanded server-side to all voice-ready operator Client identities. */
+            'operator_twilio_client_identity' => $dispatchRing,
+            'dispatch_twilio_client_identity' => $dispatchRing,
+            'voice_ready_operator_twilio_identities' => $voiceReadyIds,
+            'legacy_admin_twilio_client_identity' => $adminClientIdentity,
             'require_voice_client_ready' => $requireVoice,
             'resolution_hint' => $resolutionHint,
         ];
