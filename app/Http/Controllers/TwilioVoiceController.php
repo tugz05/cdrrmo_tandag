@@ -311,16 +311,28 @@ class TwilioVoiceController extends Controller
      */
     public function dialStatus(Request $request): Response
     {
-        Log::info('Twilio dial status callback', [
+        $dialStatus = (string) $request->input('DialCallStatus', '');
+        $sip = $request->input('DialSipResponseCode') ?? $request->input('DialCallSIPResponseCode');
+
+        $payload = [
             'CallSid' => $request->input('CallSid'),
             'DialCallSid' => $request->input('DialCallSid'),
-            'DialCallStatus' => $request->input('DialCallStatus'),
+            'DialCallStatus' => $dialStatus,
             'DialCallDuration' => $request->input('DialCallDuration'),
-            'DialSipResponseCode' => $request->input('DialSipResponseCode'),
+            'DialSipResponseCode' => $sip,
             'DialCallSIPResponseCode' => $request->input('DialCallSIPResponseCode'),
             'To' => $request->input('To'),
             'From' => $request->input('From'),
-        ]);
+        ];
+
+        // 603 / busy / no-answer on Client leg → browser often shows 31603 Decline.
+        $dialStatusLower = strtolower($dialStatus);
+        $failedLeg = in_array($dialStatusLower, ['busy', 'no-answer', 'failed', 'canceled'], true);
+        if ($failedLeg || (string) $sip === '603') {
+            Log::warning('Twilio dial status: Client leg did not complete (check 31603 / unregistered Client)', $payload);
+        } else {
+            Log::info('Twilio dial status callback', $payload);
+        }
 
         // Twilio expects valid TwiML or empty 200; empty is sufficient.
         return response('', 200);

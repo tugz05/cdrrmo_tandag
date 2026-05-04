@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\StaffPresenceService;
+use App\Support\TwilioClientIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -24,13 +25,14 @@ class CallAvailabilityController extends Controller
             ]);
 
             if ($failOpen) {
+                $adminId = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
                 $snap = [
                     'can_connect' => true,
                     'available_operators' => 1,
                     'total_operators' => 1,
                     'block_reason' => null,
                     'heartbeat_ttl_seconds' => (int) config('call.staff_heartbeat_ttl', 90),
-                    'operator_twilio_client_identity' => (string) config('services.twilio.admin_identity'),
+                    'operator_twilio_client_identity' => $adminId,
                     'resolution_hint' => 'Presence check failed; proceeding because CALL_PRESENCE_FAIL_OPEN=true.',
                 ];
             } else {

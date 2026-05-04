@@ -393,6 +393,7 @@ async function callAdmin() {
             userId: callerData.userId,
             reportId: stored.reportId,
         });
+        console.info('[Caller] device.connect', { To: dialParams.To, fromApi: dialIdentity });
         let call;
         try {
             call = await device.connect({ params: dialParams });
@@ -442,6 +443,7 @@ async function callAdmin() {
                 userId: parseInt(callerUserId, 10),
                 error: 'Location not available',
             });
+            console.info('[Caller] device.connect (fallback)', { To: dialParamsFb.To, fromApi: dialIdentity });
             let callFb;
             try {
                 callFb = await device.connect({ params: dialParamsFb });

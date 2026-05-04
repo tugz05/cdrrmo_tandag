@@ -54,6 +54,11 @@ return [
     | Recommended: true on local/dev; evaluate for production.
     |
     */
+    'presence_fail_open' => filter_var(
+        env('CALL_PRESENCE_FAIL_OPEN', false),
+        FILTER_VALIDATE_BOOL
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Voice client ready gate (31603 prevention)
