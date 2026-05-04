@@ -37,10 +37,30 @@ export function sanitizeClientDialIdentity(identity) {
  */
 export function createTwilioDeviceOptions(overrides = {}) {
     const { edge, logLevel = 'warn', closeProtection } = overrides;
+
+    // Twilio Voice JS SDK expects numeric log levels (0..5). Allow legacy string input used in this repo.
+    // 0 TRACE, 1 DEBUG, 2 INFO, 3 WARN, 4 ERROR, 5 SILENT
+    const logLevelNumber =
+        typeof logLevel === 'number'
+            ? logLevel
+            : String(logLevel).toLowerCase() === 'trace'
+              ? 0
+              : String(logLevel).toLowerCase() === 'debug'
+                ? 1
+                : String(logLevel).toLowerCase() === 'info'
+                  ? 2
+                  : String(logLevel).toLowerCase() === 'warn' || String(logLevel).toLowerCase() === 'warning'
+                    ? 3
+                    : String(logLevel).toLowerCase() === 'error'
+                      ? 4
+                      : String(logLevel).toLowerCase() === 'silent'
+                        ? 5
+                        : 3;
+
     /** @type {Record<string, unknown>} */
     const out = {
         codecPreferences: ['opus', 'pcmu'],
-        logLevel,
+        logLevel: logLevelNumber,
         // Twilio JS SDK: improves error specificity (avoids many failures surfacing only as 31005).
         enableImprovedSignalingErrorPrecision: true,
     };

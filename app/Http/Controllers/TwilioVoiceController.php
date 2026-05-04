@@ -318,12 +318,17 @@ class TwilioVoiceController extends Controller
                     'timeout' => 60,
                     'answerOnBridge' => true,
                     // Lets us log why the dial leg failed (e.g. 603/31603 decline) in laravel.log.
-                    'action' => url('/twilio/voice/dial-status'),
+                    // Relative so Twilio posts back to the same public host that served /twilio/voice (ignores APP_URL).
+                    'action' => '/twilio/voice/dial-status',
                     'method' => 'POST',
                 ]);
                 // Custom data must be <Parameter> children per Twilio Voice docs — not XML attributes on <Client>,
                 // or Twilio may fail the call with a generic "application error" prompt.
-                $client = $dial->client($clientIdentity, []);
+                $client = $dial->client($clientIdentity, [
+                    'statusCallbackEvent' => 'initiated ringing answered completed',
+                    'statusCallback' => '/twilio/voice/client-status',
+                    'statusCallbackMethod' => 'POST',
+                ]);
                 foreach ($customParams as $name => $value) {
                     $client->parameter([
                         'name' => (string) $name,
@@ -378,6 +383,25 @@ class TwilioVoiceController extends Controller
         }
 
         // Twilio expects valid TwiML or empty 200; empty is sufficient.
+        return response('', 200);
+    }
+
+    /**
+     * Per-Client status callback (initiated/ringing/answered/completed) from Twilio.
+     * Configured via <Client statusCallback="..."> in handleVoice().
+     */
+    public function clientStatus(Request $request): Response
+    {
+        Log::info('Twilio client status callback', [
+            'CallSid' => $request->input('CallSid'),
+            'ParentCallSid' => $request->input('ParentCallSid'),
+            'CallStatus' => $request->input('CallStatus'),
+            'CallDuration' => $request->input('CallDuration'),
+            'SipResponseCode' => $request->input('SipResponseCode') ?? $request->input('CallSipResponseCode'),
+            'To' => $request->input('To'),
+            'From' => $request->input('From'),
+        ]);
+
         return response('', 200);
     }
 
