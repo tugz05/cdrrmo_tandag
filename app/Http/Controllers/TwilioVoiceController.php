@@ -18,6 +18,49 @@ class TwilioVoiceController extends Controller
     public function __construct(private StaffPresenceService $staffPresence) {}
 
     /**
+     * Lightweight diagnostic endpoint: returns effective Twilio + presence config (no secrets).
+     * Useful when config caching / .env mismatch causes voice routing issues (e.g. 31603).
+     */
+    public function health(Request $request): JsonResponse
+    {
+        $adminIdentityRaw = (string) config('services.twilio.admin_identity');
+        $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
+
+        $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
+        $requireVoiceReady = (bool) config('call.require_voice_client_ready', true);
+
+        $availability = null;
+        $availabilityError = null;
+        try {
+            $availability = $this->staffPresence->getCachedAvailabilitySnapshot();
+        } catch (Throwable $e) {
+            $availabilityError = $e->getMessage();
+        }
+
+        return response()->json([
+            'ok' => true,
+            'now' => now()->toIso8601String(),
+            'app_env' => (string) config('app.env'),
+            'app_url' => (string) config('app.url'),
+            'twilio' => [
+                'account_sid_starts_with_AC' => str_starts_with((string) config('services.twilio.sid'), 'AC'),
+                'api_key_starts_with_SK' => str_starts_with((string) config('services.twilio.api_key'), 'SK'),
+                'twiml_app_sid' => (string) config('services.twilio.twiml_app_sid'),
+                'admin_identity_raw' => $adminIdentityRaw,
+                'admin_identity_sanitized' => $adminIdentity,
+                'voice_home_region' => (string) config('services.twilio.voice_home_region'),
+                'voice_sdk_edge' => (string) config('services.twilio.voice_sdk_edge'),
+            ],
+            'presence' => [
+                'require_staff_presence_for_voice_twiml' => $presenceRequired,
+                'require_voice_client_ready' => $requireVoiceReady,
+                'availability' => $availability,
+                'availability_error' => $availabilityError,
+            ],
+        ]);
+    }
+
+    /**
      * Public token URL (admin web + test pages). Identity is supplied in the query string.
      */
     public function generateToken(Request $request): JsonResponse

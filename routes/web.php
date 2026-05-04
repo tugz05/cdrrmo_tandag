@@ -81,6 +81,7 @@ Route::get('/receiver', function () {
 });
 
 Route::get('/twilio/token', [TwilioVoiceController::class, 'generateToken']);
+Route::get('/twilio/health', [TwilioVoiceController::class, 'health']);
 Route::match(['get', 'post'], '/twilio/voice', [TwilioVoiceController::class, 'handleVoice'])
     ->withoutMiddleware([VerifyCsrfToken::class]);
 Route::match(['get', 'post'], '/twilio/voice/dial-status', [TwilioVoiceController::class, 'dialStatus'])
