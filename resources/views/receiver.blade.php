@@ -14,6 +14,7 @@
     <script>
         window.__RECEIVER_CONFIG__ = @json([
             'adminIdentity' => (string) config('services.twilio.admin_identity'),
+            'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
         ]);
     </script>
 </body>

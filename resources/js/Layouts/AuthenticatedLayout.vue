@@ -12,11 +12,13 @@ import axios from 'axios';
 /** @twilio/voice-sdk version is pinned in package.json — keep in sync with caller-page.js / receiver-page.js */
 import { Device } from '@twilio/voice-sdk';
 import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from '@/utils/twilioVoiceAudio.js';
+import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioErrorDetails } from '@/utils/twilioVoiceSdk.js';
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
 /** Same string TwilioVoiceController uses for Dial Client; must match .env ADMIN_IDENTITY (never hardcode). */
 const twilioAdminIdentity = computed(() => String(page.props.twilio?.admin_identity ?? '').trim());
+const twilioVoiceSdkEdge = computed(() => String(page.props.twilio?.voice_sdk_edge ?? '').trim());
 const callStatus = ref('Someone is calling...');
 const isAnswering = ref(false);
 const showAnswerButton = ref(true);
@@ -236,6 +238,7 @@ function startStaffPresenceHeartbeat() {
 }
 
 function handleTwilioDeviceError(error) {
+    logTwilioErrorDetails('Device', error);
     const msg = String(error?.message ?? error ?? '');
     const code = error?.code;
     const lower = msg.toLowerCase();
@@ -280,10 +283,14 @@ function handleTwilioDeviceError(error) {
 async function setupTwilio(token) {
     destroyTwilioDevice();
 
-    device = new Device(token, {
-        codecPreferences: ['opus', 'pcmu'],
-        logLevel: 'error',
-    });
+    device = new Device(
+        token,
+        createTwilioDeviceOptions({
+            edge: twilioVoiceSdkEdge.value,
+            logLevel: 'error',
+        }),
+    );
+    attachTokenWillExpireHandler(device, twilioAdminIdentity.value);
 
     device.on('registered', async () => {
         await applyTwilioOutputDevices(device);
@@ -294,6 +301,16 @@ async function setupTwilio(token) {
 
     device.on('incoming', async call => {
         activeCall = call;
+
+        call.on('error', err => {
+            logTwilioErrorDetails('Incoming / active call', err);
+            if (err && err.code === 31005) {
+                callStatus.value = 'Connection lost (31005). Check network, edge (TWILIO_VOICE_SDK_EDGE), and TwiML URL.';
+            }
+            if (activeCall === call) {
+                endCall();
+            }
+        });
 
         try {
             console.log('caller data', call.parameters.From);

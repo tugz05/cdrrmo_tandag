@@ -7,10 +7,17 @@
  */
 import { Device } from '@twilio/voice-sdk';
 import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from './utils/twilioVoiceAudio.js';
+import {
+    attachTokenWillExpireHandler,
+    buildClientDialParams,
+    createTwilioDeviceOptions,
+    logTwilioErrorDetails,
+} from './utils/twilioVoiceSdk.js';
 
 const cfg = window.__CALLER_CONFIG__ || {};
 const callerUserId = String(cfg.callerUserId ?? '5');
 const adminIdentity = cfg.adminIdentity != null ? String(cfg.adminIdentity) : '';
+const voiceSdkEdge = String(cfg.voiceSdkEdge ?? '').trim();
 
 let device = null;
 let deviceReady = false;
@@ -86,6 +93,8 @@ function signalingHint(code) {
             '• API Key must be Standard or Restricted with Voice/Client permissions — IP-locked keys can block browsers.\n' +
             '• TWIML_APP_SID must be from the same Twilio account as TWILIO_ACCOUNT_SID.\n' +
             '• Optional: set TWILIO_VOICE_HOME_REGION=us1 (or ie1, au1) if your account is regional.\n' +
+            '• Optional: set TWILIO_VOICE_SDK_EDGE (e.g. singapore) for browser signaling; must be a valid edge name or leave empty.\n' +
+            '• Network: https://networktest.twilio.com/ — firewalls can drop WebSocket/WebRTC and surface as 31005.\n' +
             '• Run php artisan config:clear. Local only: GET /twilio/token-debug?identity=5'
         );
     }
@@ -96,6 +105,8 @@ function signalingHint(code) {
             '• laravel.log: “Twilio handleVoice request” = webhook OK. “blocked by staff presence” = open admin dashboard (heartbeat) or set CALL_REQUIRE_STAFF_PRESENCE_FOR_VOICE_TWIML=false for local tests.\n' +
             '• Admin Twilio.Device must be registered with identity exactly equal to ADMIN_IDENTITY (dashboard: click page once so voice loads).\n' +
             '• Allow microphone for this site; blocked mic can break the audio pipeline and show as a gateway hangup.\n' +
+            '• Match JWT region (TWILIO_VOICE_HOME_REGION), TwiML App account, and TWILIO_VOICE_SDK_EDGE — invalid edge breaks signaling (31005).\n' +
+            '• Keep tokens fresh (tokenWillExpire is handled in the app); long calls need a valid network path to Twilio.\n' +
             '• https://www.twilio.com/docs/voice/sdks/javascript#twiml-app'
         );
     }
@@ -105,6 +116,30 @@ function signalingHint(code) {
 function setStatus(msg, kind) {
     statusEl.textContent = msg;
     statusEl.className = kind || '';
+}
+
+/** Stabilize UI when the call leg errors (31005 = gateway / signaling lost). */
+function wireOutboundCallSession(call) {
+    if (!call) {
+        return;
+    }
+    call.on('disconnect', onCallEnded);
+    call.on('cancel', onCallEnded);
+    call.on('error', (err) => {
+        logTwilioErrorDetails('Outbound call', err);
+        const c = err && typeof err.code !== 'undefined' ? err.code : null;
+        if (c === 31005) {
+            setStatus(
+                'Connection lost (31005). Check network (networktest.twilio.com), TWILIO_VOICE_SDK_EDGE, webhook URL, and admin client online — then try again.',
+                'error',
+            );
+        } else {
+            setStatus(`Call error: ${formatErr(err)}${signalingHint(c)}`, 'error');
+        }
+        activeCall = null;
+        btnHangup.disabled = true;
+        btnCall.disabled = false;
+    });
 }
 
 function startVoice() {
@@ -182,14 +217,18 @@ function initDevice() {
                 return;
             }
 
-            device = new Device(data.token, {
-                codecPreferences: ['opus', 'pcmu'],
-                logLevel: 'warn',
-                closeProtection: true,
-            });
+            device = new Device(
+                data.token,
+                createTwilioDeviceOptions({
+                    edge: voiceSdkEdge,
+                    logLevel: 'warn',
+                    closeProtection: true,
+                }),
+            );
+            attachTokenWillExpireHandler(device, callerUserId);
 
             device.on('error', (err) => {
-                console.error('Twilio Device error:', err);
+                logTwilioErrorDetails('Device', err);
                 const code = err && (err.code != null ? err.code : err.twilioError && err.twilioError.code);
                 const txt = `Twilio: ${formatErr(err)}${signalingHint(code)}`;
                 setStatus(txt, 'error');
@@ -310,11 +349,6 @@ async function callAdmin() {
             return;
         }
 
-        const callerInfo = JSON.stringify({
-            userId: callerData.userId,
-            reportId: stored.reportId,
-        });
-
         setStatus('Connecting to admin…');
         try {
             await primeMicrophoneForTwilio();
@@ -325,20 +359,28 @@ async function callAdmin() {
             return;
         }
         await applyTwilioOutputDevices(device);
-        activeCall = await device.connect({
-            params: {
-                To: adminIdentity,
-                callerInfo,
-            },
+        const dialParams = buildClientDialParams(adminIdentity, {
+            userId: callerData.userId,
+            reportId: stored.reportId,
         });
-
-        activeCall.on('disconnect', onCallEnded);
-        activeCall.on('cancel', onCallEnded);
-        activeCall.on('error', (err) => {
-            console.error('Call error:', err);
-            const c = err && typeof err.code !== 'undefined' ? err.code : null;
-            setStatus(`Call error: ${formatErr(err)}${signalingHint(c)}`, 'error');
-        });
+        let call;
+        try {
+            call = await device.connect({ params: dialParams });
+        } catch (e) {
+            logTwilioErrorDetails('device.connect', e);
+            const c = e && typeof e.code !== 'undefined' ? e.code : null;
+            if (c === 31005) {
+                setStatus(
+                    'Could not start call (31005). Check network, edge setting, and Twilio configuration — then try again.',
+                    'error',
+                );
+            } else {
+                setStatus(`Could not connect: ${formatErr(e)}${signalingHint(c)}`, 'error');
+            }
+            return;
+        }
+        activeCall = call;
+        wireOutboundCallSession(call);
 
         setStatus('Call in progress — speak when the admin answers.');
         btnHangup.disabled = false;
@@ -368,19 +410,29 @@ async function callAdmin() {
                 return;
             }
             await applyTwilioOutputDevices(device);
-            activeCall = await device.connect({
-                params: {
-                    To: adminIdentity,
-                    callerInfo,
-                },
+            const dialParamsFb = buildClientDialParams(adminIdentity, {
+                userId: parseInt(callerUserId, 10),
+                error: 'Location not available',
             });
-            activeCall.on('disconnect', onCallEnded);
-            activeCall.on('cancel', onCallEnded);
-            activeCall.on('error', (err) => {
-                console.error('Call error:', err);
-                const c = err && typeof err.code !== 'undefined' ? err.code : null;
-                setStatus(`Call error: ${formatErr(err)}${signalingHint(c)}`, 'error');
-            });
+            let callFb;
+            try {
+                callFb = await device.connect({ params: dialParamsFb });
+            } catch (e2) {
+                logTwilioErrorDetails('device.connect (fallback)', e2);
+                const c2 = e2 && typeof e2.code !== 'undefined' ? e2.code : null;
+                if (c2 === 31005) {
+                    setStatus(
+                        'Could not start call (31005). Check network, edge setting, and Twilio configuration — then try again.',
+                        'error',
+                    );
+                } else {
+                    setStatus(`Could not connect: ${formatErr(e2)}${signalingHint(c2)}`, 'error');
+                }
+                alert(`Could not start call: ${formatErr(e2)}`);
+                return;
+            }
+            activeCall = callFb;
+            wireOutboundCallSession(callFb);
             setStatus('Call in progress (no location).');
             btnHangup.disabled = false;
             alert(`Call started but location could not be shared: ${formatErr(error)}`);

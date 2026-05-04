@@ -119,7 +119,7 @@ class TwilioVoiceController extends Controller
             config('services.twilio.sid'),
             config('services.twilio.api_key'),
             config('services.twilio.api_secret'),
-            3600,
+            3600, // 1h; refresh in browser via tokenWillExpire (Twilio max JWT TTL 24h)
             $identity,
             $region
         );
@@ -228,9 +228,17 @@ class TwilioVoiceController extends Controller
             $callerInfo = $request->input('callerInfo');
             $customParams = [];
             if ($callerInfo !== null && $callerInfo !== '') {
-                $customParams['callerInfo'] = is_string($callerInfo)
+                $callerInfoStr = is_string($callerInfo)
                     ? $callerInfo
                     : json_encode($callerInfo);
+                $callerLen = strlen($callerInfoStr);
+                if ($callerLen > 512) {
+                    Log::notice('Twilio handleVoice: callerInfo truncated (avoid oversized TwiML/custom params)', [
+                        'original_length' => $callerLen,
+                    ]);
+                    $callerInfoStr = substr($callerInfoStr, 0, 512);
+                }
+                $customParams['callerInfo'] = $callerInfoStr;
             }
 
             $requestedTo = trim((string) $request->input('To', ''));

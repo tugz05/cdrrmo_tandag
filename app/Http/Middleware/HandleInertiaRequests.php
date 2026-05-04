@@ -40,6 +40,8 @@ class HandleInertiaRequests extends Middleware
             'twilio' => [
                 /** Same as ADMIN_IDENTITY in .env; must match TwilioVoiceController client dial target. */
                 'admin_identity' => (string) config('services.twilio.admin_identity'),
+                /** Voice SDK edge / signaling region — empty means SDK default. */
+                'voice_sdk_edge' => (string) config('services.twilio.voice_sdk_edge'),
             ],
             'flash' => [
                 JToastEnum::SUCCESS => fn () => $request->session()->get(JToastEnum::SUCCESS),

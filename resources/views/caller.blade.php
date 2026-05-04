@@ -48,6 +48,7 @@
         window.__CALLER_CONFIG__ = @json([
             'callerUserId' => (string) $callerId,
             'adminIdentity' => (string) config('services.twilio.admin_identity'),
+            'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
         ]);
     </script>
 </body>

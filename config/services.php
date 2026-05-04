@@ -51,6 +51,11 @@ return [
          * Leave empty for default US; set if Twilio Console shows a regional account (often fixes 53000 outside US).
          */
         'voice_home_region' => env('TWILIO_VOICE_HOME_REGION'),
+        /*
+         * Voice JS SDK edge / signaling PoP (e.g. singapore, sydney, ashburn). Leave empty for SDK default.
+         * Must be valid; invalid values cause WebSocket/signaling issues (31005). Often set to singapore for Asia.
+         */
+        'voice_sdk_edge' => env('TWILIO_VOICE_SDK_EDGE', ''),
     ],
 
 ];

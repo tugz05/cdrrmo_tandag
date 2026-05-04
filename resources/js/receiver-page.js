@@ -3,8 +3,10 @@
  */
 import { Device } from '@twilio/voice-sdk';
 import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from './utils/twilioVoiceAudio.js';
+import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioErrorDetails } from './utils/twilioVoiceSdk.js';
 
 const adminIdentity = window.__RECEIVER_CONFIG__?.adminIdentity ?? '';
+const voiceSdkEdge = String(window.__RECEIVER_CONFIG__?.voiceSdkEdge ?? '').trim();
 
 let device;
 let activeCall;
@@ -37,10 +39,14 @@ async function startReceiverAfterGesture() {
             throw new Error(data.message || 'Token response invalid');
         }
 
-        device = new Device(data.token, {
-            codecPreferences: ['opus', 'pcmu'],
-            logLevel: 'error',
-        });
+        device = new Device(
+            data.token,
+            createTwilioDeviceOptions({
+                edge: voiceSdkEdge,
+                logLevel: 'error',
+            }),
+        );
+        attachTokenWillExpireHandler(device, adminIdentity);
 
         device.on('registered', async () => {
             console.log('Receiver registered');
@@ -49,6 +55,7 @@ async function startReceiverAfterGesture() {
         });
 
         device.on('incoming', async (call) => {
+            call.on('error', (e) => logTwilioErrorDetails('Receiver call', e));
             console.log('Incoming call...');
             const confirmAccept = confirm('Incoming call. Do you want to accept it?');
             if (confirmAccept) {
@@ -62,7 +69,9 @@ async function startReceiverAfterGesture() {
             }
         });
 
-        device.on('error', (error) => console.error('Receiver error:', error));
+        device.on('error', (error) => {
+            logTwilioErrorDetails('Receiver Device', error);
+        });
 
         await device.register();
     } catch (e) {
