@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.18.2/dist/twilio.min.js"></script>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
-        #status { margin: 1rem 0; padding: .75rem 1rem; background: #f4f4f5; border-radius: 8px; font-size: .9rem; }
+        #status { margin: 1rem 0; padding: .75rem 1rem; background: #f4f4f5; border-radius: 8px; font-size: .9rem; white-space: pre-wrap; }
         #status.error { background: #fef2f2; color: #991b1b; }
         #status.ok { background: #ecfdf5; color: #065f46; }
         button { padding: .5rem 1rem; margin-right: .5rem; cursor: pointer; }
@@ -23,9 +23,10 @@
         (<code>?user_id=</code> in the URL, default 5).
     </p>
 
-    <div id="status">Initializing voice…</div>
+    <div id="status">Click or tap anywhere once (or use the button below) to load Twilio — required for browser audio policy.</div>
 
     <p>
+        <button type="button" id="btnStart" onclick="startVoice()">Load voice / microphone</button>
         <button type="button" id="btnCall" onclick="callAdmin()" disabled>Call admin</button>
         <button type="button" id="btnHangup" onclick="hangUp()" disabled>Hang up</button>
     </p>
@@ -39,28 +40,89 @@
         let device = null;
         let deviceReady = false;
         let activeCall = null;
+        let voiceBootstrapStarted = false;
 
         const statusEl = document.getElementById('status');
+        const btnStart = document.getElementById('btnStart');
         const btnCall = document.getElementById('btnCall');
         const btnHangup = document.getElementById('btnHangup');
+
+        /** Safe string for any thrown value / Twilio error object */
+        function formatErr(e) {
+            if (e == null || e === '') {
+                return 'Unknown error';
+            }
+            if (typeof e === 'string') {
+                return e;
+            }
+            if (typeof e.message === 'string' && e.message.length) {
+                return e.code != null ? ('[' + e.code + '] ' + e.message) : e.message;
+            }
+            if (e.originalError && typeof e.originalError.message === 'string') {
+                return e.originalError.message;
+            }
+            try {
+                return JSON.stringify(e);
+            } catch (_) {
+                return String(e);
+            }
+        }
 
         function setStatus(msg, kind) {
             statusEl.textContent = msg;
             statusEl.className = kind || '';
         }
 
+        function startVoice() {
+            if (voiceBootstrapStarted) {
+                return;
+            }
+            voiceBootstrapStarted = true;
+            btnStart.disabled = true;
+            setStatus('Loading token…');
+            initDevice();
+        }
+
+        // Same as admin dashboard: first user gesture unlocks audio + token load
+        window.addEventListener('pointerdown', function once() {
+            window.removeEventListener('pointerdown', once, true);
+            startVoice();
+        }, true);
+
         function initDevice() {
             if (!adminIdentity) {
                 setStatus('Server is not configured: set ADMIN_IDENTITY in .env', 'error');
+                voiceBootstrapStarted = false;
+                btnStart.disabled = false;
                 return;
             }
 
-            fetch('/twilio/token?identity=' + encodeURIComponent(callerUserId))
+            const tokenUrl = '/twilio/token?identity=' + encodeURIComponent(callerUserId);
+
+            fetch(tokenUrl)
                 .then(function (res) {
-                    if (!res.ok) {
-                        throw new Error('Token HTTP ' + res.status);
-                    }
-                    return res.json();
+                    return res.text().then(function (text) {
+                        let data;
+                        try {
+                            data = text ? JSON.parse(text) : null;
+                        } catch (parseErr) {
+                            throw new Error(
+                                'Token URL did not return JSON (HTTP ' + res.status + '). Body starts with: ' +
+                                String(text).slice(0, 120)
+                            );
+                        }
+                        if (!res.ok) {
+                            throw new Error(
+                                data && data.message
+                                    ? data.message
+                                    : 'Token HTTP ' + res.status + (data && data.exception ? ' — see server logs' : '')
+                            );
+                        }
+                        if (!data || typeof data.token !== 'string' || !data.token.length) {
+                            throw new Error('Token response missing "token". Check TWILIO_* and TWIML_APP_SID in .env');
+                        }
+                        return data;
+                    });
                 })
                 .then(async function (data) {
                     device = new Twilio.Device(data.token, {
@@ -70,7 +132,7 @@
 
                     device.on('error', function (err) {
                         console.error('Device error:', err);
-                        setStatus('Twilio: ' + (err.message || err), 'error');
+                        setStatus('Twilio: ' + formatErr(err) + '\n(53000 often means bad token, wrong TwiML App SID, or network blocking WebSocket to Twilio.)', 'error');
                     });
 
                     device.on('registered', function () {
@@ -83,16 +145,16 @@
                         await device.register();
                     } catch (e) {
                         console.error(e);
-                        setStatus('Could not register with Twilio: ' + (e.message || e), 'error');
+                        setStatus('Could not register with Twilio: ' + formatErr(e), 'error');
                     }
                 })
                 .catch(function (err) {
                     console.error(err);
-                    setStatus('Token request failed: ' + err.message, 'error');
+                    setStatus('Token request failed: ' + formatErr(err), 'error');
+                    voiceBootstrapStarted = false;
+                    btnStart.disabled = false;
                 });
         }
-
-        initDevice();
 
         async function storeLocation(callerData) {
             const res = await fetch('/api/v1/caller-details/set-location', {
@@ -121,7 +183,7 @@
 
         async function callAdmin() {
             if (!device || !deviceReady) {
-                alert('Voice is not ready yet. Wait a moment and try again.');
+                alert('Voice is not ready yet. Use “Load voice” or click the page once, then wait until status says Ready.');
                 return;
             }
             if (!adminIdentity) {
@@ -173,14 +235,14 @@
                 activeCall.on('cancel', onCallEnded);
                 activeCall.on('error', function (err) {
                     console.error('Call error:', err);
-                    setStatus('Call error: ' + (err.message || err), 'error');
+                    setStatus('Call error: ' + formatErr(err), 'error');
                 });
 
                 setStatus('Call in progress — speak when the admin answers.');
                 btnHangup.disabled = false;
             } catch (error) {
                 console.error('Call flow error:', error);
-                setStatus('Falling back to call without location: ' + error.message, 'error');
+                setStatus('Falling back to call without location: ' + formatErr(error), 'error');
 
                 try {
                     const callerInfo = JSON.stringify({
@@ -197,10 +259,10 @@
                     activeCall.on('cancel', onCallEnded);
                     setStatus('Call in progress (no location).');
                     btnHangup.disabled = false;
-                    alert("Call started but location could not be shared: " + error.message);
+                    alert("Call started but location could not be shared: " + formatErr(error));
                 } catch (e2) {
-                    setStatus('Could not connect: ' + (e2.message || e2), 'error');
-                    alert('Could not start call: ' + (e2.message || e2));
+                    setStatus('Could not connect: ' + formatErr(e2), 'error');
+                    alert('Could not start call: ' + formatErr(e2));
                 }
             } finally {
                 if (!activeCall) {
