@@ -21,8 +21,6 @@ location report and on the Twilio voice webhook so users cannot bypass checks.
 2) CALL FLOW (RECOMMENDED ORDER)
 --------------------------------------------------------------------------------
 
-<<<<<<< HEAD
-=======
 IMPORTANT — IN-APP CALLING ONLY (TWILIO VOIP):
     Voice connectivity MUST happen entirely inside the Flutter app using the
     Twilio Programmable Voice / Voice SDK (e.g. flutter_twilio_voice or the
@@ -34,7 +32,6 @@ IMPORTANT — IN-APP CALLING ONLY (TWILIO VOIP):
     Laravel/Twilio webhook flow. Users tap “Call” in YOUR UI → SDK connects → audio
     stays in-app.
 
->>>>>>> 328d54f (new release)
 Step A — Lightweight capacity check (poll sparingly; see section 5).
     GET  /api/v1/call/availability
 
@@ -46,14 +43,9 @@ Step C — Store caller location and create the CALL report (required before/dur
     Body (JSON): user_id, latitude, longitude, accuracy (optional)
 
 Step D — Obtain Twilio Client token and initiate outbound VoIP to the operator
-<<<<<<< HEAD
-    identity configured on the server (see section 6). Your project may already
-    use flutter_twilio_voice or similar; align with Laravel Twilio configuration.
-=======
     identity configured on the server (see section 6). Use the Twilio Voice SDK
     from within the app only; align identities and TwiML application SID with
     Laravel/Twilio env (TWILIO_*, TWIML_APP_SID, ADMIN_IDENTITY as applicable).
->>>>>>> 328d54f (new release)
 
 Step E — After the operator answers / call lifecycle (if your app participates):
     POST /api/v1/call/started   { "report_id": <id> }
@@ -62,8 +54,6 @@ Step E — After the operator answers / call lifecycle (if your app participates
 Note: /call/started and /call/ended are used by the admin web client today;
 confirm with backend whether the mobile app must call these or only the web UI.
 
-<<<<<<< HEAD
-=======
 CALL SCREEN UI — REALTIME IN-APP SESSION:
     Implement a dedicated call screen (full-screen route or modal) that stays
     visible for the whole Twilio session — do not minimize critical connection
@@ -82,7 +72,6 @@ CALL SCREEN UI — REALTIME IN-APP SESSION:
       (retry availability check, text report option).
     • Accessibility — Screen reader labels for status changes and main buttons.
 
->>>>>>> 328d54f (new release)
 --------------------------------------------------------------------------------
 3) ENDPOINT: CALL AVAILABILITY (FOR FLUTTER)
 --------------------------------------------------------------------------------

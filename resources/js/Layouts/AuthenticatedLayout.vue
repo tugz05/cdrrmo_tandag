@@ -9,10 +9,7 @@ import { toggleModal } from '@/Helpers/JModal';
 import JButton from '@/Components/JButton.vue';
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-<<<<<<< HEAD
-=======
 import { Device } from '@twilio/voice-sdk';
->>>>>>> 328d54f (new release)
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
@@ -21,19 +18,13 @@ const isAnswering = ref(false);
 const showAnswerButton = ref(true);
 const currentCaller = ref({})
 const callerName = ref('')
-<<<<<<< HEAD
-const callReportId = ref(Number)
-=======
 const callReportId = ref(Number);
 const voicePipelineReady = ref(false);
->>>>>>> 328d54f (new release)
 
 let device = null;
 let activeCall = null;
 let heartbeatTimer = null;
 
-<<<<<<< HEAD
-=======
 let sharedAudioContext = null;
 
 /** Twilio Voice SDK should initialize after a user gesture or Chrome spams AudioContext warnings (autoplay policy). */
@@ -94,30 +85,10 @@ function destroyTwilioDevice() {
     activeCall = null;
 }
 
->>>>>>> 328d54f (new release)
 function staffHeartbeat() {
     axios.post(route('admin.staff.heartbeat')).catch(() => {});
 }
 
-<<<<<<< HEAD
-function setupTwilio(token) {
-    device = new Twilio.Device(token, {
-        codecPreferences: ['opus', 'pcmu'],
-        fakeLocalDTMF: true,
-        enableRingingState: true
-    });
-
-    device.on('ready', () => {
-        console.log('Twilio Device ready');
-        staffHeartbeat();
-        if (heartbeatTimer) {
-            clearInterval(heartbeatTimer);
-        }
-        heartbeatTimer = setInterval(staffHeartbeat, 30000);
-    });
-
-
-=======
 /** Presence for API availability — MUST NOT depend on Twilio Device registration (audio blocks / SDK errors would strand operators offline). */
 function startStaffPresenceHeartbeat() {
     staffHeartbeat();
@@ -173,52 +144,27 @@ async function setupTwilio(token) {
         staffHeartbeat();
     });
 
->>>>>>> 328d54f (new release)
     device.on('incoming', async call => {
-        // console.log('Incoming call...', call);
         activeCall = call;
 
-        // Parse caller information
-        let callerData = {};
         try {
-            // callerData = call.parameters.From || '{}';
-            // callerData = JSON.parse(call.parameters || '{}');
             console.log('caller data', call.parameters.From);
             const clientString = call.parameters.From;
-            const clientId = clientString.split(":")[1]; // Returns "1" as string
-            // const numericId = parseInt(clientId); // Convert to number if needed
+            const clientId = clientString.split(":")[1];
             const callerResponse = await fetchCaller(clientId)
             console.log('caller response: ', callerResponse)
             callerName.value = callerResponse.fname + ' ' + callerResponse.lname
             callReportId.value = callerResponse.latest_call[0].id
-            // return console.log('latest report id', callerResponse.latest_call[0].id)
-
 
         } catch (e) {
             console.error('Error parsing caller info:', e);
         }
-
-        // Update UI with caller info
-        // callStatus.value = callerData.name
-        //     ? `Call from ${callerData.name} (${callerData.department})`
-        //     : 'Incoming call';
-
-        // Store caller data for display
-        // currentCaller.value = callerData;
-
-        // console.log('current caller', currentCaller.value.name)
 
         showAnswerButton.value = true;
         isAnswering.value = false;
         toggleModal('Incoming Call', 'modal-call');
     });
 
-<<<<<<< HEAD
-
-    device.on('error', error => {
-        console.error('Twilio error:', error);
-    });
-=======
     device.on('error', handleTwilioDeviceError);
 
     try {
@@ -228,21 +174,16 @@ async function setupTwilio(token) {
         destroyTwilioDevice();
         twilioVoiceBootstrapped = false;
     }
->>>>>>> 328d54f (new release)
 }
 
 async function answerCall() {
     if (activeCall) {
-<<<<<<< HEAD
-=======
         tryResumeAudioContext();
->>>>>>> 328d54f (new release)
         callStatus.value = 'Call in progress...';
         isAnswering.value = true;
         showAnswerButton.value = false;
         activeCall.accept();
         handleCallAnswered(callReportId.value)
-        // await updateCallStarted() 
     }
 }
 
@@ -261,7 +202,7 @@ function endCall() {
     isAnswering.value = false;
     showAnswerButton.value = true;
     activeCall = null;
-    toggleModal('', 'modal-call'); // Close the modal
+    toggleModal('', 'modal-call');
     handleCallEnded(callReportId.value);
 }
 
@@ -269,15 +210,8 @@ onMounted(() => {
     if (!canAccessAdmin.value) {
         return;
     }
-<<<<<<< HEAD
-    fetch('/twilio/token?identity=admin_user')
-        .then(res => res.json())
-        .then(data => setupTwilio(data.token))
-        .catch(err => console.error('Token fetch error:', err));
-=======
     startStaffPresenceHeartbeat();
     attachTwilioVoiceAfterUserGesture();
->>>>>>> 328d54f (new release)
 });
 
 onUnmounted(() => {
@@ -285,10 +219,7 @@ onUnmounted(() => {
         clearInterval(heartbeatTimer);
         heartbeatTimer = null;
     }
-<<<<<<< HEAD
-=======
     destroyTwilioDevice();
->>>>>>> 328d54f (new release)
 });
 
 
@@ -330,7 +261,6 @@ async function handleCallAnswered(reportId) {
     }
 }
 
-// When call is ended/canceled
 async function handleCallEnded(reportId) {
     try {
         const response = await fetch('/api/v1/call/ended', {
@@ -361,8 +291,6 @@ async function handleCallEnded(reportId) {
 
 <template>
     <div>
-<<<<<<< HEAD
-=======
         <div
             v-if="canAccessAdmin && !voicePipelineReady"
             class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
@@ -371,7 +299,6 @@ async function handleCallEnded(reportId) {
             Click or tap anywhere once to enable incoming emergency voice calls — required by your browser’s audio
             policy.
         </div>
->>>>>>> 328d54f (new release)
         <div class="content">
             <SideBar />
             <main>
@@ -386,15 +313,12 @@ async function handleCallEnded(reportId) {
             <h5 class="m-0 fw-bold">
                 {{ isAnswering ? 'Active Call' : 'Incoming Call' }}
             </h5>
-            <!-- <div class="fs-sm text-muted">{{ callStatus }}</div> -->
 
-            <!-- Display caller information if available -->
             <div v-if="callerName" class="caller-info mt-3">
                 <p>{{ callerName }}</p>
             </div>
 
             <div class="d-flex justify-content-center gap-3 mt-5">
-                <!-- Buttons remain the same -->
                 <template v-if="!isAnswering">
                     <JButton danger text="Reject" @click="rejectCall" />
                     <JButton success text="Answer" @click="answerCall" />
