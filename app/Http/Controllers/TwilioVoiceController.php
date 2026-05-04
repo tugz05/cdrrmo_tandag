@@ -38,22 +38,7 @@ class TwilioVoiceController extends Controller
             $availabilityError = $e->getMessage();
         }
 
-        $webhookOrigin = rtrim(trim((string) config('services.twilio.webhook_public_origin', '')), '/');
-        if ($webhookOrigin === '') {
-            $appUrl = trim((string) config('app.url', ''));
-            if ($appUrl !== '' && str_starts_with(strtolower($appUrl), 'https://')) {
-                $parts = parse_url($appUrl);
-                if (is_array($parts) && isset($parts['host'])) {
-                    $scheme = isset($parts['scheme']) && is_string($parts['scheme']) ? $parts['scheme'] : 'https';
-                    $host = $parts['host'];
-                    $port = isset($parts['port']) ? ':'.$parts['port'] : '';
-                    $webhookOrigin = rtrim($scheme.'://'.$host.$port, '/');
-                }
-            }
-        }
-        if ($webhookOrigin === '') {
-            $webhookOrigin = rtrim($request->getSchemeAndHttpHost(), '/');
-        }
+        $webhookOrigin = $this->publicTwilioWebhookOrigin($request);
 
         return response()->json([
             'ok' => true,
@@ -87,10 +72,7 @@ class TwilioVoiceController extends Controller
     {
         $user = $request->user();
         if ($user && $user->hasRole(['admin', 'super_admin'])) {
-            $adminRaw = trim((string) config('services.twilio.admin_identity'));
-            $identity = $adminRaw !== ''
-                ? TwilioClientIdentity::sanitize($adminRaw)
-                : TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
+            $identity = TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
         } else {
             $identity = TwilioClientIdentity::sanitize((string) $request->query('identity', 'guest'));
         }
@@ -109,16 +91,13 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * Mobile app (Flutter): JWT identity matches {@code ADMIN_IDENTITY} so inbound VoIP matches legacy
-     * {@code handleVoice} {@code <Dial><Client>}. Use {@code dial_to} as {@code device.connect} {@code To}.
+     * Mobile app (Flutter): JWT identity is the operator’s user id; outbound {@code To} uses the dispatch ring name
+     * expanded on `/twilio/voice` to every voice-ready operator {@code <Client>}.
      */
     public function tokenForMobile(Request $request): JsonResponse
     {
         $user = $request->user();
-        $adminRaw = trim((string) config('services.twilio.admin_identity'));
-        $identity = $adminRaw !== ''
-            ? TwilioClientIdentity::sanitize($adminRaw)
-            : TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
+        $identity = TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -127,11 +106,18 @@ class TwilioVoiceController extends Controller
             ], 503);
         }
 
+        $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+        $legacyRaw = trim((string) config('services.twilio.admin_identity'));
+        $legacyAdmin = $legacyRaw !== '' ? TwilioClientIdentity::sanitize($legacyRaw) : null;
+
         return response()->json([
             'identity' => $identity,
             'token' => $this->makeVoiceAccessToken($identity),
-            /** Same as JWT identity — pass as `device.connect({ params: { To: dial_to } })` for VoIP to `/twilio/voice`. */
-            'dial_to' => $identity,
+            /** Pass as `device.connect({ params: { To: dial_to } })` — expanded on `/twilio/voice` to voice-ready operators. */
+            'dial_to' => $dispatchRing,
+            'operator_twilio_client_identity' => $dispatchRing,
+            'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(),
+            'legacy_admin_twilio_client_identity' => $legacyAdmin ?? '',
         ]);
     }
 
@@ -172,7 +158,7 @@ class TwilioVoiceController extends Controller
 
         $adminIdentity = trim((string) config('services.twilio.admin_identity'));
         if ($adminIdentity === '') {
-            $issues[] = 'ADMIN_IDENTITY is missing — required for VoIP `<Client>` routing and operator tokens; set it in .env.';
+            $issues[] = 'ADMIN_IDENTITY is missing — required VoIP fallback when no voice-ready operators are found at dial time; set it in .env.';
         }
 
         if ($issues === []) {
@@ -256,27 +242,38 @@ class TwilioVoiceController extends Controller
 
     public function handleVoice(Request $request)
     {
+        $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
+        $failOpen = filter_var((string) config('call.presence_fail_open', app()->environment('local')), FILTER_VALIDATE_BOOL);
+
         try {
+            $routingAllowed = true;
+            $availability = null;
+            if ($presenceRequired) {
+                try {
+                    $availability = $this->staffPresence->getCachedAvailabilitySnapshot();
+                    $routingAllowed = (bool) ($availability['can_connect'] ?? false);
+                } catch (Throwable $e) {
+                    Log::error('Twilio handleVoice: staff presence lookup failed', [
+                        'message' => $e->getMessage(),
+                        'fail_open' => $failOpen,
+                    ]);
+                    $routingAllowed = $failOpen;
+                }
+            }
+
             Log::info('Twilio handleVoice request', [
                 'CallSid' => $request->input('CallSid'),
                 'From' => $request->input('From'),
                 'To' => $request->input('To'),
                 'ApplicationSid' => $request->input('ApplicationSid'),
+                'staff_presence_required_for_twiml' => $presenceRequired,
+                'staff_routing_allowed' => $routingAllowed,
+                'staff_snapshot' => $availability,
             ]);
-
-            if (! $this->staffPresence->isCallRoutingAllowed()) {
-                return $this->twimlResponse(function (VoiceResponse $twiml): void {
-                    $twiml->say(
-                        'All emergency operators are currently busy. Please try again later, or use text messaging in the application.',
-                        ['voice' => 'alice']
-                    );
-                    $twiml->hangup();
-                });
-            }
 
             $adminIdentityRaw = trim((string) config('services.twilio.admin_identity'));
             if ($adminIdentityRaw === '') {
-                Log::warning('Twilio handleVoice: ADMIN_IDENTITY is empty in .env');
+                Log::warning('Twilio handleVoice: ADMIN_IDENTITY is empty in .env (required for VoIP fallback)');
 
                 return $this->twimlResponse(function (VoiceResponse $twiml): void {
                     $twiml->say(
@@ -288,6 +285,20 @@ class TwilioVoiceController extends Controller
             }
 
             $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
+
+            if ($presenceRequired && ! $routingAllowed) {
+                Log::notice('Twilio handleVoice: blocked by staff presence (busy TwiML)', [
+                    'hint' => 'Keep /admin open (heartbeat + twilio_voice_ready), or set CALL_REQUIRE_STAFF_PRESENCE_FOR_VOICE_TWIML=false for local tests.',
+                ]);
+
+                return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                    $twiml->say(
+                        'All emergency operators are currently busy. Please try again later, or use text messaging in the application.',
+                        ['voice' => 'alice']
+                    );
+                    $twiml->hangup();
+                });
+            }
 
             $callerInfo = $request->input('callerInfo');
             $callerInfoValue = null;
@@ -303,25 +314,59 @@ class TwilioVoiceController extends Controller
                 $callerInfoValue = $callerInfoStr;
             }
 
+            $ringGroupIdentity = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+            $clientIdentities = $this->resolveOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
+            $excludeIds = $this->callerClientIdentitiesToExcludeFromDial($request);
+            $clientIdentities = $this->excludeClientIdentitiesFromDialTargets($clientIdentities, $excludeIds);
+            $clientIdentities = $this->dialTargetsWithCallerFallback($clientIdentities, $excludeIds, $adminIdentity, $request);
+
+            if ($clientIdentities === []) {
+                Log::warning('Twilio handleVoice: no Client identities to dial after excluding caller / fallbacks', [
+                    'From' => $request->input('From'),
+                    'exclude' => $excludeIds,
+                ]);
+
+                return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                    $twiml->say(
+                        'No emergency operator is available to take this call. Please try again later.',
+                        ['voice' => 'alice']
+                    );
+                    $twiml->hangup();
+                });
+            }
+
+            $webhookOrigin = $this->publicTwilioWebhookOrigin($request);
+
             Log::info('Twilio handleVoice dial', [
-                'admin_identity_sanitized' => $adminIdentity,
-                'from_raw' => $request->input('From'),
+                'client_identities' => $clientIdentities,
+                'exclude_caller_client_identities' => $excludeIds,
                 'to_raw' => $request->input('To'),
+                'from_raw' => $request->input('From'),
+                'admin_identity_sanitized' => $adminIdentity,
+                'dispatch_ring_group' => $ringGroupIdentity,
+                'twilio_webhook_origin' => $webhookOrigin,
             ]);
 
-            /*
-             * Custom data must be <Parameter> children on <Client>, not arbitrary XML attributes.
-             * Passing ['callerInfo' => ...] as the second arg to client() emits callerInfo="..." on <Client>,
-             * which Twilio rejects with 12100 Document parse failure.
-             */
-            return $this->twimlResponse(function (VoiceResponse $twiml) use ($adminIdentity, $callerInfoValue): void {
-                $dial = $twiml->dial();
-                $client = $dial->client($adminIdentity);
-                if ($callerInfoValue !== null && $callerInfoValue !== '') {
-                    $client->parameter([
-                        'name' => 'callerInfo',
-                        'value' => $callerInfoValue,
-                    ]);
+            return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentities, $callerInfoValue, $webhookOrigin): void {
+                $dial = $twiml->dial('', [
+                    'timeout' => 60,
+                    'answerOnBridge' => true,
+                    'action' => $webhookOrigin.'/twilio/voice/dial-status',
+                    'method' => 'POST',
+                ]);
+                $clientAttrs = [
+                    'statusCallbackEvent' => 'initiated ringing answered completed',
+                    'statusCallback' => $webhookOrigin.'/twilio/voice/client-status',
+                    'statusCallbackMethod' => 'POST',
+                ];
+                foreach ($clientIdentities as $clientIdentity) {
+                    $client = $dial->client($clientIdentity, $clientAttrs);
+                    if ($callerInfoValue !== null && $callerInfoValue !== '') {
+                        $client->parameter([
+                            'name' => 'callerInfo',
+                            'value' => $callerInfoValue,
+                        ]);
+                    }
                 }
             });
         } catch (Throwable $e) {
@@ -342,7 +387,8 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * Dial status callback from Twilio (optional; legacy handleVoice uses a plain {@code <Dial>} with no action).
+     * Dial status callback from Twilio.
+     * Configured via {@code <Dial action="...">} in handleVoice().
      */
     public function dialStatus(Request $request): Response
     {
@@ -373,7 +419,8 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * Per-Client status callback (optional; legacy handleVoice does not set statusCallback on {@code <Client>}).
+     * Per-Client status callback (initiated/ringing/answered/completed) from Twilio.
+     * Configured via {@code <Client statusCallback="...">} in handleVoice().
      */
     public function clientStatus(Request $request): Response
     {
@@ -388,6 +435,180 @@ class TwilioVoiceController extends Controller
         ]);
 
         return $this->emptyTwiMLResponse();
+    }
+
+    /**
+     * Resolve which Twilio Voice Client identities to ring for this parent call.
+     *
+     * Twilio posts here for (a) Voice JS SDK outbound via a TwiML App — {@code From} is {@code client:IDENTITY},
+     * and {@code To} is the connect target; (b) inbound PSTN/SIP to a purchased number — {@code From} is a phone
+     * number and {@code To} is your Twilio number. In case (b), {@code To} must never be interpreted as a
+     * {@code <Client>} name or Twilio returns an application error.
+     *
+     * @return list<string>
+     */
+    protected function resolveOutboundDialClientIdentities(Request $request, string $adminIdentity, string $ringGroupIdentity): array
+    {
+        $from = trim((string) $request->input('From', ''));
+        $fromIsVoiceSdkClient = $from !== '' && str_starts_with(strtolower($from), 'client:');
+
+        if (! $fromIsVoiceSdkClient) {
+            return $this->voiceReadyOperatorsOrAdminFallback($adminIdentity);
+        }
+
+        $requestedToRaw = trim((string) $request->input('To', ''));
+        $requestedTo = $requestedToRaw !== '' ? TwilioClientIdentity::sanitize($requestedToRaw) : '';
+
+        $broadcast = $requestedTo === ''
+            || $requestedTo === $ringGroupIdentity
+            || ($adminIdentity !== '' && $requestedTo === $adminIdentity);
+
+        if ($broadcast) {
+            return $this->voiceReadyOperatorsOrAdminFallback($adminIdentity);
+        }
+
+        $ready = $this->staffPresence->voiceReadyOperatorIdentities();
+        if (in_array($requestedTo, $ready, true)) {
+            return [$requestedTo];
+        }
+
+        Log::notice('Twilio handleVoice: To not in voice-ready set; using ring group', [
+            'requested_to' => $requestedTo,
+        ]);
+
+        return $this->voiceReadyOperatorsOrAdminFallback($adminIdentity);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function voiceReadyOperatorsOrAdminFallback(string $adminIdentity): array
+    {
+        $targets = $this->staffPresence->voiceReadyOperatorIdentities();
+        if ($targets !== []) {
+            return $targets;
+        }
+
+        return $adminIdentity !== '' ? [$adminIdentity] : [];
+    }
+
+    /**
+     * Twilio parent leg From is {@code client:IDENTITY} for SDK calls — never dial that same Client
+     * or the call fails (31603) because the origin endpoint cannot be the dial target.
+     *
+     * @return list<string> sanitized identities to omit from {@code <Dial><Client>}
+     */
+    protected function callerClientIdentitiesToExcludeFromDial(Request $request): array
+    {
+        $out = [];
+        $from = trim((string) $request->input('From', ''));
+        if ($from !== '' && str_starts_with(strtolower($from), 'client:')) {
+            $rest = trim(substr($from, strlen('client:')));
+            if ($rest !== '') {
+                $out[] = TwilioClientIdentity::sanitize($rest);
+            }
+        }
+
+        $raw = $request->input('callerInfo');
+        if (is_string($raw) && $raw !== '') {
+            try {
+                /** @var mixed $decoded */
+                $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($decoded) && array_key_exists('userId', $decoded)) {
+                    $out[] = TwilioClientIdentity::sanitize((string) $decoded['userId']);
+                }
+            } catch (Throwable) {
+                // ignore malformed callerInfo
+            }
+        }
+
+        $out = array_values(array_unique(array_filter($out, static fn (string $s): bool => $s !== '')));
+
+        return $out;
+    }
+
+    /**
+     * @param  list<string>  $targets
+     * @param  list<string>  $excludeSanitized
+     * @return list<string>
+     */
+    protected function excludeClientIdentitiesFromDialTargets(array $targets, array $excludeSanitized): array
+    {
+        if ($excludeSanitized === []) {
+            return array_values(array_unique($targets));
+        }
+
+        $exc = array_flip($excludeSanitized);
+        $out = [];
+        foreach ($targets as $t) {
+            if (! isset($exc[$t])) {
+                $out[] = $t;
+            }
+        }
+
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * If every voice-ready operator was the caller's own Client identity, fall back to ADMIN_IDENTITY
+     * when it is a different identity so TwiML still has at least one {@code <Client>} noun.
+     *
+     * @param  list<string>  $targets
+     * @param  list<string>  $excludeSanitized
+     * @return list<string>
+     */
+    protected function dialTargetsWithCallerFallback(array $targets, array $excludeSanitized, string $adminIdentity, Request $request): array
+    {
+        if ($targets !== []) {
+            return $targets;
+        }
+
+        if ($adminIdentity === '') {
+            return [];
+        }
+
+        foreach ($excludeSanitized as $ex) {
+            if ($ex === $adminIdentity) {
+                Log::notice('Twilio handleVoice: cannot route — dial targets match caller and ADMIN_IDENTITY matches caller', [
+                    'From' => $request->input('From'),
+                    'admin_identity_sanitized' => $adminIdentity,
+                ]);
+
+                return [];
+            }
+        }
+
+        Log::notice('Twilio handleVoice: all ring-group targets matched caller identity; dialing ADMIN_IDENTITY fallback', [
+            'From' => $request->input('From'),
+            'admin_identity_sanitized' => $adminIdentity,
+        ]);
+
+        return [$adminIdentity];
+    }
+
+    /**
+     * Absolute origin for Twilio Voice callbacks embedded in TwiML (HTTPS when possible).
+     */
+    protected function publicTwilioWebhookOrigin(Request $request): string
+    {
+        $override = trim((string) config('services.twilio.webhook_public_origin', ''));
+        if ($override !== '') {
+            return rtrim($override, '/');
+        }
+
+        $appUrl = trim((string) config('app.url', ''));
+        if ($appUrl !== '' && str_starts_with(strtolower($appUrl), 'https://')) {
+            $parts = parse_url($appUrl);
+            if (is_array($parts) && isset($parts['host'])) {
+                $scheme = isset($parts['scheme']) && is_string($parts['scheme']) ? $parts['scheme'] : 'https';
+                $host = $parts['host'];
+                $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+                return rtrim($scheme.'://'.$host.$port, '/');
+            }
+        }
+
+        return rtrim($request->getSchemeAndHttpHost(), '/');
     }
 
     /**

@@ -34,8 +34,9 @@
         <button type="button" id="btnHangup" disabled>Hang up</button>
     </p>
     <small>
-        When you place a call here, Twilio dials the shared VoIP Client name from <code>ADMIN_IDENTITY</code> (same as <code>/api/v1/call/availability</code> <code>twilio_dial_identity</code>).
-        Keep an operator tab open on <code>/admin/*</code>, click once so Twilio Voice loads and registers that identity, and ensure heartbeat rules pass.
+        When you place a call here, Twilio expands the ring-group <code>To</code> from <code>/api/v1/call/availability</code>
+        (<code>TWILIO_DISPATCH_RING_GROUP</code>, default <code>dispatch</code>) to every voice-ready operator; each operator registers VoIP with their own user id.
+        Keep an operator tab open on <code>/admin/*</code>, click once so Twilio Voice loads, and ensure heartbeat rules pass.
     </small>
 
     @php
@@ -45,6 +46,7 @@
         $callerPageConfig = [
             'callerUserId' => (string) $callerId,
             'adminIdentity' => TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity')),
+            'dispatchRingIdentity' => TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch')),
             'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
         ];
     @endphp
