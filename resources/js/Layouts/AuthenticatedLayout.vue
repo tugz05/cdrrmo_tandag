@@ -33,6 +33,37 @@ let sharedAudioContext = null;
 /** Twilio Voice SDK should initialize after a user gesture or Chrome spams AudioContext warnings (autoplay policy). */
 let twilioVoiceBootstrapped = false;
 
+let staffHeartbeatSeq = 0;
+
+/**
+ * Console diagnostics for POST /admin/staff/heartbeat (Twilio routing / caller availability).
+ * On by dev build, on /admin/* in the browser, or force with: sessionStorage.setItem('cdrrmo_staff_debug','1')
+ */
+function staffPresenceDebugEnabled() {
+    if (import.meta.env.DEV) {
+        return true;
+    }
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    try {
+        if (window.sessionStorage?.getItem('cdrrmo_staff_debug') === '1') {
+            return true;
+        }
+    } catch {
+        /* storage blocked */
+    }
+    return window.location.pathname.startsWith('/admin');
+}
+
+function logStaffPresence(level, ...args) {
+    if (!staffPresenceDebugEnabled()) {
+        return;
+    }
+    const fn = level === 'warn' ? console.warn : level === 'error' ? console.error : console.info;
+    fn('[StaffPresence]', ...args);
+}
+
 function tryResumeAudioContext() {
     try {
         const Ctor = window.AudioContext || window.webkitAudioContext;
@@ -95,11 +126,43 @@ function destroyTwilioDevice() {
 }
 
 function staffHeartbeat() {
-    axios.post(route('admin.staff.heartbeat')).catch(() => {});
+    staffHeartbeatSeq += 1;
+    const seq = staffHeartbeatSeq;
+    const url = route('admin.staff.heartbeat');
+    logStaffPresence('info', `heartbeat #${seq} → POST`, url);
+
+    axios
+        .post(url)
+        .then((res) => {
+            logStaffPresence('info', `heartbeat #${seq} OK`, res.status, res.data);
+        })
+        .catch((err) => {
+            const status = err?.response?.status;
+            const data = err?.response?.data;
+            console.warn('[StaffPresence] heartbeat failed — operators may show offline for voice routing', {
+                seq,
+                url,
+                status: status ?? '(no response)',
+                data: data ?? err?.message,
+                hint:
+                    status === 419
+                        ? 'CSRF: refresh page or ensure XSRF-TOKEN cookie is set (same-site cookies).'
+                        : status === 401 || status === 403
+                          ? 'Not authorized — session may have expired.'
+                          : 'See Network tab for full response.',
+            });
+        });
 }
 
 /** Presence for API availability — MUST NOT depend on Twilio Device registration (audio blocks / SDK errors would strand operators offline). */
 function startStaffPresenceHeartbeat() {
+    const url = route('admin.staff.heartbeat');
+    logStaffPresence(
+        'info',
+        'Starting staff presence heartbeat (every 30s + immediate first ping). Endpoint:',
+        url,
+        '(sessionStorage cdrrmo_staff_debug=1 forces logs on any path)',
+    );
     staffHeartbeat();
     if (heartbeatTimer) {
         clearInterval(heartbeatTimer);
