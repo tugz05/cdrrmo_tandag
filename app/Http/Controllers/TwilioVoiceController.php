@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\StaffPresenceService;
+use App\Support\TwilioClientIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -21,7 +22,7 @@ class TwilioVoiceController extends Controller
      */
     public function generateToken(Request $request): JsonResponse
     {
-        $identity = $this->sanitizeTwilioClientIdentity((string) $request->query('identity', 'guest'));
+        $identity = TwilioClientIdentity::sanitize((string) $request->query('identity', 'guest'));
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -43,7 +44,7 @@ class TwilioVoiceController extends Controller
     public function tokenForMobile(Request $request): JsonResponse
     {
         $user = $request->user();
-        $identity = $this->sanitizeTwilioClientIdentity((string) $user->getAuthIdentifier());
+        $identity = TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -52,7 +53,7 @@ class TwilioVoiceController extends Controller
             ], 503);
         }
 
-        $operatorIdentity = (string) config('services.twilio.admin_identity');
+        $operatorIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
 
         return response()->json([
             'identity' => $identity,
@@ -133,31 +134,6 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * Twilio "Client identity" constraints:
-     * - Only alphanumeric + underscore
-     * - Max 256 chars
-     *
-     * Many SDK examples pass `To=client:alice` â€” strip the `client:` prefix when present.
-     */
-    protected function sanitizeTwilioClientIdentity(string $identity): string
-    {
-        $identity = trim($identity);
-
-        if ($identity === '') {
-            return 'guest';
-        }
-
-        if (str_starts_with(strtolower($identity), 'client:')) {
-            $identity = trim(substr($identity, strlen('client:')));
-        }
-
-        $identity = preg_replace('/[^A-Za-z0-9_]/', '_', $identity) ?? 'guest';
-        $identity = substr($identity, 0, 256);
-
-        return $identity !== '' ? $identity : 'guest';
-    }
-
-    /**
      * Local environment only: inspect Voice JWT shape (no secrets returned).
      * GET /twilio/token-debug?identity=5 — use when debugging Twilio 53000 / 31000.
      */
@@ -165,7 +141,7 @@ class TwilioVoiceController extends Controller
     {
         abort_unless(app()->environment('local'), 404);
 
-        $identity = $request->query('identity', '5');
+        $identity = TwilioClientIdentity::sanitize((string) $request->query('identity', '5'));
 
         if ($msg = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -238,8 +214,7 @@ class TwilioVoiceController extends Controller
                 'staff_snapshot' => $availability,
             ]);
 
-            $adminIdentity = (string) config('services.twilio.admin_identity');
-            $adminIdentity = $this->sanitizeTwilioClientIdentity($adminIdentity);
+            $adminIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
 
             if ($adminIdentity === '') {
                 Log::warning('Twilio handleVoice: ADMIN_IDENTITY is not configured');
@@ -284,7 +259,7 @@ class TwilioVoiceController extends Controller
             }
 
             $requestedToRaw = trim((string) $request->input('To', ''));
-            $requestedTo = $requestedToRaw !== '' ? $this->sanitizeTwilioClientIdentity($requestedToRaw) : '';
+            $requestedTo = $requestedToRaw !== '' ? TwilioClientIdentity::sanitize($requestedToRaw) : '';
             $clientIdentity = $requestedTo !== '' ? $requestedTo : $adminIdentity;
 
             Log::info('Twilio handleVoice dial', [

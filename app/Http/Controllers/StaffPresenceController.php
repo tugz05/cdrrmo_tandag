@@ -12,7 +12,11 @@ class StaffPresenceController extends Controller
 
     public function heartbeat(Request $request): JsonResponse
     {
-        $this->staffPresence->touchHeartbeat($request->user());
+        $voiceReady = $request->has('twilio_voice_ready')
+            ? $request->boolean('twilio_voice_ready')
+            : null;
+
+        $this->staffPresence->touchHeartbeat($request->user(), $voiceReady);
 
         return response()->json(['status' => 'ok']);
     }

@@ -188,6 +188,7 @@ function destroyTwilioDevice() {
         clearInterval(heartbeatTimer);
         heartbeatTimer = null;
     }
+    pingVoiceClientReadyFalse();
     try {
         device.disconnectAll?.();
         device.destroy?.();
@@ -199,14 +200,25 @@ function destroyTwilioDevice() {
     voicePipelineReady.value = false;
 }
 
+function pingVoiceClientReadyFalse() {
+    if (!canAccessAdmin.value) {
+        return;
+    }
+    const url = route('admin.staff.heartbeat');
+    axios
+        .post(url, { twilio_voice_ready: false })
+        .then(() => logStaffPresence('info', 'Reported twilio_voice_ready: false (voice offline)'))
+        .catch(() => {});
+}
+
 function staffHeartbeat() {
     staffHeartbeatSeq += 1;
     const seq = staffHeartbeatSeq;
     const url = route('admin.staff.heartbeat');
-    logStaffPresence('info', `heartbeat #${seq} â†’ POST`, url);
+    logStaffPresence('info', `heartbeat #${seq} -> POST`, url);
 
     axios
-        .post(url)
+        .post(url, { twilio_voice_ready: voicePipelineReady.value === true })
         .then((res) => {
             logStaffPresence('info', `heartbeat #${seq} OK`, res.status, res.data);
         })
@@ -316,6 +328,7 @@ async function setupTwilio(token) {
 
     device.on('unregistered', () => {
         voicePipelineReady.value = false;
+        pingVoiceClientReadyFalse();
         if (heartbeatTimer) {
             clearInterval(heartbeatTimer);
             heartbeatTimer = null;

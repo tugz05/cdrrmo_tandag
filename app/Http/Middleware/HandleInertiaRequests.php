@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\JToastEnum;
+use App\Support\TwilioClientIdentity;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,8 +39,8 @@ class HandleInertiaRequests extends Middleware
                 'isSuperAdmin' => $request->user() && $request->user()->hasRole('super_admin'),
             ],
             'twilio' => [
-                /** Same as ADMIN_IDENTITY in .env; must match TwilioVoiceController client dial target. */
-                'admin_identity' => (string) config('services.twilio.admin_identity'),
+                /** Sanitized same as /twilio/token and <Dial><Client> — use for display and token URL. */
+                'admin_identity' => TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity')),
                 /** Voice SDK edge / signaling region — empty means SDK default. */
                 'voice_sdk_edge' => (string) config('services.twilio.voice_sdk_edge'),
             ],

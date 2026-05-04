@@ -41,11 +41,12 @@
     </small>
 
     @php
+        use App\Support\TwilioClientIdentity;
         $qs = request()->query();
         $callerId = $qs['user_id'] ?? $qs['identity'] ?? '5';
         $callerPageConfig = [
             'callerUserId' => (string) $callerId,
-            'adminIdentity' => (string) config('services.twilio.admin_identity'),
+            'adminIdentity' => TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity')),
             'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
         ];
     @endphp

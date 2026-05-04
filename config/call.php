@@ -54,8 +54,18 @@ return [
     | Recommended: true on local/dev; evaluate for production.
     |
     */
-    'presence_fail_open' => filter_var(
-        env('CALL_PRESENCE_FAIL_OPEN', env('APP_ENV') === 'local'),
+    /*
+    |--------------------------------------------------------------------------
+    | Voice client ready gate (31603 prevention)
+    |--------------------------------------------------------------------------
+    |
+    | When true, an operator counts as "available for voice" only if staff_presences.voice_client_ready_at
+    | is fresh. The admin SPA sets this when Twilio.Device emits "registered" (see heartbeat JSON body).
+    | Flutter dispatch must POST twilio_voice_ready: true when its Voice client is registered, or set false here.
+    |
+    */
+    'require_voice_client_ready' => filter_var(
+        env('CALL_REQUIRE_VOICE_CLIENT_READY', true),
         FILTER_VALIDATE_BOOL
     ),
 

@@ -11,12 +11,14 @@ class StaffPresence extends Model
         'user_id',
         'state',
         'last_heartbeat_at',
+        'voice_client_ready_at',
     ];
 
     protected function casts(): array
     {
         return [
             'last_heartbeat_at' => 'datetime',
+            'voice_client_ready_at' => 'datetime',
         ];
     }
 

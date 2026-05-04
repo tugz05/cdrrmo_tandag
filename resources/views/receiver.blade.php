@@ -12,8 +12,9 @@
     <button id="endCall" style="display:none">End Call</button>
 
     @php
+        use App\Support\TwilioClientIdentity;
         $receiverPageConfig = [
-            'adminIdentity' => (string) config('services.twilio.admin_identity'),
+            'adminIdentity' => TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity')),
             'voiceSdkEdge' => (string) config('services.twilio.voice_sdk_edge'),
         ];
     @endphp

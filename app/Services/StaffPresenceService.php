@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\StaffPresence;
 use App\Models\User;
+use App\Support\TwilioClientIdentity;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -40,13 +41,20 @@ class StaffPresenceService
 
         $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
         $cutoff = now()->subSeconds($ttl);
+        $requireVoiceClient = (bool) config('call.require_voice_client_ready', true);
 
-        return (int) StaffPresence::query()
+        $q = StaffPresence::query()
             ->whereIn('user_id', $ids)
             ->where('state', self::STATE_AVAILABLE)
             ->whereNotNull('last_heartbeat_at')
-            ->where('last_heartbeat_at', '>=', $cutoff)
-            ->count();
+            ->where('last_heartbeat_at', '>=', $cutoff);
+
+        if ($requireVoiceClient) {
+            $q->whereNotNull('voice_client_ready_at')
+                ->where('voice_client_ready_at', '>=', $cutoff);
+        }
+
+        return (int) $q->count();
     }
 
     public function isCallRoutingAllowed(): bool
@@ -72,11 +80,14 @@ class StaffPresenceService
         }
 
         $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
-        $adminClientIdentity = (string) config('services.twilio.admin_identity');
+        $adminClientIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
+        $requireVoice = (bool) config('call.require_voice_client_ready', true);
 
         $resolutionHint = match ($blockReason) {
             'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
-            'NO_OPERATOR_ONLINE' => 'No operator is available for voice. Web: open /admin and click or tap once so Twilio Voice registers; staff heartbeat (and "available" status) starts only after that. Mobile: POST /api/v1/staff/heartbeat does not register a browser Client by itself; for web callers, a dispatch browser must still be online with the same identity as .env ADMIN_IDENTITY or calls return 31603.',
+            'NO_OPERATOR_ONLINE' => ($requireVoice
+                ? 'No dispatch operator is voice-ready: an admin must open /admin, click once so Twilio.Device registers, and heartbeats must include twilio_voice_ready (browser sends this after registration). Raw ADMIN_IDENTITY in .env is normalized to this Twilio Client name: '.$adminClientIdentity.'. Flutter: POST twilio_voice_ready true when Voice registers, or set CALL_REQUIRE_VOICE_CLIENT_READY=false only if you accept possible 31603.'
+                : 'No operator has a fresh presence heartbeat. Web: keep /admin open. Mobile: POST /api/v1/staff/heartbeat.'),
             default => '',
         };
 
@@ -87,6 +98,7 @@ class StaffPresenceService
             'block_reason' => $blockReason,
             'heartbeat_ttl_seconds' => $ttl,
             'operator_twilio_client_identity' => $adminClientIdentity,
+            'require_voice_client_ready' => $requireVoice,
             'resolution_hint' => $resolutionHint,
         ];
     }
@@ -109,18 +121,23 @@ class StaffPresenceService
         Cache::forget('call:availability_snapshot');
     }
 
-    public function touchHeartbeat(User $user): void
+    public function touchHeartbeat(User $user, ?bool $twilioVoiceReady = null): void
     {
         if (! $user->hasRole(['admin', 'super_admin'])) {
             return;
         }
 
-        DB::transaction(function () use ($user) {
+        DB::transaction(function () use ($user, $twilioVoiceReady) {
             $presence = StaffPresence::query()->firstOrNew(['user_id' => $user->id]);
             if ($presence->state !== self::STATE_BUSY) {
                 $presence->state = self::STATE_AVAILABLE;
             }
             $presence->last_heartbeat_at = now();
+            if ($twilioVoiceReady === true) {
+                $presence->voice_client_ready_at = now();
+            } elseif ($twilioVoiceReady === false) {
+                $presence->voice_client_ready_at = null;
+            }
             $presence->save();
         });
 
