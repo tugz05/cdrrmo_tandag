@@ -9,6 +9,7 @@ import { toggleModal } from '@/Helpers/JModal';
 import JButton from '@/Components/JButton.vue';
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+/** @twilio/voice-sdk version is pinned in package.json — keep in sync with caller-page.js / receiver-page.js */
 import { Device } from '@twilio/voice-sdk';
 
 const page = usePage();

@@ -220,9 +220,20 @@ class TwilioVoiceController extends Controller
                     : json_encode($callerInfo);
             }
 
-            return $this->twimlResponse(function (VoiceResponse $twiml) use ($adminIdentity, $customParams): void {
-                $dial = $twiml->dial();
-                $dial->client($adminIdentity, $customParams);
+            $requestedTo = trim((string) $request->input('To', ''));
+            $clientIdentity = $requestedTo !== '' ? $requestedTo : $adminIdentity;
+
+            Log::info('Twilio handleVoice dial', [
+                'client_identity' => $clientIdentity,
+                'from_To_param' => $requestedTo !== '',
+            ]);
+
+            return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentity, $customParams): void {
+                $dial = $twiml->dial('', [
+                    'timeout' => 60,
+                    'answerOnBridge' => true,
+                ]);
+                $dial->client($clientIdentity, $customParams);
             });
         } catch (Throwable $e) {
             Log::error('Twilio handleVoice exception', [

@@ -34,6 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    /*
+    | Voice browser client: use npm @twilio/voice-sdk (pinned in package.json) via Vite.
+    | Admin UI: resources/js/app.js + AuthenticatedLayout.vue. Test pages: caller-page.js, receiver-page.js.
+    | Do not load a different major/minor from jsDelivr for those surfaces or behavior can diverge.
+    */
     'twilio' => [
         'sid' => env('TWILIO_ACCOUNT_SID'),
         'auth_token' => env('TWILIO_AUTH_TOKEN'),

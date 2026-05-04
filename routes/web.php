@@ -81,7 +81,8 @@ Route::get('/receiver', function () {
 });
 
 Route::get('/twilio/token', [TwilioVoiceController::class, 'generateToken']);
-Route::post('/twilio/voice', [TwilioVoiceController::class, 'handleVoice'])->withoutMiddleware([VerifyCsrfToken::class]);
+Route::match(['get', 'post'], '/twilio/voice', [TwilioVoiceController::class, 'handleVoice'])
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 if (app()->environment('local')) {
     Route::get('/twilio/token-debug', [TwilioVoiceController::class, 'tokenDebug']);
