@@ -13,6 +13,8 @@ import { Device } from '@twilio/voice-sdk';
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
+/** Same string TwilioVoiceController uses for Dial Client; must match .env ADMIN_IDENTITY (never hardcode). */
+const twilioAdminIdentity = computed(() => String(page.props.twilio?.admin_identity ?? '').trim());
 const callStatus = ref('Someone is calling...');
 const isAnswering = ref(false);
 const showAnswerButton = ref(true);
@@ -58,7 +60,13 @@ function attachTwilioVoiceAfterUserGesture() {
         window.removeEventListener('keydown', once, true);
 
         tryResumeAudioContext();
-        fetch('/twilio/token?identity=admin_user')
+        const identity = twilioAdminIdentity.value;
+        if (!identity) {
+            console.error('[Twilio] ADMIN_IDENTITY is empty — set ADMIN_IDENTITY in .env and run php artisan config:clear.');
+            twilioVoiceBootstrapped = false;
+            return;
+        }
+        fetch('/twilio/token?identity=' + encodeURIComponent(identity))
             .then(res => res.json())
             .then(data => setupTwilio(data.token))
             .catch(err => {

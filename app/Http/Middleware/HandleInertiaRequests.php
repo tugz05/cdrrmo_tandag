@@ -37,6 +37,10 @@ class HandleInertiaRequests extends Middleware
                 'canAccessAdmin' => $request->user() && $request->user()->hasRole(['admin', 'super_admin']),
                 'isSuperAdmin' => $request->user() && $request->user()->hasRole('super_admin'),
             ],
+            'twilio' => [
+                /** Same as ADMIN_IDENTITY in .env; must match TwilioVoiceController client dial target. */
+                'admin_identity' => (string) config('services.twilio.admin_identity'),
+            ],
             'flash' => [
                 JToastEnum::SUCCESS => fn () => $request->session()->get(JToastEnum::SUCCESS),
                 JToastEnum::WARNING => fn () => $request->session()->get(JToastEnum::WARNING),

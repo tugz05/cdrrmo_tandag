@@ -14,7 +14,7 @@
         let device;
         let activeCall;
 
-        fetch('/twilio/token?identity={{ env("ADMIN_IDENTITY") }}')
+        fetch('/twilio/token?identity={{ rawurlencode(config('services.twilio.admin_identity')) }}')
             .then(res => res.json())
             .then(async (data) => {
                 device = new Twilio.Device(data.token, {
