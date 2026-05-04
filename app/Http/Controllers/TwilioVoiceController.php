@@ -92,8 +92,9 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * Mobile app (Flutter): JWT identity is the operator’s user id; outbound {@code To} uses the dispatch ring name
-     * expanded on `/twilio/voice` to every voice-ready operator {@code <Client>}.
+     * Mobile app (Flutter): JWT identity is the operator’s user id; outbound {@code To} is {@code dial_to} —
+     * a single voice-ready operator user id when only one is reachable, otherwise the ring-group token expanded
+     * on `/twilio/voice` to every voice-ready operator {@code <Client>}.
      */
     public function tokenForMobile(Request $request): JsonResponse
     {
@@ -107,16 +108,16 @@ class TwilioVoiceController extends Controller
             ], 503);
         }
 
-        $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+        $dialTo = $this->staffPresence->voiceOutboundDialToIdentity();
         $legacyRaw = trim((string) config('services.twilio.admin_identity'));
         $legacyAdmin = $legacyRaw !== '' ? TwilioClientIdentity::sanitize($legacyRaw) : null;
 
         return response()->json([
             'identity' => $identity,
             'token' => $this->makeVoiceAccessToken($identity),
-            /** Pass as `device.connect({ params: { To: dial_to } })` — expanded on `/twilio/voice` to voice-ready operators. */
-            'dial_to' => $dispatchRing,
-            'operator_twilio_client_identity' => $dispatchRing,
+            /** Pass as `device.connect({ params: { To: dial_to } })` — ring-group token or single operator user id; see /api/v1/call/availability. */
+            'dial_to' => $dialTo,
+            'operator_twilio_client_identity' => $dialTo,
             'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(false),
             'legacy_admin_twilio_client_identity' => $legacyAdmin ?? '',
         ]);

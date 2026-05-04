@@ -25,7 +25,7 @@ class CallerInfoController extends Controller
     public function setLocation(Request $request) // Changed from Client\Request to Http\Request
     {
         try {
-            $allowed = $this->staffPresence->isCallRoutingAllowed();
+            $allowed = $this->staffPresence->isCallRoutingAllowed(true);
         } catch (Throwable $e) {
             $failOpen = (bool) config('call.presence_fail_open', false);
             Log::error('Caller setLocation: staff presence lookup failed', [

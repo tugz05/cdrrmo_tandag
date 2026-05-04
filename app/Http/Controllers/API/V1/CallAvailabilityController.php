@@ -30,13 +30,16 @@ class CallAvailabilityController extends Controller
                 $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
                 $snap = [
                     'can_connect' => true,
-                    'available_operators' => 1,
+                    'available_operators' => 0,
+                    'available_operators_for_voice' => 1,
                     'total_operators' => 1,
                     'block_reason' => null,
                     'heartbeat_ttl_seconds' => (int) config('call.staff_heartbeat_ttl', 90),
                     'operator_twilio_client_identity' => $dispatchRing,
                     'dispatch_twilio_client_identity' => $dispatchRing,
                     'voice_ready_operator_twilio_identities' => [],
+                    'twiml_dial_operator_identities' => [],
+                    'twiml_dial_operator_count' => 0,
                     'legacy_admin_twilio_client_identity' => $adminId,
                     'require_voice_client_ready' => (bool) config('call.require_voice_client_ready', true),
                     'resolution_hint' => 'Presence check failed; proceeding because CALL_PRESENCE_FAIL_OPEN=true.',
@@ -58,7 +61,7 @@ class CallAvailabilityController extends Controller
                     ? 'An operator is available to take your call.'
                     : 'All emergency operators are currently busy. Please try again in a few minutes or use a text report if available.',
                 'twilio_dial_identity' => $snap['operator_twilio_client_identity'] ?? '',
-                'twilio_note' => 'Pass twilio_dial_identity as device.connect params.To (VoIP Client). Server expands the ring-group name to every voice-ready operator; each operator registers Twilio Voice with their own user id.',
+                'twilio_note' => 'Pass twilio_dial_identity as device.connect params.To. When it is a numeric user id, that operator is dialed; when it is the ring-group token (e.g. dispatch), the server expands it to every reachable operator Client. Operators register Twilio Voice with their own user id, not dispatch.',
             ]
         );
 

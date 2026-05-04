@@ -2,7 +2,8 @@
  * Caller test page — uses the same @twilio/voice-sdk as the admin SPA (see package.json).
  * Loaded only from resources/views/caller.blade.php via @vite.
  *
- * Outbound `device.connect({ params: { To } })` hits Twilio → `/twilio/voice` → `<Dial><Client>` (ring group expanded server-side).
+ * Outbound `device.connect({ params: { To } })` hits Twilio → `/twilio/voice` → `<Dial><Client>`. `To` is either a
+ * real operator Client id (one online) or the ring-group token (e.g. dispatch), which the server expands to many `<Client>` legs.
  * Admin notification UI (modal, Notification API, title flash, vibrate) lives on `/admin/*` in AuthenticatedLayout.vue.
  */
 import { Device } from '@twilio/voice-sdk';

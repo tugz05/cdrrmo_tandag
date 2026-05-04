@@ -149,12 +149,32 @@ class StaffPresenceService
         return $this->availableOperatorCount($forTwimlDial) > 0;
     }
 
+    /**
+     * Value for {@code device.connect({ params: { To } })}: when exactly one operator is reachable
+     * under TwiML rules, return that sanitized user id; otherwise the ring-group token (e.g. {@code dispatch})
+     * which {@code /twilio/voice} expands to every reachable operator. Admins always register the SDK as
+     * their own user id — never as {@code dispatch}.
+     */
+    public function voiceOutboundDialToIdentity(): string
+    {
+        $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+        $twimlDialIds = $this->voiceReadyOperatorIdentities(true);
+
+        return count($twimlDialIds) === 1 ? $twimlDialIds[0] : $dispatchRing;
+    }
+
     public function getAvailabilitySnapshot(): array
     {
         $total = $this->totalOperatorCount();
-        $voiceReadyIds = $this->voiceReadyOperatorIdentities();
-        $available = count($voiceReadyIds);
-        $canConnect = $total > 0 && $available > 0;
+        $voiceReadyIdsStrict = $this->voiceReadyOperatorIdentities(false);
+        $twimlDialIds = $this->voiceReadyOperatorIdentities(true);
+        $strictCount = count($voiceReadyIdsStrict);
+        $twimlCount = count($twimlDialIds);
+        /*
+         * Voice uses TwiML rules (wider window / heartbeat fallback). can_connect must match what
+         * /twilio/voice will dial or first-time callers get 503 from set-location even when an admin tab is open.
+         */
+        $canConnect = $total > 0 && $twimlCount > 0;
 
         $blockReason = null;
         if ($total === 0) {
@@ -168,26 +188,34 @@ class StaffPresenceService
         $adminClientIdentity = TwilioClientIdentity::sanitize($adminRaw !== '' ? $adminRaw : (string) config('services.twilio.admin_identity'));
         $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
         $requireVoice = (bool) config('call.require_voice_client_ready', true);
+        $dialTo = $this->voiceOutboundDialToIdentity();
 
         $resolutionHint = match ($blockReason) {
             'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
             'NO_OPERATOR_ONLINE' => ($requireVoice
-                ? 'No dispatch operator is voice-ready: each operator opens /admin so Twilio Voice registers with their user id, and heartbeats send twilio_voice_ready after Device emits registered. Outbound VoIP uses connect param To='.$dispatchRing.' (TWILIO_DISPATCH_RING_GROUP); TwiML rings every ready operator. ADMIN_IDENTITY ('.$adminClientIdentity.') is used only if none are listed at dial time. Flutter: POST twilio_voice_ready when Voice registers, or set CALL_REQUIRE_VOICE_CLIENT_READY=false only if you accept possible 31603.'
+                ? 'No operator is reachable for voice: open /admin with a fresh heartbeat; Twilio Device should register (twilio_voice_ready). To is the ring-group '.$dispatchRing.' unless exactly one operator is online (then To is their user id). ADMIN_IDENTITY ('.$adminClientIdentity.') is only a TwiML fallback when nobody is listed.'
                 : 'No operator has a fresh presence heartbeat. Web: keep /admin open. Mobile: POST /api/v1/staff/heartbeat.'),
             default => '',
         };
 
         return [
             'can_connect' => $canConnect,
-            'available_operators' => $available,
+            /** Strict voice-ready count (historical meaning of available_operators). */
+            'available_operators' => $strictCount,
+            /** Operators /twilio/voice would actually try to ring. */
+            'available_operators_for_voice' => $twimlCount,
             'total_operators' => $total,
             'block_reason' => $blockReason,
             'heartbeat_ttl_seconds' => $ttl,
-            /** Value for device.connect({ params: { To } }) — expanded on `/twilio/voice` to all voice-ready operator Client identities. */
-            'operator_twilio_client_identity' => $dispatchRing,
+            /**
+             * Suggested device.connect To: one operator user id when exactly one is reachable; otherwise the
+             * ring-group token (not a registered Client — the server expands it to real operator Client ids).
+             */
+            'operator_twilio_client_identity' => $dialTo,
             'dispatch_twilio_client_identity' => $dispatchRing,
-            'voice_ready_operator_twilio_identities' => $voiceReadyIds,
-            'twiml_dial_operator_count' => count($this->voiceReadyOperatorIdentities(true)),
+            'voice_ready_operator_twilio_identities' => $voiceReadyIdsStrict,
+            'twiml_dial_operator_identities' => $twimlDialIds,
+            'twiml_dial_operator_count' => $twimlCount,
             'legacy_admin_twilio_client_identity' => $adminClientIdentity,
             'require_voice_client_ready' => $requireVoice,
             'strict_presence_ttl_seconds' => $this->operatorPresenceTtlSeconds(false),
