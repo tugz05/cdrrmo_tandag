@@ -7,6 +7,27 @@
 export const TWILIO_CONNECT_PARAMS_MAX_BYTES = 760;
 
 /**
+ * Align with App\Support\TwilioClientIdentity: never send `client:foo` as `To`.
+ * TwiML `<Client>` expects the bare identity (wrong form contributes to 31603).
+ *
+ * @param {unknown} identity
+ * @returns {string}
+ */
+export function sanitizeClientDialIdentity(identity) {
+    let s = String(identity ?? '').trim();
+    if (s === '') {
+        return 'guest';
+    }
+    const lower = s.toLowerCase();
+    if (lower.startsWith('client:')) {
+        s = s.slice('client:'.length).trim();
+    }
+    s = s.replace(/[^A-Za-z0-9_]/g, '_');
+    s = s.slice(0, 256);
+    return s !== '' ? s : 'guest';
+}
+
+/**
  * Base Device constructor options; omit invalid empty edge (dynamic edge breaks signaling).
  *
  * @param {object} [overrides]
@@ -79,16 +100,17 @@ export function estimateConnectParamsBytes(params) {
  * @param {{ userId: number, reportId?: number, error?: string }} data
  */
 export function buildClientDialParams(toIdentity, data) {
+    const to = sanitizeClientDialIdentity(toIdentity);
     let callerInfo = JSON.stringify({
         userId: data.userId,
         ...(data.reportId != null ? { reportId: data.reportId } : {}),
         ...(data.error ? { error: String(data.error).slice(0, 120) } : {}),
     });
-    const params = { To: String(toIdentity), callerInfo };
+    const params = { To: to, callerInfo };
     if (estimateConnectParamsBytes(params) > TWILIO_CONNECT_PARAMS_MAX_BYTES) {
         callerInfo = JSON.stringify({ userId: data.userId });
     }
-    return { To: String(toIdentity), callerInfo };
+    return { To: to, callerInfo };
 }
 
 /**
