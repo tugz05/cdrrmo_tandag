@@ -239,6 +239,7 @@ class TwilioVoiceController extends Controller
             ]);
 
             $adminIdentity = (string) config('services.twilio.admin_identity');
+            $adminIdentity = $this->sanitizeTwilioClientIdentity($adminIdentity);
 
             if ($adminIdentity === '') {
                 Log::warning('Twilio handleVoice: ADMIN_IDENTITY is not configured');
@@ -290,12 +291,17 @@ class TwilioVoiceController extends Controller
                 'client_identity' => $clientIdentity,
                 'from_To_param' => $requestedToRaw !== '',
                 'to_raw' => $requestedToRaw,
+                'admin_identity_config' => (string) config('services.twilio.admin_identity'),
+                'admin_identity_sanitized' => $adminIdentity,
             ]);
 
             return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentity, $customParams): void {
                 $dial = $twiml->dial('', [
                     'timeout' => 60,
                     'answerOnBridge' => true,
+                    // Lets us log why the dial leg failed (e.g. 603/31603 decline) in laravel.log.
+                    'action' => url('/twilio/voice/dial-status'),
+                    'method' => 'POST',
                 ]);
                 // Custom data must be <Parameter> children per Twilio Voice docs — not XML attributes on <Client>,
                 // or Twilio may fail the call with a generic "application error" prompt.
@@ -322,6 +328,27 @@ class TwilioVoiceController extends Controller
                 $twiml->hangup();
             });
         }
+    }
+
+    /**
+     * Dial status callback from Twilio.
+     * Configured via <Dial action="..."> in handleVoice().
+     */
+    public function dialStatus(Request $request): Response
+    {
+        Log::info('Twilio dial status callback', [
+            'CallSid' => $request->input('CallSid'),
+            'DialCallSid' => $request->input('DialCallSid'),
+            'DialCallStatus' => $request->input('DialCallStatus'),
+            'DialCallDuration' => $request->input('DialCallDuration'),
+            'DialSipResponseCode' => $request->input('DialSipResponseCode'),
+            'DialCallSIPResponseCode' => $request->input('DialCallSIPResponseCode'),
+            'To' => $request->input('To'),
+            'From' => $request->input('From'),
+        ]);
+
+        // Twilio expects valid TwiML or empty 200; empty is sufficient.
+        return response('', 200);
     }
 
     /**

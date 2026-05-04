@@ -322,6 +322,12 @@ async function callAdmin() {
         btnCall.disabled = false;
         return;
     }
+    const dialIdentity = String(avail.body?.twilio_dial_identity || adminIdentity || '').trim();
+    if (!dialIdentity) {
+        setStatus('Server is not configured: missing Twilio dial identity (ADMIN_IDENTITY).', 'error');
+        btnCall.disabled = false;
+        return;
+    }
 
     setStatus('Getting location & creating call report…');
 
@@ -359,7 +365,7 @@ async function callAdmin() {
             return;
         }
         await applyTwilioOutputDevices(device);
-        const dialParams = buildClientDialParams(adminIdentity, {
+        const dialParams = buildClientDialParams(dialIdentity, {
             userId: callerData.userId,
             reportId: stored.reportId,
         });
@@ -410,7 +416,7 @@ async function callAdmin() {
                 return;
             }
             await applyTwilioOutputDevices(device);
-            const dialParamsFb = buildClientDialParams(adminIdentity, {
+            const dialParamsFb = buildClientDialParams(dialIdentity, {
                 userId: parseInt(callerUserId, 10),
                 error: 'Location not available',
             });
