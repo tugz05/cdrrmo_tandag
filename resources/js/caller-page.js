@@ -121,6 +121,15 @@ function signalingHint(code) {
             '• See https://www.twilio.com/docs/api/errors/31603'
         );
     }
+    if (n === 31480) {
+        return (
+            '\n\n31480 (Temporarily unavailable — SIP 480 class):\n' +
+            '• Often means every dialed operator Client leg was unavailable (not registered, busy, or rejected) — ensure each operator on /admin has Device registered + twilio_voice_ready in heartbeat.\n' +
+            '• Corporate Wi‑Fi / firewall: allow WebSocket + UDP to Twilio; run https://networktest.twilio.com/ from the caller machine.\n' +
+            '• Wrong signaling edge: try clearing TWILIO_VOICE_SDK_EDGE or set an edge near your region (must match account / home region).\n' +
+            '• See https://www.twilio.com/docs/api/errors/31480'
+        );
+    }
     return '';
 }
 
@@ -142,6 +151,14 @@ function shortMessageForCallErrorCode(code, dialTarget) {
     }
     if (n === 31005) {
         return 'Connection lost (31005). Check network (networktest.twilio.com), TWILIO_VOICE_SDK_EDGE, webhook URL, then try again.';
+    }
+    if (n === 31480) {
+        const target = dialTarget ? `"${dialTarget}"` : 'operators';
+        return (
+            `Temporarily unavailable (31480). Twilio could not connect to ${target} — usually every operator Client leg was unreachable ` +
+            `(not registered on Voice SDK, busy, or network blocked). Open /admin on at least one operator, click once so Device registers, ` +
+            `confirm heartbeats send twilio_voice_ready, then retry. If it persists, check firewall/UDP and TWILIO_VOICE_SDK_EDGE.`
+        );
     }
     return null;
 }

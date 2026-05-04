@@ -95,4 +95,38 @@ return [
     */
     'max_simultaneous_client_dials' => (int) env('CALL_MAX_SIMULTANEOUS_CLIENT_DIALS', 20),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Twilio webhook operator freshness (vs availability API)
+    |--------------------------------------------------------------------------
+    |
+    | The /twilio/voice webhook uses a fresh DB read (not the short availability cache).
+    | When > 1.0, heartbeat + voice_client_ready cutoffs are multiplied ONLY for TwiML
+    | routing so a momentary gap between heartbeat and Twilio registration does not
+    | drop operators that the REST availability API would still show as busy-preparing.
+    | Keep close to 1.0 in production unless you see false "all operators busy" on voice.
+    |
+    */
+    'twiml_operator_ttl_multiplier' => (float) env('CALL_TWIML_OPERATOR_TTL_MULTIPLIER', 1.25),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Re-dial after first <Dial> ring cycle fails
+    |--------------------------------------------------------------------------
+    |
+    | When true, Dial `action` callback may issue a second parallel <Dial> with a
+    | freshly resolved operator list (e.g. operator registered during the first ring).
+    | Max value is how many **extra** Dial attempts after the first failure (0 = none).
+    |
+    */
+    'voice_dial_retry_on_no_answer' => filter_var(
+        env('CALL_VOICE_DIAL_RETRY_ON_NO_ANSWER', true),
+        FILTER_VALIDATE_BOOL
+    ),
+
+    'voice_dial_max_retries' => max(0, (int) env('CALL_VOICE_DIAL_MAX_RETRIES', 1)),
+
+    /** Seconds to keep outbound dial session data for Twilio Dial `action` retries. */
+    'voice_dial_session_ttl_seconds' => max(120, (int) env('CALL_VOICE_DIAL_SESSION_TTL_SECONDS', 420)),
+
 ];

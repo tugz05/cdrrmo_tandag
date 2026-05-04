@@ -383,6 +383,13 @@ function handleTwilioDeviceError(error) {
         );
         return;
     }
+    if (code === 31480 || lower.includes('31480') || lower.includes('temporarilyunavailable')) {
+        console.warn(
+            '[Twilio] 31480 Temporarily unavailable (SIP) — all Client legs may be offline/busy, or firewall/UDP/edge blocked signaling/media. Operators: register Device on /admin + twilio_voice_ready; callers: retry. https://www.twilio.com/docs/api/errors/31480',
+            error,
+        );
+        return;
+    }
     if (code === 31205 || lower.includes('token')) {
         console.error('[Twilio] Token / registration:', code, msg, error);
         return;
@@ -443,6 +450,9 @@ async function setupTwilio(token) {
             } else if (err && err.code === 31603) {
                 callStatus.value =
                     'Call declined (31603). Caller may be using a stale dial target, or no operator had Twilio Voice registered.';
+            } else if (err && err.code === 31480) {
+                callStatus.value =
+                    'Temporarily unavailable (31480). Signaling/media may be blocked, or no operator Client could take the call — see Twilio Debugger and https://www.twilio.com/docs/api/errors/31480';
             }
             if (activeCall === call) {
                 endCall();

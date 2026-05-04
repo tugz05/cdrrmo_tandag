@@ -33,16 +33,19 @@ class StaffPresenceService
      * Twilio Client identities (sanitized user ids) for operators who may receive
      * an inbound emergency VoIP call right now.
      *
+     * @param  bool  $forTwimlDial  When true, applies {@code call.twiml_operator_ttl_multiplier} to the
+     *                              heartbeat / voice-ready cutoffs so /twilio/voice matches live presence
+     *                              slightly better than the strict availability API window.
      * @return list<string>
      */
-    public function voiceReadyOperatorIdentities(): array
+    public function voiceReadyOperatorIdentities(bool $forTwimlDial = false): array
     {
         $ids = $this->operatorUserIds();
         if ($ids === []) {
             return [];
         }
 
-        $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
+        $ttl = $this->operatorPresenceTtlSeconds($forTwimlDial);
         $cutoff = now()->subSeconds($ttl);
         $requireVoiceClient = (bool) config('call.require_voice_client_ready', true);
 
@@ -75,18 +78,39 @@ class StaffPresenceService
         return array_slice($out, 0, $max);
     }
 
-    public function availableOperatorCount(): int
+    /**
+     * Heartbeat / voice-ready cutoff length in seconds (Twilio webhook may use a wider window).
+     */
+    public function operatorPresenceTtlSeconds(bool $forTwimlDial = false): int
     {
-        return count($this->voiceReadyOperatorIdentities());
+        $base = max(15, (int) config('call.staff_heartbeat_ttl', 90));
+        if (! $forTwimlDial) {
+            return $base;
+        }
+
+        $mult = (float) config('call.twiml_operator_ttl_multiplier', 1.0);
+        if ($mult < 1.0) {
+            $mult = 1.0;
+        }
+        if ($mult > 4.0) {
+            $mult = 4.0;
+        }
+
+        return (int) round($base * $mult);
     }
 
-    public function isCallRoutingAllowed(): bool
+    public function availableOperatorCount(bool $forTwimlDial = false): int
+    {
+        return count($this->voiceReadyOperatorIdentities($forTwimlDial));
+    }
+
+    public function isCallRoutingAllowed(bool $forTwimlDial = false): bool
     {
         if ($this->totalOperatorCount() === 0) {
             return false;
         }
 
-        return $this->availableOperatorCount() > 0;
+        return $this->availableOperatorCount($forTwimlDial) > 0;
     }
 
     public function getAvailabilitySnapshot(): array
@@ -129,6 +153,8 @@ class StaffPresenceService
             'voice_ready_operator_twilio_identities' => $voiceReadyIds,
             'legacy_admin_twilio_client_identity' => $adminClientIdentity,
             'require_voice_client_ready' => $requireVoice,
+            'strict_presence_ttl_seconds' => $this->operatorPresenceTtlSeconds(false),
+            'twiml_presence_ttl_seconds' => $this->operatorPresenceTtlSeconds(true),
             'resolution_hint' => $resolutionHint,
         ];
     }

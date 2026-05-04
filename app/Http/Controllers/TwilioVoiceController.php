@@ -7,6 +7,7 @@ use App\Support\TwilioClientIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use Twilio\Jwt\AccessToken;
@@ -116,7 +117,7 @@ class TwilioVoiceController extends Controller
             /** Pass as `device.connect({ params: { To: dial_to } })` — expanded on `/twilio/voice` to voice-ready operators. */
             'dial_to' => $dispatchRing,
             'operator_twilio_client_identity' => $dispatchRing,
-            'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(),
+            'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(false),
             'legacy_admin_twilio_client_identity' => $legacyAdmin ?? '',
         ]);
     }
@@ -246,12 +247,23 @@ class TwilioVoiceController extends Controller
         $failOpen = filter_var((string) config('call.presence_fail_open', app()->environment('local')), FILTER_VALIDATE_BOOL);
 
         try {
+            /*
+             * Never use the short-lived availability JSON cache for TwiML: it can say "all busy"
+             * while operators are actually voice-ready, or the opposite. Use a fresh DB read with the
+             * same rules as dial target resolution (optionally wider TTL via twiml_operator_ttl_multiplier).
+             */
+            $this->staffPresence->forgetAvailabilityCache();
+
             $routingAllowed = true;
-            $availability = null;
+            $availabilityLog = null;
             if ($presenceRequired) {
                 try {
-                    $availability = $this->staffPresence->getCachedAvailabilitySnapshot();
-                    $routingAllowed = (bool) ($availability['can_connect'] ?? false);
+                    $routingAllowed = $this->staffPresence->isCallRoutingAllowed(true);
+                    $availabilityLog = [
+                        'operators_strict_ready' => $this->staffPresence->availableOperatorCount(false),
+                        'operators_twiml_ready' => $this->staffPresence->availableOperatorCount(true),
+                        'twiml_ttl_seconds' => $this->staffPresence->operatorPresenceTtlSeconds(true),
+                    ];
                 } catch (Throwable $e) {
                     Log::error('Twilio handleVoice: staff presence lookup failed', [
                         'message' => $e->getMessage(),
@@ -268,7 +280,7 @@ class TwilioVoiceController extends Controller
                 'ApplicationSid' => $request->input('ApplicationSid'),
                 'staff_presence_required_for_twiml' => $presenceRequired,
                 'staff_routing_allowed' => $routingAllowed,
-                'staff_snapshot' => $availability,
+                'staff_presence_fresh' => $availabilityLog,
             ]);
 
             $adminIdentityRaw = trim((string) config('services.twilio.admin_identity'));
@@ -315,10 +327,7 @@ class TwilioVoiceController extends Controller
             }
 
             $ringGroupIdentity = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
-            $clientIdentities = $this->resolveOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
-            $excludeIds = $this->callerClientIdentitiesToExcludeFromDial($request);
-            $clientIdentities = $this->excludeClientIdentitiesFromDialTargets($clientIdentities, $excludeIds);
-            $clientIdentities = $this->dialTargetsWithCallerFallback($clientIdentities, $excludeIds, $adminIdentity, $request);
+            $clientIdentities = $this->buildOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
 
             if ($clientIdentities === []) {
                 Log::warning('Twilio handleVoice: no Client identities to dial after excluding caller / fallbacks', [
@@ -337,9 +346,21 @@ class TwilioVoiceController extends Controller
 
             $webhookOrigin = $this->publicTwilioWebhookOrigin($request);
 
+            $callSid = (string) $request->input('CallSid', '');
+            if ($callSid !== '' && (bool) config('call.voice_dial_retry_on_no_answer', true)) {
+                Cache::put(
+                    $this->outboundDialSessionCacheKey($callSid),
+                    [
+                        'caller_info' => $callerInfoValue,
+                        'retries_used' => 0,
+                    ],
+                    now()->addSeconds(max(120, (int) config('call.voice_dial_session_ttl_seconds', 420)))
+                );
+            }
+
             Log::info('Twilio handleVoice dial', [
                 'client_identities' => $clientIdentities,
-                'exclude_caller_client_identities' => $excludeIds,
+                'exclude_caller_client_identities' => $this->callerClientIdentitiesToExcludeFromDial($request),
                 'to_raw' => $request->input('To'),
                 'from_raw' => $request->input('From'),
                 'admin_identity_sanitized' => $adminIdentity,
@@ -348,26 +369,7 @@ class TwilioVoiceController extends Controller
             ]);
 
             return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentities, $callerInfoValue, $webhookOrigin): void {
-                $dial = $twiml->dial('', [
-                    'timeout' => 60,
-                    'answerOnBridge' => true,
-                    'action' => $webhookOrigin.'/twilio/voice/dial-status',
-                    'method' => 'POST',
-                ]);
-                $clientAttrs = [
-                    'statusCallbackEvent' => 'initiated ringing answered completed',
-                    'statusCallback' => $webhookOrigin.'/twilio/voice/client-status',
-                    'statusCallbackMethod' => 'POST',
-                ];
-                foreach ($clientIdentities as $clientIdentity) {
-                    $client = $dial->client($clientIdentity, $clientAttrs);
-                    if ($callerInfoValue !== null && $callerInfoValue !== '') {
-                        $client->parameter([
-                            'name' => 'callerInfo',
-                            'value' => $callerInfoValue,
-                        ]);
-                    }
-                }
+                $this->appendParallelOperatorDial($twiml, $clientIdentities, $callerInfoValue, $webhookOrigin);
             });
         } catch (Throwable $e) {
             Log::error('Twilio handleVoice exception', [
@@ -406,13 +408,24 @@ class TwilioVoiceController extends Controller
             'From' => $request->input('From'),
         ];
 
-        // 603 / busy / no-answer on Client leg → browser often shows 31603 Decline.
         $dialStatusLower = strtolower($dialStatus);
         $failedLeg = in_array($dialStatusLower, ['busy', 'no-answer', 'failed', 'canceled'], true);
         if ($failedLeg || (string) $sip === '603') {
             Log::warning('Twilio dial status: Client leg did not complete (check 31603 / unregistered Client)', $payload);
         } else {
             Log::info('Twilio dial status callback', $payload);
+        }
+
+        if ($failedLeg && (bool) config('call.voice_dial_retry_on_no_answer', true)) {
+            $retryResponse = $this->maybeRetryOutboundDialFromDialStatus($request);
+            if ($retryResponse !== null) {
+                return $retryResponse;
+            }
+        }
+
+        $callSid = (string) $request->input('CallSid', '');
+        if ($callSid !== '' && ! $failedLeg) {
+            Cache::forget($this->outboundDialSessionCacheKey($callSid));
         }
 
         return $this->emptyTwiMLResponse();
@@ -467,7 +480,7 @@ class TwilioVoiceController extends Controller
             return $this->voiceReadyOperatorsOrAdminFallback($adminIdentity);
         }
 
-        $ready = $this->staffPresence->voiceReadyOperatorIdentities();
+        $ready = $this->staffPresence->voiceReadyOperatorIdentities(true);
         if (in_array($requestedTo, $ready, true)) {
             return [$requestedTo];
         }
@@ -484,7 +497,7 @@ class TwilioVoiceController extends Controller
      */
     protected function voiceReadyOperatorsOrAdminFallback(string $adminIdentity): array
     {
-        $targets = $this->staffPresence->voiceReadyOperatorIdentities();
+        $targets = $this->staffPresence->voiceReadyOperatorIdentities(true);
         if ($targets !== []) {
             return $targets;
         }
@@ -584,6 +597,135 @@ class TwilioVoiceController extends Controller
         ]);
 
         return [$adminIdentity];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function buildOutboundDialClientIdentities(Request $request, string $adminIdentity, string $ringGroupIdentity): array
+    {
+        $clientIdentities = $this->resolveOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
+        $excludeIds = $this->callerClientIdentitiesToExcludeFromDial($request);
+        $clientIdentities = $this->excludeClientIdentitiesFromDialTargets($clientIdentities, $excludeIds);
+
+        return $this->dialTargetsWithCallerFallback($clientIdentities, $excludeIds, $adminIdentity, $request);
+    }
+
+    /**
+     * @param  list<string>  $clientIdentities
+     */
+    protected function appendParallelOperatorDial(
+        VoiceResponse $twiml,
+        array $clientIdentities,
+        ?string $callerInfoValue,
+        string $webhookOrigin
+    ): void {
+        $dial = $twiml->dial('', [
+            'timeout' => 60,
+            'answerOnBridge' => true,
+            'action' => $webhookOrigin.'/twilio/voice/dial-status',
+            'method' => 'POST',
+        ]);
+        $clientAttrs = [
+            'statusCallbackEvent' => 'initiated ringing answered completed',
+            'statusCallback' => $webhookOrigin.'/twilio/voice/client-status',
+            'statusCallbackMethod' => 'POST',
+        ];
+        foreach ($clientIdentities as $clientIdentity) {
+            $client = $dial->client($clientIdentity, $clientAttrs);
+            if ($callerInfoValue !== null && $callerInfoValue !== '') {
+                $client->parameter([
+                    'name' => 'callerInfo',
+                    'value' => $callerInfoValue,
+                ]);
+            }
+        }
+    }
+
+    protected function outboundDialSessionCacheKey(string $callSid): string
+    {
+        return 'twilio:outbound_dial:'.sha1($callSid);
+    }
+
+    /**
+     * After a failed parallel {@code <Dial>}, optionally re-resolve operators and issue one more {@code <Dial>}
+     * so a just-registered operator can still be reached without the caller hanging up manually.
+     */
+    protected function maybeRetryOutboundDialFromDialStatus(Request $request): ?Response
+    {
+        $callSid = (string) $request->input('CallSid', '');
+        if ($callSid === '') {
+            return null;
+        }
+
+        $key = $this->outboundDialSessionCacheKey($callSid);
+        /** @var array{caller_info: ?string, retries_used: int}|null $ctx */
+        $ctx = Cache::get($key);
+        if (! is_array($ctx)) {
+            return null;
+        }
+
+        $maxExtra = max(0, (int) config('call.voice_dial_max_retries', 1));
+        $retriesUsed = (int) ($ctx['retries_used'] ?? 0);
+        if ($retriesUsed >= $maxExtra) {
+            Cache::forget($key);
+
+            return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                $twiml->say(
+                    'We could not reach an available operator. Please try your call again in a moment.',
+                    ['voice' => 'alice']
+                );
+                $twiml->hangup();
+            });
+        }
+
+        $adminIdentityRaw = trim((string) config('services.twilio.admin_identity'));
+        if ($adminIdentityRaw === '') {
+            Cache::forget($key);
+
+            return null;
+        }
+
+        $this->staffPresence->forgetAvailabilityCache();
+
+        $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
+        $ringGroupIdentity = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+        $identities = $this->buildOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
+
+        if ($identities === []) {
+            Cache::forget($key);
+
+            return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                $twiml->say(
+                    'No operator is available to take your call right now. Please try again shortly.',
+                    ['voice' => 'alice']
+                );
+                $twiml->hangup();
+            });
+        }
+
+        $callerInfo = isset($ctx['caller_info']) && is_string($ctx['caller_info']) && $ctx['caller_info'] !== ''
+            ? $ctx['caller_info']
+            : null;
+
+        $ctx['retries_used'] = $retriesUsed + 1;
+        Cache::put(
+            $key,
+            $ctx,
+            now()->addSeconds(max(120, (int) config('call.voice_dial_session_ttl_seconds', 420)))
+        );
+
+        $webhookOrigin = $this->publicTwilioWebhookOrigin($request);
+
+        Log::info('Twilio dial-status issuing retry Dial', [
+            'CallSid' => $callSid,
+            'retries_used' => $ctx['retries_used'],
+            'client_identities' => $identities,
+        ]);
+
+        return $this->twimlResponse(function (VoiceResponse $twiml) use ($identities, $callerInfo, $webhookOrigin): void {
+            $this->appendParallelOperatorDial($twiml, $identities, $callerInfo, $webhookOrigin);
+        });
     }
 
     /**
