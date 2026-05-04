@@ -43,6 +43,7 @@ class TwilioVoiceController extends Controller
             'now' => now()->toIso8601String(),
             'app_env' => (string) config('app.env'),
             'app_url' => (string) config('app.url'),
+            'twilio_webhook_origin_effective' => $this->publicTwilioWebhookOrigin($request),
             'twilio' => [
                 'account_sid_starts_with_AC' => str_starts_with((string) config('services.twilio.sid'), 'AC'),
                 'api_key_starts_with_SK' => str_starts_with((string) config('services.twilio.api_key'), 'SK'),
@@ -104,7 +105,8 @@ class TwilioVoiceController extends Controller
         }
 
         $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
-        $legacyAdmin = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
+        $legacyRaw = trim((string) config('services.twilio.admin_identity'));
+        $legacyAdmin = $legacyRaw !== '' ? TwilioClientIdentity::sanitize($legacyRaw) : null;
 
         return response()->json([
             'identity' => $identity,
@@ -113,7 +115,7 @@ class TwilioVoiceController extends Controller
             'dial_to' => $dispatchRing,
             'operator_twilio_client_identity' => $dispatchRing,
             'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(),
-            'legacy_admin_twilio_client_identity' => $legacyAdmin,
+            'legacy_admin_twilio_client_identity' => $legacyAdmin ?? '',
         ]);
     }
 
@@ -152,9 +154,9 @@ class TwilioVoiceController extends Controller
             $issues[] = 'TWIML_APP_SID must start with AP (TwiML Application SID).';
         }
 
-        $adminIdentity = (string) config('services.twilio.admin_identity');
+        $adminIdentity = trim((string) config('services.twilio.admin_identity'));
         if ($adminIdentity === '') {
-            $issues[] = 'ADMIN_IDENTITY is missing — used as a fallback Twilio Client name when no voice-ready operators are found at dial time; set it in .env (often a shared test identity).';
+            $issues[] = 'ADMIN_IDENTITY is missing — required VoIP fallback when no voice-ready operators are found at dial time; set it in .env.';
         }
 
         if ($issues === []) {
@@ -267,10 +269,9 @@ class TwilioVoiceController extends Controller
                 'staff_snapshot' => $availability,
             ]);
 
-            $adminIdentity = TwilioClientIdentity::sanitize((string) config('services.twilio.admin_identity'));
-
-            if ($adminIdentity === '') {
-                Log::warning('Twilio handleVoice: ADMIN_IDENTITY is not configured');
+            $adminIdentityRaw = trim((string) config('services.twilio.admin_identity'));
+            if ($adminIdentityRaw === '') {
+                Log::warning('Twilio handleVoice: ADMIN_IDENTITY is empty in .env (required for VoIP fallback)');
 
                 return $this->twimlResponse(function (VoiceResponse $twiml): void {
                     $twiml->say(
@@ -280,6 +281,8 @@ class TwilioVoiceController extends Controller
                     $twiml->hangup();
                 });
             }
+
+            $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
 
             if ($presenceRequired && ! $routingAllowed) {
                 Log::notice('Twilio handleVoice: blocked by staff presence (busy TwiML → gateway hangup on caller)', [
@@ -332,6 +335,8 @@ class TwilioVoiceController extends Controller
                 });
             }
 
+            $webhookOrigin = $this->publicTwilioWebhookOrigin($request);
+
             Log::info('Twilio handleVoice dial', [
                 'client_identities' => $clientIdentities,
                 'exclude_caller_client_identities' => $excludeIds,
@@ -341,19 +346,19 @@ class TwilioVoiceController extends Controller
                 'admin_identity_config' => (string) config('services.twilio.admin_identity'),
                 'admin_identity_sanitized' => $adminIdentity,
                 'dispatch_ring_group' => $ringGroupIdentity,
+                'twilio_webhook_origin' => $webhookOrigin,
             ]);
 
-            return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentities, $customParams): void {
+            return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentities, $customParams, $webhookOrigin): void {
                 $dial = $twiml->dial('', [
                     'timeout' => 60,
                     'answerOnBridge' => true,
-                    // Relative so Twilio posts back to the same public host that served /twilio/voice (ignores APP_URL).
-                    'action' => '/twilio/voice/dial-status',
+                    'action' => $webhookOrigin.'/twilio/voice/dial-status',
                     'method' => 'POST',
                 ]);
                 $clientAttrs = [
                     'statusCallbackEvent' => 'initiated ringing answered completed',
-                    'statusCallback' => '/twilio/voice/client-status',
+                    'statusCallback' => $webhookOrigin.'/twilio/voice/client-status',
                     'statusCallbackMethod' => 'POST',
                 ];
                 foreach ($clientIdentities as $clientIdentity) {
@@ -582,6 +587,20 @@ class TwilioVoiceController extends Controller
         ]);
 
         return [$adminIdentity];
+    }
+
+    /**
+     * Absolute HTTPS origin for Twilio Voice callbacks embedded in TwiML.
+     * Twilio recommends reachable URLs; relative paths can fail behind proxies or mis-matched APP_URL.
+     */
+    protected function publicTwilioWebhookOrigin(Request $request): string
+    {
+        $override = trim((string) config('services.twilio.webhook_public_origin', ''));
+        if ($override !== '') {
+            return rtrim($override, '/');
+        }
+
+        return rtrim($request->getSchemeAndHttpHost(), '/');
     }
 
     /**

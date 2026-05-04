@@ -56,6 +56,12 @@ return [
          * Must be valid; invalid values cause WebSocket/signaling issues (31005). Often set to singapore for Asia.
          */
         'voice_sdk_edge' => env('TWILIO_VOICE_SDK_EDGE', ''),
+        /*
+         * Public origin Twilio should call for Voice webhooks (dial status, client status).
+         * Use when Laravel sees http://127.0.0.1 but Twilio must hit https://your-domain.com
+         * (e.g. behind ngrok / reverse proxy). No trailing slash.
+         */
+        'webhook_public_origin' => env('TWILIO_WEBHOOK_PUBLIC_ORIGIN', ''),
     ],
 
 ];
