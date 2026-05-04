@@ -20,6 +20,8 @@ export function createTwilioDeviceOptions(overrides = {}) {
     const out = {
         codecPreferences: ['opus', 'pcmu'],
         logLevel,
+        // Twilio JS SDK: improves error specificity (avoids many failures surfacing only as 31005).
+        enableImprovedSignalingErrorPrecision: true,
     };
     if (typeof closeProtection === 'boolean') {
         out.closeProtection = closeProtection;

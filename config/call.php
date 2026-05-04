@@ -41,4 +41,22 @@ return [
         FILTER_VALIDATE_BOOL
     ),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Presence lookup fail-open
+    |--------------------------------------------------------------------------
+    |
+    | When the staff presence check fails (DB outage, migration lock, etc.),
+    | Twilio may receive a 500 from /twilio/voice and callers see a generic
+    | 31005 "gateway hangup". When true, the webhook will proceed to dial
+    | ADMIN_IDENTITY instead of failing the request.
+    |
+    | Recommended: true on local/dev; evaluate for production.
+    |
+    */
+    'presence_fail_open' => filter_var(
+        env('CALL_PRESENCE_FAIL_OPEN', env('APP_ENV') === 'local'),
+        FILTER_VALIDATE_BOOL
+    ),
+
 ];

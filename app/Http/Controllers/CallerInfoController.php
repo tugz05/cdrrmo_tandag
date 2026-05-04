@@ -8,6 +8,8 @@ use App\Models\Report;
 use App\Models\User;
 use App\Services\StaffPresenceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CallerInfoController extends Controller
 {
@@ -22,7 +24,18 @@ class CallerInfoController extends Controller
 
     public function setLocation(Request $request) // Changed from Client\Request to Http\Request
     {
-        if (! $this->staffPresence->isCallRoutingAllowed()) {
+        try {
+            $allowed = $this->staffPresence->isCallRoutingAllowed();
+        } catch (Throwable $e) {
+            $failOpen = (bool) config('call.presence_fail_open', false);
+            Log::error('Caller setLocation: staff presence lookup failed', [
+                'message' => $e->getMessage(),
+                'fail_open' => $failOpen,
+            ]);
+            $allowed = $failOpen;
+        }
+
+        if (! $allowed) {
             return response()->json([
                 'success' => false,
                 'code' => 'ALL_OPERATORS_BUSY',

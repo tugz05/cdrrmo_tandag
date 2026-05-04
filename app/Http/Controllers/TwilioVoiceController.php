@@ -21,7 +21,7 @@ class TwilioVoiceController extends Controller
      */
     public function generateToken(Request $request): JsonResponse
     {
-        $identity = $request->query('identity', 'guest');
+        $identity = $this->sanitizeTwilioClientIdentity((string) $request->query('identity', 'guest'));
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -43,7 +43,7 @@ class TwilioVoiceController extends Controller
     public function tokenForMobile(Request $request): JsonResponse
     {
         $user = $request->user();
-        $identity = (string) $user->getAuthIdentifier();
+        $identity = $this->sanitizeTwilioClientIdentity((string) $user->getAuthIdentifier());
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -133,6 +133,31 @@ class TwilioVoiceController extends Controller
     }
 
     /**
+     * Twilio "Client identity" constraints:
+     * - Only alphanumeric + underscore
+     * - Max 256 chars
+     *
+     * Many SDK examples pass `To=client:alice` â€” strip the `client:` prefix when present.
+     */
+    protected function sanitizeTwilioClientIdentity(string $identity): string
+    {
+        $identity = trim($identity);
+
+        if ($identity === '') {
+            return 'guest';
+        }
+
+        if (str_starts_with(strtolower($identity), 'client:')) {
+            $identity = trim(substr($identity, strlen('client:')));
+        }
+
+        $identity = preg_replace('/[^A-Za-z0-9_]/', '_', $identity) ?? 'guest';
+        $identity = substr($identity, 0, 256);
+
+        return $identity !== '' ? $identity : 'guest';
+    }
+
+    /**
      * Local environment only: inspect Voice JWT shape (no secrets returned).
      * GET /twilio/token-debug?identity=5 — use when debugging Twilio 53000 / 31000.
      */
@@ -185,18 +210,34 @@ class TwilioVoiceController extends Controller
     public function handleVoice(Request $request)
     {
         $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
-        $routingAllowed = $this->staffPresence->isCallRoutingAllowed();
-
-        Log::info('Twilio handleVoice request', [
-            'CallSid' => $request->input('CallSid'),
-            'From' => $request->input('From'),
-            'To' => $request->input('To'),
-            'ApplicationSid' => $request->input('ApplicationSid'),
-            'staff_presence_required_for_twiml' => $presenceRequired,
-            'staff_routing_allowed' => $routingAllowed,
-        ]);
+        $failOpen = filter_var((string) config('call.presence_fail_open', app()->environment('local')), FILTER_VALIDATE_BOOL);
 
         try {
+            $routingAllowed = true;
+            $availability = null;
+            if ($presenceRequired) {
+                try {
+                    $availability = $this->staffPresence->getCachedAvailabilitySnapshot();
+                    $routingAllowed = (bool) ($availability['can_connect'] ?? false);
+                } catch (Throwable $e) {
+                    Log::error('Twilio handleVoice: staff presence lookup failed', [
+                        'message' => $e->getMessage(),
+                        'fail_open' => $failOpen,
+                    ]);
+                    $routingAllowed = $failOpen;
+                }
+            }
+
+            Log::info('Twilio handleVoice request', [
+                'CallSid' => $request->input('CallSid'),
+                'From' => $request->input('From'),
+                'To' => $request->input('To'),
+                'ApplicationSid' => $request->input('ApplicationSid'),
+                'staff_presence_required_for_twiml' => $presenceRequired,
+                'staff_routing_allowed' => $routingAllowed,
+                'staff_snapshot' => $availability,
+            ]);
+
             $adminIdentity = (string) config('services.twilio.admin_identity');
 
             if ($adminIdentity === '') {
@@ -241,12 +282,14 @@ class TwilioVoiceController extends Controller
                 $customParams['callerInfo'] = $callerInfoStr;
             }
 
-            $requestedTo = trim((string) $request->input('To', ''));
+            $requestedToRaw = trim((string) $request->input('To', ''));
+            $requestedTo = $requestedToRaw !== '' ? $this->sanitizeTwilioClientIdentity($requestedToRaw) : '';
             $clientIdentity = $requestedTo !== '' ? $requestedTo : $adminIdentity;
 
             Log::info('Twilio handleVoice dial', [
                 'client_identity' => $clientIdentity,
-                'from_To_param' => $requestedTo !== '',
+                'from_To_param' => $requestedToRaw !== '',
+                'to_raw' => $requestedToRaw,
             ]);
 
             return $this->twimlResponse(function (VoiceResponse $twiml) use ($clientIdentity, $customParams): void {

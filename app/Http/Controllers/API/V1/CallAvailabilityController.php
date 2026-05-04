@@ -5,6 +5,8 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Controllers\Controller;
 use App\Services\StaffPresenceService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CallAvailabilityController extends Controller
 {
@@ -12,7 +14,33 @@ class CallAvailabilityController extends Controller
 
     public function show(): JsonResponse
     {
-        $snap = $this->staffPresence->getCachedAvailabilitySnapshot();
+        try {
+            $snap = $this->staffPresence->getCachedAvailabilitySnapshot();
+        } catch (Throwable $e) {
+            $failOpen = (bool) config('call.presence_fail_open', false);
+            Log::error('Call availability: staff presence lookup failed', [
+                'message' => $e->getMessage(),
+                'fail_open' => $failOpen,
+            ]);
+
+            if ($failOpen) {
+                $snap = [
+                    'can_connect' => true,
+                    'available_operators' => 1,
+                    'total_operators' => 1,
+                    'block_reason' => null,
+                    'heartbeat_ttl_seconds' => (int) config('call.staff_heartbeat_ttl', 90),
+                    'operator_twilio_client_identity' => (string) config('services.twilio.admin_identity'),
+                    'resolution_hint' => 'Presence check failed; proceeding because CALL_PRESENCE_FAIL_OPEN=true.',
+                ];
+            } else {
+                return response()->json([
+                    'can_connect' => false,
+                    'code' => 'PRESENCE_CHECK_FAILED',
+                    'message' => 'Temporary error checking operator availability. Please try again in a moment.',
+                ], 503);
+            }
+        }
 
         $body = array_merge(
             $snap,
