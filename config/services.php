@@ -41,6 +41,11 @@ return [
         'api_secret' => env('TWILIO_API_SECRET'),
         'twiml_app_sid' => env('TWIML_APP_SID'),
         'admin_identity' => env('ADMIN_IDENTITY'),
+        /*
+         * Twilio account home region for Voice JWT header (twr), e.g. us1, ie1, au1.
+         * Leave empty for default US; set if Twilio Console shows a regional account (often fixes 53000 outside US).
+         */
+        'voice_home_region' => env('TWILIO_VOICE_HOME_REGION'),
     ],
 
 ];

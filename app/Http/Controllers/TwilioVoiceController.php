@@ -108,12 +108,16 @@ class TwilioVoiceController extends Controller
 
     protected function makeVoiceAccessToken(string $identity): string
     {
+        $region = config('services.twilio.voice_home_region');
+        $region = is_string($region) && $region !== '' ? $region : null;
+
         $token = new AccessToken(
             config('services.twilio.sid'),
             config('services.twilio.api_key'),
             config('services.twilio.api_secret'),
             3600,
-            $identity
+            $identity,
+            $region
         );
 
         $voiceGrant = new VoiceGrant;
@@ -122,6 +126,56 @@ class TwilioVoiceController extends Controller
         $token->addGrant($voiceGrant);
 
         return $token->toJWT();
+    }
+
+    /**
+     * Local environment only: inspect Voice JWT shape (no secrets returned).
+     * GET /twilio/token-debug?identity=5 — use when debugging Twilio 53000 / 31000.
+     */
+    public function tokenDebug(Request $request): JsonResponse
+    {
+        abort_unless(app()->environment('local'), 404);
+
+        $identity = $request->query('identity', '5');
+
+        if ($msg = $this->twilioVoiceConfigurationMessage()) {
+            return response()->json([
+                'ok' => false,
+                'message' => $msg,
+            ], 503);
+        }
+
+        try {
+            $jwt = $this->makeVoiceAccessToken((string) $identity);
+            $parts = explode('.', $jwt);
+            if (count($parts) < 2) {
+                return response()->json(['ok' => false, 'error' => 'jwt_malformed'], 500);
+            }
+
+            $b64 = $parts[1];
+            $b64 .= str_repeat('=', (4 - strlen($b64) % 4) % 4);
+            $payload = json_decode(base64_decode(strtr($b64, '-_', '+/')), true, 512, JSON_THROW_ON_ERROR);
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'jwt_decode_failed',
+                'detail' => $e->getMessage(),
+            ], 500);
+        }
+
+        $voice = $payload['grants']['voice'] ?? null;
+
+        return response()->json([
+            'ok' => true,
+            'identity' => $identity,
+            'voice_home_region_env' => config('services.twilio.voice_home_region'),
+            'jwt_iss_starts_with_SK' => isset($payload['iss']) && str_starts_with((string) $payload['iss'], 'SK'),
+            'jwt_sub_starts_with_AC' => isset($payload['sub']) && str_starts_with((string) $payload['sub'], 'AC'),
+            'voice_grant' => $voice,
+            'outgoing_application_sid' => is_array($voice)
+                ? ($voice['outgoing']['application_sid'] ?? null)
+                : null,
+        ]);
     }
 
     public function handleVoice(Request $request)

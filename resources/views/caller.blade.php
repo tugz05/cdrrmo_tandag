@@ -104,7 +104,12 @@
         function signalingHint(code) {
             var n = typeof code === 'number' ? code : parseInt(code, 10);
             if (n === 31000 || n === 53000) {
-                return '\n\nFix: In Twilio Console create an API Key (SK…), set TWILIO_API_KEY + TWILIO_API_SECRET + TWILIO_ACCOUNT_SID + TWIML_APP_SID (AP…) in .env, run php artisan config:clear. API Key must belong to the same account as the Account SID.';
+                return '\n\n53000/31000 checklist:\n' +
+                    '• TWILIO_API_SECRET must match the SK key exactly (create a new API Key if unsure).\n' +
+                    '• API Key must be Standard or Restricted with Voice/Client permissions — IP-locked keys can block browsers.\n' +
+                    '• TWIML_APP_SID must be from the same Twilio account as TWILIO_ACCOUNT_SID.\n' +
+                    '• Optional: set TWILIO_VOICE_HOME_REGION=us1 (or ie1, au1) if your account is regional.\n' +
+                    '• Run php artisan config:clear. Local only: GET /twilio/token-debug?identity=5';
             }
             return '';
         }

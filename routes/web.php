@@ -13,6 +13,7 @@ use App\Http\Controllers\StaffPresenceController;
 use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class);
@@ -80,6 +81,10 @@ Route::get('/receiver', function () {
 });
 
 Route::get('/twilio/token', [TwilioVoiceController::class, 'generateToken']);
-Route::post('/twilio/voice', [TwilioVoiceController::class, 'handleVoice'])->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/twilio/voice', [TwilioVoiceController::class, 'handleVoice'])->withoutMiddleware([VerifyCsrfToken::class]);
+
+if (app()->environment('local')) {
+    Route::get('/twilio/token-debug', [TwilioVoiceController::class, 'tokenDebug']);
+}
 
 require __DIR__.'/auth.php';
