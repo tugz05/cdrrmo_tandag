@@ -290,7 +290,7 @@ class TwilioVoiceController extends Controller
             $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
 
             $callerInfo = $request->input('callerInfo');
-            $clientAttrs = [];
+            $callerInfoValue = null;
             if ($callerInfo !== null && $callerInfo !== '') {
                 $callerInfoStr = is_string($callerInfo) ? $callerInfo : json_encode($callerInfo);
                 $callerLen = strlen($callerInfoStr);
@@ -300,7 +300,7 @@ class TwilioVoiceController extends Controller
                     ]);
                     $callerInfoStr = substr($callerInfoStr, 0, 512);
                 }
-                $clientAttrs['callerInfo'] = $callerInfoStr;
+                $callerInfoValue = $callerInfoStr;
             }
 
             Log::info('Twilio handleVoice dial', [
@@ -309,12 +309,19 @@ class TwilioVoiceController extends Controller
                 'to_raw' => $request->input('To'),
             ]);
 
-            return $this->twimlResponse(function (VoiceResponse $twiml) use ($adminIdentity, $clientAttrs): void {
+            /*
+             * Custom data must be <Parameter> children on <Client>, not arbitrary XML attributes.
+             * Passing ['callerInfo' => ...] as the second arg to client() emits callerInfo="..." on <Client>,
+             * which Twilio rejects with 12100 Document parse failure.
+             */
+            return $this->twimlResponse(function (VoiceResponse $twiml) use ($adminIdentity, $callerInfoValue): void {
                 $dial = $twiml->dial();
-                if ($clientAttrs === []) {
-                    $dial->client($adminIdentity);
-                } else {
-                    $dial->client($adminIdentity, $clientAttrs);
+                $client = $dial->client($adminIdentity);
+                if ($callerInfoValue !== null && $callerInfoValue !== '') {
+                    $client->parameter([
+                        'name' => 'callerInfo',
+                        'value' => $callerInfoValue,
+                    ]);
                 }
             });
         } catch (Throwable $e) {
