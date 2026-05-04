@@ -2,7 +2,11 @@
 <html>
 <head>
     <title>Receiver</title>
+<<<<<<< HEAD
     <script src="https://media.twiliocdn.com/sdk/js/client/v1.13/twilio.min.js"></script>
+=======
+    <script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.18.2/dist/twilio.min.js"></script>
+>>>>>>> 328d54f (new release)
 </head>
 <body>
     <h1>Admin Receiver</h1>
@@ -16,6 +20,7 @@
 
         fetch('/twilio/token?identity={{ env("ADMIN_IDENTITY") }}')
             .then(res => res.json())
+<<<<<<< HEAD
             .then(data => {
                 device = new Twilio.Device(data.token, {
                     codecPreferences: ['opus', 'pcmu'],
@@ -25,6 +30,16 @@
 
                 device.on('ready', () => {
                     console.log('Receiver ready');
+=======
+            .then(async (data) => {
+                device = new Twilio.Device(data.token, {
+                    codecPreferences: ['opus', 'pcmu'],
+                    logLevel: 'error',
+                });
+
+                device.on('registered', () => {
+                    console.log('Receiver registered');
+>>>>>>> 328d54f (new release)
                     document.getElementById('status').textContent = 'Ready to receive calls';
                 });
 
@@ -44,6 +59,15 @@
                 });
 
                 device.on('error', error => console.error('Receiver error:', error));
+<<<<<<< HEAD
+=======
+
+                try {
+                    await device.register();
+                } catch (e) {
+                    console.error('Receiver register failed:', e);
+                }
+>>>>>>> 328d54f (new release)
             });
 
         document.getElementById('endCall').addEventListener('click', () => {
@@ -64,7 +88,11 @@
 <html>
 <head>
     <title>Receiver</title>
+<<<<<<< HEAD
     <script src="https://media.twiliocdn.com/sdk/js/client/v1.13/twilio.min.js"></script>
+=======
+    <script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.18.2/dist/twilio.min.js"></script>
+>>>>>>> 328d54f (new release)
 </head>
 <body>
     <h1>Admin Receiver</h1>

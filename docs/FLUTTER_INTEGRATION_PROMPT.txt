@@ -21,6 +21,20 @@ location report and on the Twilio voice webhook so users cannot bypass checks.
 2) CALL FLOW (RECOMMENDED ORDER)
 --------------------------------------------------------------------------------
 
+<<<<<<< HEAD
+=======
+IMPORTANT — IN-APP CALLING ONLY (TWILIO VOIP):
+    Voice connectivity MUST happen entirely inside the Flutter app using the
+    Twilio Programmable Voice / Voice SDK (e.g. flutter_twilio_voice or the
+    officially supported Twilio mobile SDK path). Do NOT route emergency voice
+    through the device’s built-in Phone app: do not use tel: URIs, url_launcher
+    to dial, ACTION_DIAL / ACTION_CALL on Android, or any carrier PSTN dialer.
+    The third-party integration is Twilio Client-to-Client (or Client-to-server
+    TwiML); native dialer bypasses Twilio, loses operator routing, and breaks the
+    Laravel/Twilio webhook flow. Users tap “Call” in YOUR UI → SDK connects → audio
+    stays in-app.
+
+>>>>>>> 328d54f (new release)
 Step A — Lightweight capacity check (poll sparingly; see section 5).
     GET  /api/v1/call/availability
 
@@ -32,8 +46,14 @@ Step C — Store caller location and create the CALL report (required before/dur
     Body (JSON): user_id, latitude, longitude, accuracy (optional)
 
 Step D — Obtain Twilio Client token and initiate outbound VoIP to the operator
+<<<<<<< HEAD
     identity configured on the server (see section 6). Your project may already
     use flutter_twilio_voice or similar; align with Laravel Twilio configuration.
+=======
+    identity configured on the server (see section 6). Use the Twilio Voice SDK
+    from within the app only; align identities and TwiML application SID with
+    Laravel/Twilio env (TWILIO_*, TWIML_APP_SID, ADMIN_IDENTITY as applicable).
+>>>>>>> 328d54f (new release)
 
 Step E — After the operator answers / call lifecycle (if your app participates):
     POST /api/v1/call/started   { "report_id": <id> }
@@ -42,6 +62,27 @@ Step E — After the operator answers / call lifecycle (if your app participates
 Note: /call/started and /call/ended are used by the admin web client today;
 confirm with backend whether the mobile app must call these or only the web UI.
 
+<<<<<<< HEAD
+=======
+CALL SCREEN UI — REALTIME IN-APP SESSION:
+    Implement a dedicated call screen (full-screen route or modal) that stays
+    visible for the whole Twilio session — do not minimize critical connection
+    state to a tiny banner only.
+
+    • Realtime connection states — Bind UI to SDK callbacks so labels update live:
+        connecting / ringing / connected / reconnecting / disconnected / failed.
+    • Visual polish — Clear typography hierarchy (status headline + subtitle),
+      branded colors consistent with CDRRMO, optional subtle pulse or waveform-style
+      animation while ringing or connected (avoid clutter; calm “command center”
+      feel suits emergency apps).
+    • Live duration — Show an elapsed timer from first “connected” until hang-up.
+    • Actions — Primary hang-up always visible; mute / speakerphone if the SDK
+      supports them; disable controls while reconnecting with explanatory text.
+    • Errors — On disconnect or failure, show a clear message and next steps
+      (retry availability check, text report option).
+    • Accessibility — Screen reader labels for status changes and main buttons.
+
+>>>>>>> 328d54f (new release)
 --------------------------------------------------------------------------------
 3) ENDPOINT: CALL AVAILABILITY (FOR FLUTTER)
 --------------------------------------------------------------------------------
@@ -142,6 +183,12 @@ Flutter apps typically need a similar token endpoint secured appropriately for
 mobile users (coordinate with backend — may require Sanctum token or a dedicated
 mobile endpoint). Do not hardcode secrets; use env on server side only.
 
+<<<<<<< HEAD
+=======
+Reminder: tokens feed the in-app Voice SDK only — never substitute opening the
+native phone dialer for emergency routing (see §2).
+
+>>>>>>> 328d54f (new release)
 Twilio Programmable Voice webhook:
   POST {BASE}/twilio/voice
 If no operator is available, the server returns TwiML that plays a busy message
@@ -152,8 +199,19 @@ and hangs up — still handle failures gracefully on the client.
 --------------------------------------------------------------------------------
 
 • Operators = Laravel users with roles: admin, super_admin (Laratrust).
+<<<<<<< HEAD
 • “Online” = staff dashboard loaded, Twilio device ready, heartbeat sent within
   CALL_STAFF_HEARTBEAT_TTL seconds (default 90).
+=======
+• “Online” (counts toward availability) = staff have an authenticated admin page
+  open that POSTs /admin/staff/heartbeat on load and every ~30s. Heartbeats are
+  independent of Twilio Device “ready” so browser audio policy / headset errors
+  do not strand operators as “offline” for the Flutter availability API.
+• For answering incoming VoIP on the web dashboard, Twilio still needs a working
+  mic/output and usually a user gesture to unlock AudioContext — console warnings
+  like “AudioContext was not allowed to start” are browser restrictions; presence
+  can still show online while you fix audio permissions / HTTPS / headset.
+>>>>>>> 328d54f (new release)
 • “Busy” = staff answered an incoming call until call finished callback marks
   available again.
 

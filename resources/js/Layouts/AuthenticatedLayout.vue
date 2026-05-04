@@ -9,6 +9,10 @@ import { toggleModal } from '@/Helpers/JModal';
 import JButton from '@/Components/JButton.vue';
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+<<<<<<< HEAD
+=======
+import { Device } from '@twilio/voice-sdk';
+>>>>>>> 328d54f (new release)
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
@@ -17,16 +21,85 @@ const isAnswering = ref(false);
 const showAnswerButton = ref(true);
 const currentCaller = ref({})
 const callerName = ref('')
+<<<<<<< HEAD
 const callReportId = ref(Number)
+=======
+const callReportId = ref(Number);
+const voicePipelineReady = ref(false);
+>>>>>>> 328d54f (new release)
 
 let device = null;
 let activeCall = null;
 let heartbeatTimer = null;
 
+<<<<<<< HEAD
+=======
+let sharedAudioContext = null;
+
+/** Twilio Voice SDK should initialize after a user gesture or Chrome spams AudioContext warnings (autoplay policy). */
+let twilioVoiceBootstrapped = false;
+
+function tryResumeAudioContext() {
+    try {
+        const Ctor = window.AudioContext || window.webkitAudioContext;
+        if (!Ctor) {
+            return;
+        }
+        if (!sharedAudioContext) {
+            sharedAudioContext = new Ctor();
+        }
+        if (sharedAudioContext.state === 'suspended' && typeof sharedAudioContext.resume === 'function') {
+            sharedAudioContext.resume().catch(() => {});
+        }
+    } catch {
+        /* ignore */
+    }
+}
+
+/** One combined gesture: unlock AudioContext + fetch token + build Voice SDK Device (stops pre-gesture AudioContext spam). */
+function attachTwilioVoiceAfterUserGesture() {
+    const once = () => {
+        if (twilioVoiceBootstrapped) {
+            return;
+        }
+        twilioVoiceBootstrapped = true;
+        window.removeEventListener('pointerdown', once, true);
+        window.removeEventListener('keydown', once, true);
+
+        tryResumeAudioContext();
+        fetch('/twilio/token?identity=admin_user')
+            .then(res => res.json())
+            .then(data => setupTwilio(data.token))
+            .catch(err => {
+                console.error('Token fetch error:', err);
+                twilioVoiceBootstrapped = false;
+            });
+    };
+
+    window.addEventListener('pointerdown', once, true);
+    window.addEventListener('keydown', once, true);
+}
+
+function destroyTwilioDevice() {
+    if (!device) {
+        return;
+    }
+    try {
+        device.disconnectAll?.();
+        device.destroy?.();
+    } catch {
+        /* ignore */
+    }
+    device = null;
+    activeCall = null;
+}
+
+>>>>>>> 328d54f (new release)
 function staffHeartbeat() {
     axios.post(route('admin.staff.heartbeat')).catch(() => {});
 }
 
+<<<<<<< HEAD
 function setupTwilio(token) {
     device = new Twilio.Device(token, {
         codecPreferences: ['opus', 'pcmu'],
@@ -44,6 +117,63 @@ function setupTwilio(token) {
     });
 
 
+=======
+/** Presence for API availability — MUST NOT depend on Twilio Device registration (audio blocks / SDK errors would strand operators offline). */
+function startStaffPresenceHeartbeat() {
+    staffHeartbeat();
+    if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+    }
+    heartbeatTimer = setInterval(staffHeartbeat, 30000);
+}
+
+function handleTwilioDeviceError(error) {
+    const msg = String(error?.message ?? error ?? '');
+    const code = error?.code;
+    const lower = msg.toLowerCase();
+    if (
+        lower.includes('audio output') ||
+        lower.includes('devices not found') ||
+        lower.includes('invalidargumenterror') ||
+        lower.includes('notreadableerror') ||
+        lower.includes('no audio')
+    ) {
+        console.warn(
+            '[Twilio] Audio device:',
+            msg || error,
+            '— Check speakers/headphones, OS sound output, and click anywhere on the page once if calls stay silent.'
+        );
+        return;
+    }
+    if (code === 31205 || lower.includes('token')) {
+        console.error('[Twilio] Token / registration:', code, msg, error);
+        return;
+    }
+    if (code === 31007 || lower.includes('client version not supported')) {
+        console.error(
+            '[Twilio] Voice SDK is outdated or blocked — rebuild frontend assets and ensure @twilio/voice-sdk is bundled (not legacy v1 client).',
+            error
+        );
+        return;
+    }
+    console.error('[Twilio]', code, msg, error);
+}
+
+async function setupTwilio(token) {
+    destroyTwilioDevice();
+
+    device = new Device(token, {
+        codecPreferences: ['opus', 'pcmu'],
+        logLevel: 'error',
+    });
+
+    device.on('registered', () => {
+        voicePipelineReady.value = true;
+        tryResumeAudioContext();
+        staffHeartbeat();
+    });
+
+>>>>>>> 328d54f (new release)
     device.on('incoming', async call => {
         // console.log('Incoming call...', call);
         activeCall = call;
@@ -83,14 +213,30 @@ function setupTwilio(token) {
         toggleModal('Incoming Call', 'modal-call');
     });
 
+<<<<<<< HEAD
 
     device.on('error', error => {
         console.error('Twilio error:', error);
     });
+=======
+    device.on('error', handleTwilioDeviceError);
+
+    try {
+        await device.register();
+    } catch (err) {
+        handleTwilioDeviceError(err);
+        destroyTwilioDevice();
+        twilioVoiceBootstrapped = false;
+    }
+>>>>>>> 328d54f (new release)
 }
 
 async function answerCall() {
     if (activeCall) {
+<<<<<<< HEAD
+=======
+        tryResumeAudioContext();
+>>>>>>> 328d54f (new release)
         callStatus.value = 'Call in progress...';
         isAnswering.value = true;
         showAnswerButton.value = false;
@@ -123,10 +269,15 @@ onMounted(() => {
     if (!canAccessAdmin.value) {
         return;
     }
+<<<<<<< HEAD
     fetch('/twilio/token?identity=admin_user')
         .then(res => res.json())
         .then(data => setupTwilio(data.token))
         .catch(err => console.error('Token fetch error:', err));
+=======
+    startStaffPresenceHeartbeat();
+    attachTwilioVoiceAfterUserGesture();
+>>>>>>> 328d54f (new release)
 });
 
 onUnmounted(() => {
@@ -134,6 +285,10 @@ onUnmounted(() => {
         clearInterval(heartbeatTimer);
         heartbeatTimer = null;
     }
+<<<<<<< HEAD
+=======
+    destroyTwilioDevice();
+>>>>>>> 328d54f (new release)
 });
 
 
@@ -206,6 +361,17 @@ async function handleCallEnded(reportId) {
 
 <template>
     <div>
+<<<<<<< HEAD
+=======
+        <div
+            v-if="canAccessAdmin && !voicePipelineReady"
+            class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
+            role="status"
+        >
+            Click or tap anywhere once to enable incoming emergency voice calls — required by your browser’s audio
+            policy.
+        </div>
+>>>>>>> 328d54f (new release)
         <div class="content">
             <SideBar />
             <main>

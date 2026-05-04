@@ -25,7 +25,10 @@
         @inertiaHead
 
         <link rel="stylesheet" href="{{ asset('styles/styles.css') }}">
+<<<<<<< HEAD
         <script src="https://media.twiliocdn.com/sdk/js/client/v1.13/twilio.min.js"></script>
+=======
+>>>>>>> 328d54f (new release)
 
     </head>
     <body class="font-sans antialiased">
