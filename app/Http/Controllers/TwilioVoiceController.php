@@ -313,9 +313,15 @@ class TwilioVoiceController extends Controller
 
             $ringGroupIdentity = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
             $clientIdentities = $this->resolveOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
+            $excludeIds = $this->callerClientIdentitiesToExcludeFromDial($request);
+            $clientIdentities = $this->excludeClientIdentitiesFromDialTargets($clientIdentities, $excludeIds);
+            $clientIdentities = $this->dialTargetsWithCallerFallback($clientIdentities, $excludeIds, $adminIdentity, $request);
 
             if ($clientIdentities === []) {
-                Log::warning('Twilio handleVoice: no Client identities to dial');
+                Log::warning('Twilio handleVoice: no Client identities to dial after excluding caller / fallbacks', [
+                    'From' => $request->input('From'),
+                    'exclude' => $excludeIds,
+                ]);
 
                 return $this->twimlResponse(function (VoiceResponse $twiml): void {
                     $twiml->say(
@@ -328,8 +334,10 @@ class TwilioVoiceController extends Controller
 
             Log::info('Twilio handleVoice dial', [
                 'client_identities' => $clientIdentities,
+                'exclude_caller_client_identities' => $excludeIds,
                 'from_To_param' => trim((string) $request->input('To', '')) !== '',
                 'to_raw' => $request->input('To'),
+                'from_raw' => $request->input('From'),
                 'admin_identity_config' => (string) config('services.twilio.admin_identity'),
                 'admin_identity_sanitized' => $adminIdentity,
                 'dispatch_ring_group' => $ringGroupIdentity,
@@ -428,13 +436,24 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * Resolve which Twilio Voice Client identities to ring for this outbound parent call.
-     * Per Twilio VoIP docs, multiple Client nouns under one Dial ring simultaneously until one answers.
+     * Resolve which Twilio Voice Client identities to ring for this parent call.
+     *
+     * Twilio posts here for (a) Voice JS SDK outbound via a TwiML App — {@code From} is {@code client:IDENTITY},
+     * and {@code To} is the connect target; (b) inbound PSTN/SIP to a purchased number — {@code From} is a phone
+     * number and {@code To} is your Twilio number. In case (b), {@code To} must never be interpreted as a
+     * {@code <Client>} name or Twilio returns an application error.
      *
      * @return list<string>
      */
     protected function resolveOutboundDialClientIdentities(Request $request, string $adminIdentity, string $ringGroupIdentity): array
     {
+        $from = trim((string) $request->input('From', ''));
+        $fromIsVoiceSdkClient = $from !== '' && str_starts_with(strtolower($from), 'client:');
+
+        if (! $fromIsVoiceSdkClient) {
+            return $this->voiceReadyOperatorsOrAdminFallback($adminIdentity);
+        }
+
         $requestedToRaw = trim((string) $request->input('To', ''));
         $requestedTo = $requestedToRaw !== '' ? TwilioClientIdentity::sanitize($requestedToRaw) : '';
 
@@ -443,12 +462,7 @@ class TwilioVoiceController extends Controller
             || ($adminIdentity !== '' && $requestedTo === $adminIdentity);
 
         if ($broadcast) {
-            $targets = $this->staffPresence->voiceReadyOperatorIdentities();
-            if ($targets !== []) {
-                return $targets;
-            }
-
-            return $adminIdentity !== '' ? [$adminIdentity] : [];
+            return $this->voiceReadyOperatorsOrAdminFallback($adminIdentity);
         }
 
         $ready = $this->staffPresence->voiceReadyOperatorIdentities();
@@ -460,11 +474,114 @@ class TwilioVoiceController extends Controller
             'requested_to' => $requestedTo,
         ]);
 
-        if ($ready !== []) {
-            return $ready;
+        return $this->voiceReadyOperatorsOrAdminFallback($adminIdentity);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function voiceReadyOperatorsOrAdminFallback(string $adminIdentity): array
+    {
+        $targets = $this->staffPresence->voiceReadyOperatorIdentities();
+        if ($targets !== []) {
+            return $targets;
         }
 
         return $adminIdentity !== '' ? [$adminIdentity] : [];
+    }
+
+    /**
+     * Twilio parent leg From is {@code client:IDENTITY} for SDK calls — never dial that same Client
+     * or the call fails (31603 / "application error") because the origin endpoint cannot be the dial target.
+     *
+     * @return list<string> sanitized identities to omit from {@code <Dial><Client>}
+     */
+    protected function callerClientIdentitiesToExcludeFromDial(Request $request): array
+    {
+        $out = [];
+        $from = trim((string) $request->input('From', ''));
+        if ($from !== '' && str_starts_with(strtolower($from), 'client:')) {
+            $rest = trim(substr($from, strlen('client:')));
+            if ($rest !== '') {
+                $out[] = TwilioClientIdentity::sanitize($rest);
+            }
+        }
+
+        $raw = $request->input('callerInfo');
+        if (is_string($raw) && $raw !== '') {
+            try {
+                /** @var mixed $decoded */
+                $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($decoded) && array_key_exists('userId', $decoded)) {
+                    $out[] = TwilioClientIdentity::sanitize((string) $decoded['userId']);
+                }
+            } catch (Throwable) {
+                // ignore malformed callerInfo
+            }
+        }
+
+        $out = array_values(array_unique(array_filter($out, static fn (string $s): bool => $s !== '')));
+
+        return $out;
+    }
+
+    /**
+     * @param  list<string>  $targets
+     * @param  list<string>  $excludeSanitized
+     * @return list<string>
+     */
+    protected function excludeClientIdentitiesFromDialTargets(array $targets, array $excludeSanitized): array
+    {
+        if ($excludeSanitized === []) {
+            return array_values(array_unique($targets));
+        }
+
+        $exc = array_flip($excludeSanitized);
+        $out = [];
+        foreach ($targets as $t) {
+            if (! isset($exc[$t])) {
+                $out[] = $t;
+            }
+        }
+
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * If every voice-ready operator was the caller's own Client identity, fall back to ADMIN_IDENTITY
+     * when it is a different identity so TwiML still has at least one {@code <Client>} noun.
+     *
+     * @param  list<string>  $targets
+     * @param  list<string>  $excludeSanitized
+     * @return list<string>
+     */
+    protected function dialTargetsWithCallerFallback(array $targets, array $excludeSanitized, string $adminIdentity, Request $request): array
+    {
+        if ($targets !== []) {
+            return $targets;
+        }
+
+        if ($adminIdentity === '') {
+            return [];
+        }
+
+        foreach ($excludeSanitized as $ex) {
+            if ($ex === $adminIdentity) {
+                Log::notice('Twilio handleVoice: cannot route — only dial targets match the caller Client identity and ADMIN_IDENTITY matches the caller', [
+                    'From' => $request->input('From'),
+                    'admin_identity_sanitized' => $adminIdentity,
+                ]);
+
+                return [];
+            }
+        }
+
+        Log::notice('Twilio handleVoice: all ring-group targets matched caller identity; dialing ADMIN_IDENTITY fallback', [
+            'From' => $request->input('From'),
+            'admin_identity_sanitized' => $adminIdentity,
+        ]);
+
+        return [$adminIdentity];
     }
 
     /**
