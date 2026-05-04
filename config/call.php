@@ -109,6 +109,13 @@ return [
     */
     'twiml_operator_ttl_multiplier' => (float) env('CALL_TWIML_OPERATOR_TTL_MULTIPLIER', 1.25),
 
+    'twiml_voice_ready_grace_seconds' => max(60, (int) env('CALL_TWIML_VOICE_READY_GRACE_SECONDS', 900)),
+
+    'twiml_fallback_heartbeat_only_operators' => filter_var(
+        env('CALL_TWIML_FALLBACK_HEARTBEAT_ONLY_OPERATORS', true),
+        FILTER_VALIDATE_BOOL
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Re-dial after first <Dial> ring cycle fails

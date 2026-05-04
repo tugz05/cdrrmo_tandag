@@ -666,6 +666,12 @@ class TwilioVoiceController extends Controller
         }
 
         $maxExtra = max(0, (int) config('call.voice_dial_max_retries', 1));
+        if ($maxExtra === 0) {
+            Cache::forget($key);
+
+            return null;
+        }
+
         $retriesUsed = (int) ($ctx['retries_used'] ?? 0);
         if ($retriesUsed >= $maxExtra) {
             Cache::forget($key);

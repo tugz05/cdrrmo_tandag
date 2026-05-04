@@ -45,22 +45,33 @@ class StaffPresenceService
             return [];
         }
 
-        $ttl = $this->operatorPresenceTtlSeconds($forTwimlDial);
-        $cutoff = now()->subSeconds($ttl);
+        $heartbeatTtlSec = $this->operatorPresenceTtlSeconds($forTwimlDial);
+        $heartbeatCutoff = now()->subSeconds($heartbeatTtlSec);
         $requireVoiceClient = (bool) config('call.require_voice_client_ready', true);
 
         $q = StaffPresence::query()
             ->whereIn('user_id', $ids)
             ->where('state', self::STATE_AVAILABLE)
             ->whereNotNull('last_heartbeat_at')
-            ->where('last_heartbeat_at', '>=', $cutoff);
+            ->where('last_heartbeat_at', '>=', $heartbeatCutoff);
 
         if ($requireVoiceClient) {
+            if ($forTwimlDial) {
+                $grace = max(60, (int) config('call.twiml_voice_ready_grace_seconds', 900));
+                $voiceWindow = max($heartbeatTtlSec, $grace);
+                $voiceCutoff = now()->subSeconds($voiceWindow);
+            } else {
+                $voiceCutoff = $heartbeatCutoff;
+            }
             $q->whereNotNull('voice_client_ready_at')
-                ->where('voice_client_ready_at', '>=', $cutoff);
+                ->where('voice_client_ready_at', '>=', $voiceCutoff);
         }
 
         $rawIds = $q->orderBy('user_id')->pluck('user_id')->all();
+
+        if ($rawIds === [] && $forTwimlDial && (bool) config('call.twiml_fallback_heartbeat_only_operators', true)) {
+            $rawIds = $this->heartbeatOnlyOperatorIdsForTwimlDial();
+        }
 
         $seen = [];
         $out = [];
@@ -76,6 +87,31 @@ class StaffPresenceService
         $max = max(1, (int) config('call.max_simultaneous_client_dials', 20));
 
         return array_slice($out, 0, $max);
+    }
+
+    /**
+     * Last-resort dial targets for TwiML: same admin/super_admin operators as the main query,
+     * fresh heartbeat + available, without requiring {@code voice_client_ready_at}.
+     *
+     * @return list<int>
+     */
+    protected function heartbeatOnlyOperatorIdsForTwimlDial(): array
+    {
+        $ids = $this->operatorUserIds();
+        if ($ids === []) {
+            return [];
+        }
+
+        $heartbeatCutoff = now()->subSeconds($this->operatorPresenceTtlSeconds(true));
+
+        return StaffPresence::query()
+            ->whereIn('user_id', $ids)
+            ->where('state', self::STATE_AVAILABLE)
+            ->whereNotNull('last_heartbeat_at')
+            ->where('last_heartbeat_at', '>=', $heartbeatCutoff)
+            ->orderBy('user_id')
+            ->pluck('user_id')
+            ->all();
     }
 
     /**
@@ -151,6 +187,7 @@ class StaffPresenceService
             'operator_twilio_client_identity' => $dispatchRing,
             'dispatch_twilio_client_identity' => $dispatchRing,
             'voice_ready_operator_twilio_identities' => $voiceReadyIds,
+            'twiml_dial_operator_count' => count($this->voiceReadyOperatorIdentities(true)),
             'legacy_admin_twilio_client_identity' => $adminClientIdentity,
             'require_voice_client_ready' => $requireVoice,
             'strict_presence_ttl_seconds' => $this->operatorPresenceTtlSeconds(false),
