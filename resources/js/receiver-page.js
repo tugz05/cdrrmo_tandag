@@ -2,6 +2,7 @@
  * Standalone admin receiver test — same @twilio/voice-sdk as package.json / admin SPA.
  */
 import { Device } from '@twilio/voice-sdk';
+import { applyTwilioOutputDevices } from './utils/twilioVoiceAudio.js';
 
 const adminIdentity = window.__RECEIVER_CONFIG__?.adminIdentity ?? '';
 
@@ -22,15 +23,17 @@ if (!adminIdentity) {
                 logLevel: 'error',
             });
 
-            device.on('registered', () => {
+            device.on('registered', async () => {
                 console.log('Receiver registered');
+                await applyTwilioOutputDevices(device);
                 statusEl.textContent = 'Ready to receive calls';
             });
 
-            device.on('incoming', (call) => {
+            device.on('incoming', async (call) => {
                 console.log('Incoming call...');
                 const confirmAccept = confirm('Incoming call. Do you want to accept it?');
                 if (confirmAccept) {
+                    await applyTwilioOutputDevices(device);
                     call.accept();
                     activeCall = call;
                     statusEl.textContent = 'Call in progress...';

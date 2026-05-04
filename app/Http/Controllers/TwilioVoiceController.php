@@ -184,11 +184,16 @@ class TwilioVoiceController extends Controller
 
     public function handleVoice(Request $request)
     {
+        $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
+        $routingAllowed = $this->staffPresence->isCallRoutingAllowed();
+
         Log::info('Twilio handleVoice request', [
             'CallSid' => $request->input('CallSid'),
             'From' => $request->input('From'),
             'To' => $request->input('To'),
             'ApplicationSid' => $request->input('ApplicationSid'),
+            'staff_presence_required_for_twiml' => $presenceRequired,
+            'staff_routing_allowed' => $routingAllowed,
         ]);
 
         try {
@@ -206,7 +211,11 @@ class TwilioVoiceController extends Controller
                 });
             }
 
-            if (! $this->staffPresence->isCallRoutingAllowed()) {
+            if ($presenceRequired && ! $routingAllowed) {
+                Log::notice('Twilio handleVoice: blocked by staff presence (busy TwiML → gateway hangup on caller)', [
+                    'hint' => 'Keep /admin/dashboard open (heartbeat), or set CALL_REQUIRE_STAFF_PRESENCE_FOR_VOICE_TWIML=false for local Client-only tests.',
+                ]);
+
                 return $this->twimlResponse(function (VoiceResponse $twiml): void {
                     $twiml->say(
                         'All emergency operators are currently busy. Please try again later, or use text messaging in the application.',
@@ -237,7 +246,15 @@ class TwilioVoiceController extends Controller
                     'timeout' => 60,
                     'answerOnBridge' => true,
                 ]);
-                $dial->client($clientIdentity, $customParams);
+                // Custom data must be <Parameter> children per Twilio Voice docs — not XML attributes on <Client>,
+                // or Twilio may fail the call with a generic "application error" prompt.
+                $client = $dial->client($clientIdentity, []);
+                foreach ($customParams as $name => $value) {
+                    $client->parameter([
+                        'name' => (string) $name,
+                        'value' => (string) $value,
+                    ]);
+                }
             });
         } catch (Throwable $e) {
             Log::error('Twilio handleVoice exception', [

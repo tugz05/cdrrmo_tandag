@@ -11,6 +11,7 @@ import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 /** @twilio/voice-sdk version is pinned in package.json — keep in sync with caller-page.js / receiver-page.js */
 import { Device } from '@twilio/voice-sdk';
+import { applyTwilioOutputDevices } from '@/utils/twilioVoiceAudio.js';
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
@@ -34,6 +35,58 @@ let sharedAudioContext = null;
 let twilioVoiceBootstrapped = false;
 
 let staffHeartbeatSeq = 0;
+
+let incomingTitleFlashTimer = null;
+let savedDocumentTitleBeforeFlash = '';
+
+function stopIncomingTitleFlash() {
+    if (incomingTitleFlashTimer !== null) {
+        clearInterval(incomingTitleFlashTimer);
+        incomingTitleFlashTimer = null;
+    }
+    if (typeof document !== 'undefined' && savedDocumentTitleBeforeFlash !== '') {
+        document.title = savedDocumentTitleBeforeFlash;
+        savedDocumentTitleBeforeFlash = '';
+    }
+}
+
+function startIncomingTitleFlash() {
+    if (typeof document === 'undefined') {
+        return;
+    }
+    stopIncomingTitleFlash();
+    savedDocumentTitleBeforeFlash = document.title;
+    const base = document.title || 'Dashboard';
+    let on = false;
+    incomingTitleFlashTimer = window.setInterval(() => {
+        on = !on;
+        document.title = on ? `Incoming call — ${base}` : base;
+    }, 900);
+}
+
+function notifyIncomingVoiceCall(displayName) {
+    const body = displayName ? `${displayName} is calling` : 'Incoming emergency voice call';
+    try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            const n = new Notification('CDRRMO — Voice call', {
+                body,
+                tag: 'cdrrmo-voice-incoming',
+                requireInteraction: true,
+            });
+            window.setTimeout(() => n.close?.(), 45000);
+        }
+    } catch {
+        /* ignore */
+    }
+    try {
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 120, 200]);
+        }
+    } catch {
+        /* ignore */
+    }
+    startIncomingTitleFlash();
+}
 
 /**
  * Console diagnostics for POST /admin/staff/heartbeat (Twilio routing / caller availability).
@@ -92,6 +145,9 @@ function attachTwilioVoiceAfterUserGesture() {
         window.removeEventListener('keydown', once, true);
 
         tryResumeAudioContext();
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission().catch(() => {});
+        }
         const identity = twilioAdminIdentity.value;
         if (!identity) {
             console.error('[Twilio] ADMIN_IDENTITY is empty — set ADMIN_IDENTITY in .env and run php artisan config:clear.');
@@ -210,7 +266,8 @@ async function setupTwilio(token) {
         logLevel: 'error',
     });
 
-    device.on('registered', () => {
+    device.on('registered', async () => {
+        await applyTwilioOutputDevices(device);
         voicePipelineReady.value = true;
         tryResumeAudioContext();
         staffHeartbeat();
@@ -235,6 +292,7 @@ async function setupTwilio(token) {
         showAnswerButton.value = true;
         isAnswering.value = false;
         toggleModal('Incoming Call', 'modal-call');
+        notifyIncomingVoiceCall(callerName.value);
     });
 
     device.on('error', handleTwilioDeviceError);
@@ -250,6 +308,8 @@ async function setupTwilio(token) {
 
 async function answerCall() {
     if (activeCall) {
+        stopIncomingTitleFlash();
+        await applyTwilioOutputDevices(device);
         tryResumeAudioContext();
         callStatus.value = 'Call in progress...';
         isAnswering.value = true;
@@ -261,12 +321,14 @@ async function answerCall() {
 
 function rejectCall() {
     if (activeCall) {
+        stopIncomingTitleFlash();
         activeCall.reject();
         endCall();
     }
 }
 
 function endCall() {
+    stopIncomingTitleFlash();
     if (activeCall) {
         activeCall.disconnect();
     }

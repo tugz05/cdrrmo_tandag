@@ -3,6 +3,7 @@
  * Loaded only from resources/views/caller.blade.php via @vite.
  */
 import { Device } from '@twilio/voice-sdk';
+import { applyTwilioOutputDevices } from './utils/twilioVoiceAudio.js';
 
 const cfg = window.__CALLER_CONFIG__ || {};
 const callerUserId = String(cfg.callerUserId ?? '5');
@@ -88,9 +89,9 @@ function signalingHint(code) {
     if (n === 31005) {
         return (
             '\n\n31005 (gateway HANGUP):\n' +
-            '• Voice webhook: Twilio Console TwiML App “Voice URL” must match GET or POST to this app’s /twilio/voice and be reachable (HTTPS + public URL).\n' +
-            '• Admin must register the same Client identity as ADMIN_IDENTITY (dashboard open, click once).\n' +
-            '• See laravel.log for “Twilio handleVoice request”. If absent, Twilio never hit your server.\n' +
+            '• TwiML App Voice URL must be a public HTTPS URL that hits /twilio/voice — not http://127.0.0.1 or *.test (use ngrok/cloudflare tunnel and php artisan config:clear).\n' +
+            '• laravel.log: “Twilio handleVoice request” = webhook OK. “blocked by staff presence” = open admin dashboard (heartbeat) or set CALL_REQUIRE_STAFF_PRESENCE_FOR_VOICE_TWIML=false for local tests.\n' +
+            '• Admin Twilio.Device must be registered with identity exactly equal to ADMIN_IDENTITY (dashboard: click page once so voice loads).\n' +
             '• https://www.twilio.com/docs/voice/sdks/javascript#twiml-app'
         );
     }
@@ -183,7 +184,8 @@ function initDevice() {
                 deviceReady = false;
             });
 
-            device.on('registered', () => {
+            device.on('registered', async () => {
+                await applyTwilioOutputDevices(device);
                 deviceReady = true;
                 setStatus(`Ready. Twilio identity: ${callerUserId} — you can call the admin.`, 'ok');
                 btnCall.disabled = false;
@@ -204,6 +206,20 @@ function initDevice() {
             voiceBootstrapStarted = false;
             btnStart.disabled = false;
         });
+}
+
+/** Same operator availability as set-location / TwiML gate; use before every device.connect (incl. geo fallback). */
+async function checkOperatorAvailability() {
+    const res = await fetch('/api/v1/call/availability', { headers: { Accept: 'application/json' } });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok) {
+        return { ok: true, message: body.message || 'OK', body };
+    }
+    return {
+        ok: false,
+        message: body.message || 'All emergency operators are currently busy.',
+        resolution: body.resolution_hint || '',
+    };
 }
 
 async function storeLocation(callerData) {
@@ -242,6 +258,17 @@ async function callAdmin() {
     }
 
     btnCall.disabled = true;
+    setStatus('Checking operator availability…');
+
+    const avail = await checkOperatorAvailability();
+    if (!avail.ok) {
+        const extra = avail.resolution ? `\n${avail.resolution}` : '';
+        setStatus(`${avail.message}${extra}`, 'error');
+        alert(`${avail.message}${extra}`);
+        btnCall.disabled = false;
+        return;
+    }
+
     setStatus('Getting location & creating call report…');
 
     try {
@@ -274,6 +301,7 @@ async function callAdmin() {
         });
 
         setStatus('Connecting to admin…');
+        await applyTwilioOutputDevices(device);
         activeCall = await device.connect({
             params: {
                 To: adminIdentity,
@@ -296,10 +324,19 @@ async function callAdmin() {
         setStatus(`Falling back to call without location: ${formatErr(error)}`, 'error');
 
         try {
+            const avail2 = await checkOperatorAvailability();
+            if (!avail2.ok) {
+                const extra = avail2.resolution ? `\n${avail2.resolution}` : '';
+                setStatus(`${avail2.message}${extra}`, 'error');
+                alert(`${avail2.message}${extra}`);
+                return;
+            }
+
             const callerInfo = JSON.stringify({
                 userId: parseInt(callerUserId, 10),
                 error: 'Location not available',
             });
+            await applyTwilioOutputDevices(device);
             activeCall = await device.connect({
                 params: {
                     To: adminIdentity,
@@ -308,6 +345,11 @@ async function callAdmin() {
             });
             activeCall.on('disconnect', onCallEnded);
             activeCall.on('cancel', onCallEnded);
+            activeCall.on('error', (err) => {
+                console.error('Call error:', err);
+                const c = err && typeof err.code !== 'undefined' ? err.code : null;
+                setStatus(`Call error: ${formatErr(err)}${signalingHint(c)}`, 'error');
+            });
             setStatus('Call in progress (no location).');
             btnHangup.disabled = false;
             alert(`Call started but location could not be shared: ${formatErr(error)}`);

@@ -24,4 +24,21 @@ return [
     */
     'availability_cache_seconds' => (int) env('CALL_AVAILABILITY_CACHE_SECONDS', 2),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Staff presence gate on Twilio Voice webhook
+    |--------------------------------------------------------------------------
+    |
+    | When true, /twilio/voice returns busy audio + hangup if no operator has a
+    | fresh heartbeat (same rule as set-location). When false, TwiML still dials
+    | ADMIN_IDENTITY — for local Client-to-Client tests without the admin
+    | dashboard heartbeat. The Twilio.Device for that identity must still be
+    | registered or the Client leg will fail (often seen as 31005).
+    |
+    */
+    'require_staff_presence_for_voice_twiml' => filter_var(
+        env('CALL_REQUIRE_STAFF_PRESENCE_FOR_VOICE_TWIML', true),
+        FILTER_VALIDATE_BOOL
+    ),
+
 ];
