@@ -211,15 +211,30 @@ class StaffPresenceService
 
         $n = count($orderedSanitizedIdentities);
         $key = 'call:voice_outbound_dial_round_robin';
+        $idx = 0;
         try {
-            $seq = (int) Cache::increment($key);
+            $raw = Cache::increment($key);
+            if ($raw === false || $raw === null) {
+                throw new \RuntimeException('cache_increment_unsupported');
+            }
+            $seq = (int) $raw;
+            if ($seq < 1) {
+                $seq = 1;
+            }
+            $idx = ($seq - 1) % $n;
+            if ($idx < 0) {
+                $idx += $n;
+            }
         } catch (Throwable) {
-            $seq = random_int(1, max(1, $n * 1000));
+            $idx = random_int(0, $n - 1);
         }
 
-        $idx = ($seq - 1) % $n;
+        $picked = $orderedSanitizedIdentities[$idx] ?? $orderedSanitizedIdentities[0];
+        if (! is_string($picked) || $picked === '') {
+            return [$orderedSanitizedIdentities[0]];
+        }
 
-        return [$orderedSanitizedIdentities[$idx]];
+        return [$picked];
     }
 
     /**
