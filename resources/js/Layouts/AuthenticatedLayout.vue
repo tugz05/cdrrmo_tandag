@@ -727,7 +727,7 @@ async function handleCallEnded(reportId) {
 </script>
 
 <template>
-    <div>
+    <div class="app-shell">
         <div
             v-if="canAccessAdmin && !voicePipelineReady"
             class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
@@ -736,11 +736,15 @@ async function handleCallEnded(reportId) {
             Click or tap anywhere once (or press a key) to connect Twilio voice for incoming emergency calls.
             The browser requires this before audio can start; the microphone is only requested when you answer.
         </div>
-        <div class="content">
+        <div class="content app-shell__content">
             <SideBar />
-            <main>
-                <slot />
-                <Footer />
+            <main class="app-shell__main">
+                <div class="app-shell__page">
+                    <slot />
+                </div>
+                <div class="app-shell__footer">
+                    <Footer />
+                </div>
             </main>
         </div>
     </div>

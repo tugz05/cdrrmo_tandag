@@ -160,4 +160,37 @@ main {
 
 .fs-xsm {
   font-size: x-small !important;
-}/*# sourceMappingURL=styles.css.map */
+}
+
+/* —— App shell: main column fills viewport; footer stays at bottom when content is short —— */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+main.app-shell__main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.app-shell__page {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.app-shell__footer {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+/*# sourceMappingURL=styles.css.map */
