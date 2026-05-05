@@ -226,7 +226,7 @@ const emptyMessage = computed(() => {
                                             alt=""
                                             loading="lazy"
                                             decoding="async"
-                                            sizes="(max-width: 576px) 100vw, (max-width: 992px) 50vw, (max-width: 1600px) 33vw, 520px"
+                                            sizes="(max-width: 576px) 100vw, 420px"
                                             @load="onCoverImgLoad"
                                         />
                                     </div>
@@ -438,28 +438,18 @@ const emptyMessage = computed(() => {
 }
 
 .posts-index__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.15rem;
     align-items: stretch;
     margin: 0;
     padding: 0;
 }
 
-@media (min-width: 1200px) {
-    .posts-index__grid {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16.75rem), 1fr));
-        gap: 1.15rem;
-    }
-}
-
-@media (min-width: 1700px) {
-    .posts-index__grid {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
-    }
-}
-
 .posts-index__grid-item {
+    flex: 0 1 26rem;
+    width: min(26rem, 100%);
+    max-width: 100%;
     min-width: 0;
 }
 
@@ -516,7 +506,6 @@ const emptyMessage = computed(() => {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: 100%;
 }
 
 .posts-index__card:hover {
@@ -530,52 +519,24 @@ const emptyMessage = computed(() => {
     position: relative;
     flex-shrink: 0;
     width: 100%;
-    /* Fixed band: tall infographic sources cannot stretch the card layout */
-    height: 10.25rem;
-    min-height: 10.25rem;
-    max-height: 10.25rem;
-    isolation: isolate;
+    aspect-ratio: 4 / 3;
     overflow: hidden;
+    isolation: isolate;
     background: linear-gradient(135deg, var(--cdrrmo-100, #e0f2fe) 0%, var(--cdrrmo-200, #bae6fd) 100%);
 }
-
-@media (min-width: 576px) {
-    .posts-index__media {
-        height: 11rem;
-        min-height: 11rem;
-        max-height: 11rem;
-    }
-}
-
-@media (min-width: 992px) {
-    .posts-index__media {
-        height: 12rem;
-        min-height: 12rem;
-        max-height: 12rem;
-    }
-}
-
-@media (min-width: 1400px) {
-    .posts-index__media {
-        height: 12.5rem;
-        min-height: 12.5rem;
-        max-height: 12.5rem;
-    }
-}
-
 .posts-index__media-frame {
     position: absolute;
     inset: 0;
     overflow: hidden;
     z-index: 0;
-    contain: strict;
 }
 
 .posts-index__img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    max-width: 100%;
-    max-height: 100%;
+    margin: 0;
     object-fit: cover;
     object-position: center center;
     display: block;
