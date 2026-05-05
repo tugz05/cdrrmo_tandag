@@ -2,6 +2,7 @@
 
 use App\Enums\PostTypeEnum;
 use App\Http\Controllers\API\V1\Auth\ForgotPasswordController;
+use App\Http\Controllers\API\V1\Auth\GoogleAuthController;
 use App\Http\Controllers\API\V1\Auth\LoginController;
 use App\Http\Controllers\API\V1\Auth\NewPasswordController;
 use App\Http\Controllers\API\V1\Auth\PasswordResetLinkController;
@@ -29,8 +30,7 @@ Route::get('/user', function (Request $request) {
 Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('login', [LoginController::class, 'store'])->name('api.signin')->middleware('throttle:8,1');
-        // Route::get('google', [GoogleAuthController::class, 'redirect'])->name('api.google.redirect');
-        // Route::get('google/callback', [GoogleAuthController::class, 'callback'])->name('api.google.callback');
+        Route::post('google', [GoogleAuthController::class, 'store'])->name('api.auth.google')->middleware('throttle:8,1');
         Route::post('register', [RegisterController::class, 'store'])->name('api.signup');
         // Route::post('verification-code/send', [VerificationController::class, 'store'])->name('api.verification-code.store');
         // Route::post('verification-code/verify', [VerificationController::class, 'verify'])->name('api.verify-code')->middleware('throttle:6,1');

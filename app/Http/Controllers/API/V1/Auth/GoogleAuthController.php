@@ -2,61 +2,186 @@
 
 namespace App\Http\Controllers\API\V1\Auth;
 
+use App\Enums\JStatusCode;
+use App\Exceptions\GoogleIdTokenVerificationException;
+use App\Helpers\JHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\API\V1\Auth\GoogleIdTokenRequest;
 use App\Models\User;
-use App\Traits\JActiveUser;
+use App\Services\Auth\GoogleIdTokenVerifier;
 use App\Traits\JResponseApiTrait;
-use Illuminate\Support\Facades\Auth;
-use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class GoogleAuthController extends Controller
 {
     use JResponseApiTrait;
-    use JActiveUser;
 
-    public function redirect()
-    {
-        return Socialite::driver('google')->redirect();
-    }
+    public function __construct(
+        private readonly GoogleIdTokenVerifier $googleIdTokenVerifier
+    ) {}
 
-    public function callback()
+    public function store(GoogleIdTokenRequest $request): JsonResponse
     {
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
-            $existingUser = User::where('email', $googleUser->getEmail())->first();
+            $payload = $this->googleIdTokenVerifier->verify($request->validated('id_token'));
+        } catch (GoogleIdTokenVerificationException $e) {
+            return $this->responseError(
+                $e->getMessage(),
+                [],
+                $e->getCode() > 0 ? $e->getCode() : JsonResponse::HTTP_UNAUTHORIZED
+            );
+        }
 
-            if ($existingUser) {
-                $user = Auth::login($existingUser);
-                $this->userIsActiveAt($user);
-                return $this->responseOK($this->userResponseData($user), 'Login Successfully');
-            }
+        $email = isset($payload->email) && is_string($payload->email) ? $payload->email : '';
+        if ($email === '') {
+            return $this->responseError('Your Google account did not return an email address.', [], 401);
+        }
 
-            $user = User::create([
-                'google_id' => $googleUser->getId(),
-                'name' => $googleUser->getName(),
-                'email' => $googleUser->getEmail(),
-            ]);
+        $emailVerified = isset($payload->email_verified) && $payload->email_verified === true;
+        if (! $emailVerified) {
+            return $this->responseError('Please verify your email address with Google before signing in.', [], 401);
+        }
 
-            Auth::login($user);
+        $sub = (string) $payload->sub;
+        $displayName = $this->displayNameFromPayload($payload);
 
-            return $this->responseOK($this->userResponseData($user), 'Registered successfully.');
-        } catch (\Exception $exception) {
-            return redirect()->route('login')->withErrors(['google' => 'Google sign-in failed.']);
+        $conflict = User::query()
+            ->where('email', $email)
+            ->whereNotNull('google_id')
+            ->where('google_id', '!=', $sub)
+            ->exists();
+
+        if ($conflict) {
+            return $this->responseError(
+                'This email is already linked to a different Google account.',
+                [],
+                401
+            );
+        }
+
+        try {
+            $user = DB::transaction(function () use ($sub, $email, $displayName, $emailVerified) {
+                $user = User::query()->where('google_id', $sub)->first();
+
+                if ($user) {
+                    $this->syncEmailVerificationFromGoogle($user, $emailVerified);
+
+                    return $user;
+                }
+
+                $user = User::query()->where('email', $email)->first();
+
+                if ($user) {
+                    $user->forceFill([
+                        'google_id' => $sub,
+                        'name' => $user->name ?: $displayName,
+                    ]);
+                    $this->syncEmailVerificationFromGoogle($user, $emailVerified);
+                    $user->save();
+
+                    return $user;
+                }
+
+                $nameParts = $this->splitDisplayName($displayName);
+
+                $user = User::query()->create([
+                    'name' => $displayName,
+                    'fname' => $nameParts['fname'],
+                    'lname' => $nameParts['lname'],
+                    'mname' => null,
+                    'email' => $email,
+                    'google_id' => $sub,
+                    'password' => Str::password(32),
+                    'email_verified_at' => $emailVerified ? now() : null,
+                ]);
+
+                $user->addRole('user');
+
+                return $user;
+            });
+        } catch (QueryException) {
+            return $this->responseError('Could not create or update your account. Please try again.', [], 422);
+        }
+
+        $user->refresh();
+
+        if ($user->hasRole(['admin', 'super_admin'])) {
+            return $this->responseError(
+                'These credentials do not match our records..',
+                [],
+                JStatusCode::ACCEPTED
+            );
+        }
+
+        return $this->responseOK([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'address' => $user->address,
+            'email_verified_at' => $user->email_verified_at,
+            'confirmed_at' => $user->confirmed_at,
+            'status' => $this->accountStatus($user),
+            'token' => $user->createToken('user-token')->plainTextToken,
+        ], 'Login successfully.');
+    }
+
+    private function syncEmailVerificationFromGoogle(User $user, bool $emailVerified): void
+    {
+        if ($emailVerified && $user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()]);
+            $user->save();
         }
     }
 
-    private function userResponseData($user): array
+    private function displayNameFromPayload(object $payload): string
     {
-        // $data['id'] = $user->id;
-        // $data['fullname'] = $user->fullname();
-        // $data['email'] = $user->email;
-        // $data['token'] = $user->createToken('graduate-tracer-app-user')->plainTextToken;
+        if (isset($payload->name) && is_string($payload->name) && trim($payload->name) !== '') {
+            return trim($payload->name);
+        }
+        $given = isset($payload->given_name) && is_string($payload->given_name) ? trim($payload->given_name) : '';
+        $family = isset($payload->family_name) && is_string($payload->family_name) ? trim($payload->family_name) : '';
+        $composed = trim($given.' '.$family);
+        if ($composed !== '') {
+            return $composed;
+        }
+        $email = isset($payload->email) && is_string($payload->email) ? $payload->email : 'user';
 
-        $data['success'] = true;
-        $data['message'] = 'Login Successfully.';
-        $data['email_confirmed'] = !is_null($user->email_verified_at);
-        $data['token'] = $user->createToken('graduate-tracer-app-user')->plainTextToken;
+        return Str::before($email, '@') ?: 'User';
+    }
 
-        return $data;
+    /**
+     * @return array{fname: string|null, lname: string|null}
+     */
+    private function splitDisplayName(string $displayName): array
+    {
+        $parts = preg_split('/\s+/', trim($displayName), -1, PREG_SPLIT_NO_EMPTY);
+        if ($parts === false || $parts === []) {
+            return ['fname' => 'User', 'lname' => null];
+        }
+        if (count($parts) === 1) {
+            return ['fname' => $parts[0], 'lname' => null];
+        }
+
+        return [
+            'fname' => array_shift($parts),
+            'lname' => implode(' ', $parts),
+        ];
+    }
+
+    private function accountStatus(User $user): string
+    {
+        if (! is_null($user->confirmed_at)) {
+            return 'verified';
+        }
+
+        if (count(JHelper::getValidImages($user->id)) > 0) {
+            return 'pending_verification';
+        }
+
+        return 'for_verification';
     }
 }

@@ -64,4 +64,12 @@ return [
         'webhook_public_origin' => env('TWILIO_WEBHOOK_PUBLIC_ORIGIN', ''),
     ],
 
+    /*
+    | Google Sign-In (mobile): Web OAuth 2.0 client ID used as serverClientId in Flutter.
+    | The ID token's "aud" claim must match this value.
+    */
+    'google' => [
+        'server_client_id' => env('GOOGLE_SERVER_CLIENT_ID'),
+    ],
+
 ];
