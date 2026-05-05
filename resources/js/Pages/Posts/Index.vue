@@ -529,10 +529,38 @@ const emptyMessage = computed(() => {
 .posts-index__media {
     position: relative;
     flex-shrink: 0;
-    aspect-ratio: 4 / 3;
+    width: 100%;
+    /* Fixed band: tall infographic sources cannot stretch the card layout */
+    height: 10.25rem;
+    min-height: 10.25rem;
+    max-height: 10.25rem;
     isolation: isolate;
     overflow: hidden;
     background: linear-gradient(135deg, var(--cdrrmo-100, #e0f2fe) 0%, var(--cdrrmo-200, #bae6fd) 100%);
+}
+
+@media (min-width: 576px) {
+    .posts-index__media {
+        height: 11rem;
+        min-height: 11rem;
+        max-height: 11rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .posts-index__media {
+        height: 12rem;
+        min-height: 12rem;
+        max-height: 12rem;
+    }
+}
+
+@media (min-width: 1400px) {
+    .posts-index__media {
+        height: 12.5rem;
+        min-height: 12.5rem;
+        max-height: 12.5rem;
+    }
 }
 
 .posts-index__media-frame {
@@ -540,11 +568,14 @@ const emptyMessage = computed(() => {
     inset: 0;
     overflow: hidden;
     z-index: 0;
+    contain: strict;
 }
 
 .posts-index__img {
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: cover;
     object-position: center center;
     display: block;

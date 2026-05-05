@@ -1,7 +1,7 @@
 <template>
     <footer class="app-footer border-top bg-body">
         <div
-            class="footer-inner d-flex flex-wrap justify-content-between align-items-center gap-3 text-muted py-4 px-1"
+            class="footer-inner d-flex flex-wrap justify-content-between align-items-center gap-3 text-muted py-4 px-0"
         >
             <nav class="d-flex flex-wrap gap-3 align-items-center" aria-label="Footer links">
                 <a href="#" class="app-footer__link text-decoration-none text-uppercase">About</a>
