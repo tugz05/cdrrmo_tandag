@@ -1,11 +1,15 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { onMounted } from 'vue'
 
 const props = defineProps({
     breadcrumbItems: Array,
     title: String,
-    subtitle: String
+    subtitle: String,
+    /** Tighter top/bottom spacing for dense admin views (e.g. Posts). */
+    compact: {
+        type: Boolean,
+        default: false,
+    },
 })
 
 // onMounted(() => {
@@ -26,7 +30,10 @@ const isItemNotActive = itemIndex =>
 </script>
 
 <template>
-    <header class="mb-14 mt-20 d-flex gap-5 align-items-center justify-content-between">
+    <header
+        class="j-header-title d-flex align-items-center justify-content-between"
+        :class="compact ? 'j-header-title--compact' : 'j-header-title--default'"
+    >
         <hgroup>
             <h6 v-if="subtitle" class="fw-normal text-muted" style="text-transform:capitalize;">{{ subtitle }}</h6>
             <h2 class="fw-bold m-0 mb-2">
@@ -64,14 +71,32 @@ const isItemNotActive = itemIndex =>
     </header>
 </template>
 
-<style>
+<style scoped>
+.j-header-title--default {
+    margin-top: clamp(2.5rem, 6vw, 4.5rem);
+    margin-bottom: clamp(1.75rem, 4vw, 3.25rem);
+    gap: 1.25rem;
+}
 
-    #btn-toggle-sidenav {
-        display: none;
+.j-header-title--compact {
+    margin-top: 0.35rem;
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+}
+
+@media (min-width: 992px) {
+    .j-header-title--compact {
+        margin-top: 0.5rem;
+        margin-bottom: 1.125rem;
     }
-    @media (max-width: 768px) {
-        #btn-toggle-sidenav {
-            display: inline-block;
-        }
+}
+
+:global(#btn-toggle-sidenav) {
+    display: none;
+}
+@media (max-width: 768px) {
+    :global(#btn-toggle-sidenav) {
+        display: inline-block;
     }
+}
 </style>

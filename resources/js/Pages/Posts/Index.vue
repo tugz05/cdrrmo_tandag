@@ -144,14 +144,14 @@ const emptyMessage = computed(() => {
 
     <div class="posts-index">
         <div class="posts-index__inner">
-            <JHeaderTitle title="Posts" :breadcrumb-items="[{ title: 'Posts' }]" />
+            <JHeaderTitle compact title="Posts" :breadcrumb-items="[{ title: 'Posts' }]" />
 
             <section class="posts-index__panel card border-0 overflow-hidden" aria-labelledby="posts-library-heading">
                 <div class="posts-index__panel-head">
-                    <div class="row g-4 align-items-center">
+                    <div class="row g-3 g-lg-4 align-items-center">
                         <div class="col-xl-8">
-                            <p class="posts-index__eyebrow text-uppercase mb-2">Content library</p>
-                            <h2 id="posts-library-heading" class="posts-index__title h4 fw-bold text-body mb-2">
+                            <p class="posts-index__eyebrow text-uppercase mb-1">Content library</p>
+                            <h2 id="posts-library-heading" class="posts-index__title h4 fw-bold text-body mb-1">
                                 News, safety tips &amp; preparedness
                             </h2>
                             <p class="posts-index__lede text-body-secondary mb-0">
@@ -167,7 +167,7 @@ const emptyMessage = computed(() => {
 
                 <div class="posts-index__panel-divider" role="presentation" />
 
-                <nav class="posts-index__panel-nav px-3 px-md-4 py-3" aria-label="Post categories">
+                <nav class="posts-index__panel-nav px-3 px-md-4 py-2" aria-label="Post categories">
                     <div class="d-flex flex-column flex-xl-row align-items-stretch align-items-xl-center gap-3">
                         <div class="posts-index__tabs flex-grow-1 overflow-auto">
                             <div class="btn-group posts-index__btn-group" role="group" aria-label="Filter by type">
@@ -261,8 +261,8 @@ const emptyMessage = computed(() => {
                                     {{ newsItem.is_published ? 'Published' : 'Draft' }}
                                 </span>
                             </div>
-                            <div class="card-body d-flex flex-column pt-4 pb-3">
-                                <h3 class="posts-index__card-title h6 fw-bold mb-3">
+                            <div class="card-body d-flex flex-column pt-3 pb-3 px-3 px-sm-4">
+                                <h3 class="posts-index__card-title h6 fw-bold mb-2">
                                     {{ newsItem.title }}
                                 </h3>
                                 <div class="mt-auto d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-opacity-25">
@@ -340,7 +340,7 @@ const emptyMessage = computed(() => {
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
-    gap: 1.25rem;
+    gap: 0.875rem;
 }
 
 .posts-index__panel {
@@ -353,12 +353,12 @@ const emptyMessage = computed(() => {
 }
 
 .posts-index__panel-head {
-    padding: 1.5rem 1.5rem 1.25rem;
+    padding: 1.125rem 1.25rem 1rem;
 }
 
 @media (min-width: 992px) {
     .posts-index__panel-head {
-        padding: 1.75rem 2rem 1.5rem;
+        padding: 1.35rem 1.75rem 1.15rem;
     }
 }
 
@@ -439,8 +439,8 @@ const emptyMessage = computed(() => {
 
 .posts-index__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.25rem), 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
+    gap: 1rem;
     align-items: stretch;
     margin: 0;
     padding: 0;
@@ -448,14 +448,14 @@ const emptyMessage = computed(() => {
 
 @media (min-width: 1200px) {
     .posts-index__grid {
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 18.5rem), 1fr));
-        gap: 1.35rem;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16.75rem), 1fr));
+        gap: 1.15rem;
     }
 }
 
 @media (min-width: 1700px) {
     .posts-index__grid {
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 19.5rem), 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
     }
 }
 
@@ -579,7 +579,7 @@ const emptyMessage = computed(() => {
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: linear-gradient(to top, rgba(8, 47, 73, 0.55) 0%, transparent 45%);
+    background: linear-gradient(to top, rgba(8, 47, 73, 0.38) 0%, transparent 52%);
 }
 
 .posts-index__media-top {
