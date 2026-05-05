@@ -1,15 +1,27 @@
 const defaultConfirmModalId = () => 'confirm-modal';
 const toggleModal = (title = '', modalId = 'default-modal') => {
+    const modalEl = document.getElementById(modalId)
+    if (!modalEl) {
+        return
+    }
     const modalTitle = document.querySelector(`#${modalId} .modal-title`)
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
-    modalTitle.innerHTML = title
+    if (modalTitle) {
+        modalTitle.innerHTML = title
+    }
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl)
     modal.toggle()
 }
 
 const hideModal = (title = '', modalId = 'default-modal') => {
+    const modalEl = document.getElementById(modalId)
+    if (!modalEl) {
+        return
+    }
     const modalTitle = document.querySelector(`#${modalId} .modal-title`)
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
-    modalTitle.innerHTML = title
+    if (modalTitle) {
+        modalTitle.innerHTML = title
+    }
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl)
     modal.hide()
 }
 

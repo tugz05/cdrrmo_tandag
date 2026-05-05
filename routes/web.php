@@ -39,11 +39,15 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(fu
     /*
      * Register literal paths and the resource before GET posts/{type?}, otherwise "create" is
      * captured as {type} and POST /admin/posts can mis-route in some stacks (405 / wrong handler).
+     *
+     * POST admin/posts is explicit (not only from Route::resource) so POST always matches before
+     * any wildcard GET, including after route:cache or picky reverse proxies.
      */
     Route::put('posts/publish/{id}', [PostController::class, 'publish'])->name('posts.publish');
     Route::put('posts/update-title', [PostController::class, 'updateTitle'])->name('posts.update-title');
     Route::put('posts/update-type', [PostController::class, 'updateType'])->name('posts.update-type');
-    Route::resource('posts', PostController::class)->only(['create', 'edit', 'store', 'destroy']);
+    Route::post('posts', [PostController::class, 'store'])->name('posts.store');
+    Route::resource('posts', PostController::class)->only(['create', 'edit', 'destroy']);
     Route::get('posts/{type?}', [PostController::class, 'index'])->name('posts.index');
     // Route::resource('safety-tips', SafetyTipsController::class)->only(['index','store','destroy']);
     Route::resource('settings', SettingsController::class)->only(['index']);
