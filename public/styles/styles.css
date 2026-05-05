@@ -1,7 +1,12 @@
 /* Uses global --cdrrmo-* tokens from resources/css/app.css (loaded via Vite) */
+:root {
+  --app-admin-sidebar-width: 230px;
+  --app-footer-reserved-pad: 6rem;
+}
+
 main {
   padding: 0 2rem;
-  margin-left: 230px;
+  margin-left: var(--app-admin-sidebar-width);
 }
 
 .navigation {
@@ -11,7 +16,7 @@ main {
   left: 0;
   bottom: 0;
   width: 100%;
-  max-width: 230px;
+  max-width: var(--app-admin-sidebar-width);
   box-sizing: initial;
   border-left: 5px solid var(--cdrrmo-600, #0284c7);
   background: var(--cdrrmo-sidebar, linear-gradient(180deg, #075985 0%, #0c4a6e 100%));
@@ -195,6 +200,8 @@ main.app-shell__main {
     width: 100%;
     min-width: 0;
     min-height: 0;
+    position: relative;
+    padding-bottom: calc(var(--app-footer-reserved-pad) + env(safe-area-inset-bottom, 0px));
 }
 
 .app-shell__page {
@@ -204,10 +211,15 @@ main.app-shell__main {
     flex-direction: column;
 }
 
+/* Fixed to viewport bottom inside the main column (right of sidebar) */
 .app-shell__footer {
-    flex-shrink: 0;
-    margin-top: auto;
-    width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: var(--app-admin-sidebar-width);
+    right: 0;
+    z-index: 1020;
+    width: auto;
+    margin-top: 0;
     padding-inline: 2rem;
     box-sizing: border-box;
     background: var(--cdrrmo-surface-raised, #ffffff);
