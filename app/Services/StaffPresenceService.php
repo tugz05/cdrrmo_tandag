@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\TwilioClientIdentity;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class StaffPresenceService
 {
@@ -151,16 +152,74 @@ class StaffPresenceService
 
     /**
      * Value for {@code device.connect({ params: { To } })}: when exactly one operator is reachable
-     * under TwiML rules, return that sanitized user id; otherwise the ring-group token (e.g. {@code dispatch})
-     * which {@code /twilio/voice} expands to every reachable operator. Admins always register the SDK as
-     * their own user id — never as {@code dispatch}.
+     * under TwiML rules, return that sanitized user id; otherwise the ring-group token (e.g. {@code dispatch}).
+     * For {@code call.voice_outbound_dial_mode=single} with multiple operators ready, callers still use
+     * the ring token here; {@code /twilio/voice} collapses to one {@code <Client>} so only one admin rings.
+     * Admins register the SDK as their own user id — never as {@code dispatch}.
      */
     public function voiceOutboundDialToIdentity(): string
     {
         $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
         $twimlDialIds = $this->voiceReadyOperatorIdentities(true);
 
-        return count($twimlDialIds) === 1 ? $twimlDialIds[0] : $dispatchRing;
+        if (count($twimlDialIds) === 1) {
+            return $twimlDialIds[0];
+        }
+
+        return $dispatchRing;
+    }
+
+    /**
+     * How many {@code <Client>} nouns TwiML will emit for this operator pool (1 when single-target mode).
+     *
+     * @param  list<string>  $orderedSanitizedIdentities
+     */
+    public function outboundTwilioClientLegCount(array $orderedSanitizedIdentities): int
+    {
+        $n = count($orderedSanitizedIdentities);
+        if ($n <= 1) {
+            return $n;
+        }
+
+        $mode = strtolower(trim((string) config('call.voice_outbound_dial_mode', 'single')));
+
+        return $mode === 'single' ? 1 : $n;
+    }
+
+    /**
+     * Collapse a multi-operator dial list to one identity when {@code call.voice_outbound_dial_mode=single}.
+     * Round-robin advances once per call (real Twilio webhook), not on availability polls.
+     *
+     * @param  list<string>  $orderedSanitizedIdentities
+     * @return list<string>
+     */
+    public function applyVoiceOutboundDialMode(array $orderedSanitizedIdentities): array
+    {
+        if ($orderedSanitizedIdentities === [] || count($orderedSanitizedIdentities) === 1) {
+            return $orderedSanitizedIdentities;
+        }
+
+        $mode = strtolower(trim((string) config('call.voice_outbound_dial_mode', 'single')));
+        if ($mode !== 'single') {
+            return $orderedSanitizedIdentities;
+        }
+
+        $strategy = strtolower(trim((string) config('call.voice_outbound_single_pick_strategy', 'round_robin')));
+        if ($strategy === 'lowest_user_id') {
+            return [$orderedSanitizedIdentities[0]];
+        }
+
+        $n = count($orderedSanitizedIdentities);
+        $key = 'call:voice_outbound_dial_round_robin';
+        try {
+            $seq = (int) Cache::increment($key);
+        } catch (Throwable) {
+            $seq = random_int(1, max(1, $n * 1000));
+        }
+
+        $idx = ($seq - 1) % $n;
+
+        return [$orderedSanitizedIdentities[$idx]];
     }
 
     /**
@@ -168,7 +227,7 @@ class StaffPresenceService
      */
     public function twilioDialContractNote(): string
     {
-        return 'Opaque string for Twilio device.connect params.To: a numeric Client identity when exactly one operator is voice-reachable, otherwise the ring-group token (see dispatch_twilio_client_identity) expanded on /twilio/voice. Not users.id. dial_to from the voice token must match twilio_dial_identity from availability when both are read without other calls in between.';
+        return 'Opaque string for Twilio device.connect params.To: one operator’s Client id when exactly one is voice-ready; otherwise the ring-group token (dispatch) — /twilio/voice resolves it. With CALL_VOICE_OUTBOUND_DIAL_MODE=single and several operators ready, TwiML rings only one admin per attempt (round_robin or lowest_user_id); outbound_twilio_client_leg_count is 1. Not users.id.';
     }
 
     public function getAvailabilitySnapshot(): array
@@ -197,6 +256,8 @@ class StaffPresenceService
         $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
         $requireVoice = (bool) config('call.require_voice_client_ready', true);
         $dialTo = $this->voiceOutboundDialToIdentity();
+        $dialMode = strtolower(trim((string) config('call.voice_outbound_dial_mode', 'single')));
+        $legCount = $this->outboundTwilioClientLegCount($twimlDialIds);
 
         $resolutionHint = match ($blockReason) {
             'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
@@ -226,6 +287,10 @@ class StaffPresenceService
             'voice_ready_operator_twilio_identities' => $voiceReadyIdsStrict,
             'twiml_dial_operator_identities' => $twimlDialIds,
             'twiml_dial_operator_count' => $twimlCount,
+            /** Actual {@code <Client>} legs for this outbound dial (1 when single-target mode). */
+            'outbound_twilio_client_leg_count' => $legCount,
+            'voice_outbound_dial_mode' => $dialMode,
+            'voice_outbound_single_pick_strategy' => strtolower(trim((string) config('call.voice_outbound_single_pick_strategy', 'round_robin'))),
             'legacy_admin_twilio_client_identity' => $adminClientIdentity,
             'require_voice_client_ready' => $requireVoice,
             'strict_presence_ttl_seconds' => $this->operatorPresenceTtlSeconds(false),

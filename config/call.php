@@ -93,6 +93,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Outbound emergency VoIP: one operator vs parallel ring
+    |--------------------------------------------------------------------------
+    |
+    | parallel — TwiML <Dial> includes every voice-ready <Client> (all admins ring + notify).
+    | single   — TwiML dials exactly one voice-ready <Client> per attempt (one ring/notify).
+    |            Pick strategy rotates per real /twilio/voice outbound request (round_robin) or
+    |            uses lowest user id (deterministic). Availability JSON still lists the full pool
+    |            in twiml_dial_operator_identities; see outbound_twilio_client_leg_count.
+    |
+    */
+    'voice_outbound_dial_mode' => strtolower((string) env('CALL_VOICE_OUTBOUND_DIAL_MODE', 'single')),
+
+    /*
+    | Used only when voice_outbound_dial_mode=single and multiple operators are voice-ready.
+    |
+    | round_robin    — Cache-backed counter, advances once per Twilio handleVoice dial attempt.
+    | lowest_user_id — Always the smallest user_id among ready operators (no cache).
+    |
+    */
+    'voice_outbound_single_pick_strategy' => strtolower((string) env('CALL_VOICE_OUTBOUND_SINGLE_PICK_STRATEGY', 'round_robin')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Max <Client> legs per <Dial> (TwiML size / Twilio limits)
     |--------------------------------------------------------------------------
     */

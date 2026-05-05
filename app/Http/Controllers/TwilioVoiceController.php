@@ -355,7 +355,7 @@ class TwilioVoiceController extends Controller
             if ($clientIdentities === []) {
                 Log::warning('Twilio handleVoice: no Client identities to dial after excluding caller / fallbacks', [
                     'From' => $request->input('From'),
-                    'exclude' => $excludeIds,
+                    'exclude' => $this->callerClientIdentitiesToExcludeFromDial($request),
                 ]);
 
                 return $this->twimlResponse(function (VoiceResponse $twiml): void {
@@ -388,6 +388,7 @@ class TwilioVoiceController extends Controller
                 'from_raw' => $request->input('From'),
                 'admin_identity_sanitized' => $adminIdentity,
                 'dispatch_ring_group' => $ringGroupIdentity,
+                'voice_outbound_dial_mode' => strtolower(trim((string) config('call.voice_outbound_dial_mode', 'single'))),
                 'twilio_webhook_origin' => $webhookOrigin,
             ]);
 
@@ -630,8 +631,9 @@ class TwilioVoiceController extends Controller
         $clientIdentities = $this->resolveOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
         $excludeIds = $this->callerClientIdentitiesToExcludeFromDial($request);
         $clientIdentities = $this->excludeClientIdentitiesFromDialTargets($clientIdentities, $excludeIds);
+        $clientIdentities = $this->dialTargetsWithCallerFallback($clientIdentities, $excludeIds, $adminIdentity, $request);
 
-        return $this->dialTargetsWithCallerFallback($clientIdentities, $excludeIds, $adminIdentity, $request);
+        return $this->staffPresence->applyVoiceOutboundDialMode($clientIdentities);
     }
 
     /**
