@@ -727,48 +727,50 @@ async function handleCallEnded(reportId) {
 </script>
 
 <template>
-    <div class="app-shell">
-        <div
-            v-if="canAccessAdmin && !voicePipelineReady"
-            class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
-            role="status"
-        >
-            Click or tap anywhere once (or press a key) to connect Twilio voice for incoming emergency calls.
-            The browser requires this before audio can start; the microphone is only requested when you answer.
+    <div class="layout-root">
+        <div class="app-shell">
+            <div
+                v-if="canAccessAdmin && !voicePipelineReady"
+                class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
+                role="status"
+            >
+                Click or tap anywhere once (or press a key) to connect Twilio voice for incoming emergency calls.
+                The browser requires this before audio can start; the microphone is only requested when you answer.
+            </div>
+            <div class="content app-shell__content">
+                <SideBar />
+                <main class="app-shell__main">
+                    <div class="app-shell__page">
+                        <slot />
+                    </div>
+                    <div class="app-shell__footer">
+                        <Footer />
+                    </div>
+                </main>
+            </div>
         </div>
-        <div class="content app-shell__content">
-            <SideBar />
-            <main class="app-shell__main">
-                <div class="app-shell__page">
-                    <slot />
+
+        <JModal id="modal-call">
+            <div class="text-center mb-10">
+                <h5 class="m-0 fw-bold">
+                    {{ isAnswering ? 'Active Call' : 'Incoming Call' }}
+                </h5>
+
+                <div v-if="callerName" class="caller-info mt-3">
+                    <p>{{ callerName }}</p>
                 </div>
-                <div class="app-shell__footer">
-                    <Footer />
+
+                <div class="d-flex justify-content-center gap-3 mt-5">
+                    <template v-if="!isAnswering">
+                        <JButton danger text="Reject" @click="rejectCall" />
+                        <JButton success text="Answer" @click="answerCall" />
+                    </template>
+                    <JButton v-if="isAnswering" danger text="End Call" @click="endCall" />
                 </div>
-            </main>
-        </div>
+            </div>
+        </JModal>
+
+        <JConfirmDialog />
+        <JToast />
     </div>
-
-    <JModal id="modal-call">
-        <div class="text-center mb-10">
-            <h5 class="m-0 fw-bold">
-                {{ isAnswering ? 'Active Call' : 'Incoming Call' }}
-            </h5>
-
-            <div v-if="callerName" class="caller-info mt-3">
-                <p>{{ callerName }}</p>
-            </div>
-
-            <div class="d-flex justify-content-center gap-3 mt-5">
-                <template v-if="!isAnswering">
-                    <JButton danger text="Reject" @click="rejectCall" />
-                    <JButton success text="Answer" @click="answerCall" />
-                </template>
-                <JButton v-if="isAnswering" danger text="End Call" @click="endCall" />
-            </div>
-        </div>
-    </JModal>
-
-    <JConfirmDialog />
-    <JToast />
 </template>
