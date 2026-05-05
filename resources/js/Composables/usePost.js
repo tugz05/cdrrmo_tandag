@@ -1,6 +1,6 @@
 import { useForm, router } from "@inertiajs/vue3"
 import { confirmDialog, toggleModal } from "@/Helpers/JHelper"
-import { hideModal } from "@/Helpers/JModal"
+import { cleanupStrayBootstrapModalArtifacts, hideModal } from "@/Helpers/JModal"
 import { nextTick, onMounted } from "vue"
 
 export function usePost(post = null) {
@@ -49,6 +49,9 @@ export function usePost(post = null) {
             onSuccess: () => {
                 hideModal()
             },
+            onFinish: () => {
+                cleanupStrayBootstrapModalArtifacts()
+            },
         })
     }
 
@@ -65,6 +68,9 @@ export function usePost(post = null) {
             onError: () => form.clearErrors(),
             onSuccess: () => {
                 hideModal()
+            },
+            onFinish: () => {
+                cleanupStrayBootstrapModalArtifacts()
             },
         })
     }

@@ -11,11 +11,16 @@ import JSpinner from '@/Components/JSpinner.vue'
 import JEmptyState from '@/Components/JEmptyState.vue'
 
 import { createApp, h } from 'vue';
-import { Head, createInertiaApp } from '@inertiajs/vue3';
+import { Head, createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { cleanupStrayBootstrapModalArtifacts } from '@/Helpers/JModal';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+router.on('finish', () => {
+    cleanupStrayBootstrapModalArtifacts();
+});
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
