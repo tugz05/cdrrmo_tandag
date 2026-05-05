@@ -81,7 +81,12 @@ const props = defineProps({
     iconEnd: {
         type: Boolean,
         default: false
-    }
+    },
+    /** HTML `form` attribute (id of a `<form>` elsewhere) for submit buttons outside the form. */
+    form: {
+        type: String,
+        default: null,
+    },
 })
 
 const buttonClasses = computed(() => ({
@@ -123,7 +128,14 @@ const buttonClasses = computed(() => ({
         <i v-if="icon && iconEnd" :class="[`bi bi-${icon}`, {'ps-2' : text}]"></i>
     </Link>
 
-    <button v-else :type="type" class="btn" :class="buttonClasses" :disabled="processing || disabled">
+    <button
+        v-else
+        :type="type"
+        class="btn"
+        :class="buttonClasses"
+        :disabled="processing || disabled"
+        :form="form || undefined"
+    >
         <template v-if="processing">
             <span class="spinner-border spinner-border-sm" :class="{'me-1' : processingText}" aria-hidden="true"></span>
             {{ processingText }}

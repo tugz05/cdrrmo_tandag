@@ -36,11 +36,15 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(fu
     Route::get('/reports/{type}/{status?}', [ReportController::class, 'index'])->name('reports.index');
     Route::resource('reports', ReportController::class)->only(['store', 'destroy']);
     // Route::resource('reports', ReportController::class)->only(['index']);
-    Route::get('posts/{type?}', [PostController::class, 'index'])->name('posts.index');
+    /*
+     * Register literal paths and the resource before GET posts/{type?}, otherwise "create" is
+     * captured as {type} and POST /admin/posts can mis-route in some stacks (405 / wrong handler).
+     */
     Route::put('posts/publish/{id}', [PostController::class, 'publish'])->name('posts.publish');
     Route::put('posts/update-title', [PostController::class, 'updateTitle'])->name('posts.update-title');
     Route::put('posts/update-type', [PostController::class, 'updateType'])->name('posts.update-type');
     Route::resource('posts', PostController::class)->only(['create', 'edit', 'store', 'destroy']);
+    Route::get('posts/{type?}', [PostController::class, 'index'])->name('posts.index');
     // Route::resource('safety-tips', SafetyTipsController::class)->only(['index','store','destroy']);
     Route::resource('settings', SettingsController::class)->only(['index']);
 
