@@ -1,11 +1,11 @@
 ﻿<script setup>
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed, nextTick } from 'vue';
 import SideBar from './SideBar.vue';
 import Footer from './Footer.vue';
 import JConfirmDialog from '@/Components/JConfirmDialog.vue';
 import JToast from '@/Components/JToast.vue';
 import JModal from '@/Components/JModal.vue';
-import { toggleModal } from '@/Helpers/JModal';
+import { toggleModal, hideModal } from '@/Helpers/JModal';
 import JButton from '@/Components/JButton.vue';
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -55,6 +55,58 @@ let twilioGestureBootstrapHandler = null;
 let incomingTitleFlashTimer = null;
 let savedDocumentTitleBeforeFlash = '';
 
+/** Browser Notification instance for incoming ring; close when call ends or caller hangs up. */
+let incomingBrowserNotification = null;
+
+/** Prevents double POST to call/ended when both disconnect and destroy run. */
+let callEndNotifyDone = false;
+
+/** Bound once: dismiss modal (X) rejects a pending ring so Twilio + UI stay in sync. */
+let modalCallHiddenHandlerBound = false;
+
+function finalizeVoiceCallEnd(callInstance) {
+    if (activeCall !== callInstance) {
+        return;
+    }
+    activeCall = null;
+    callStatus.value = 'Call ended.';
+    dismissIncomingCallUi();
+    if (!callEndNotifyDone) {
+        callEndNotifyDone = true;
+        void handleCallEnded(callReportId.value);
+    }
+}
+
+function onModalCallHiddenBootstrap() {
+    const c = activeCall;
+    if (!c || isAnswering.value) {
+        return;
+    }
+    try {
+        c.reject();
+    } catch (e) {
+        console.warn('[Twilio] reject after modal close', e);
+        finalizeVoiceCallEnd(c);
+    }
+}
+
+function dismissIncomingBrowserNotification() {
+    try {
+        incomingBrowserNotification?.close?.();
+    } catch {
+        /* ignore */
+    }
+    incomingBrowserNotification = null;
+}
+
+function dismissIncomingCallUi() {
+    stopIncomingTitleFlash();
+    dismissIncomingBrowserNotification();
+    hideModal('', 'modal-call');
+    isAnswering.value = false;
+    showAnswerButton.value = true;
+}
+
 function stopIncomingTitleFlash() {
     if (incomingTitleFlashTimer !== null) {
         clearInterval(incomingTitleFlashTimer);
@@ -81,15 +133,18 @@ function startIncomingTitleFlash() {
 }
 
 function notifyIncomingVoiceCall(displayName) {
+    dismissIncomingBrowserNotification();
     const body = displayName ? `${displayName} is calling` : 'Incoming emergency voice call';
     try {
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            const n = new Notification('CDRRMO â€” Voice call', {
+            incomingBrowserNotification = new Notification('CDRRMO — Voice call', {
                 body,
                 tag: 'cdrrmo-voice-incoming',
                 requireInteraction: true,
             });
-            window.setTimeout(() => n.close?.(), 45000);
+            window.setTimeout(() => {
+                dismissIncomingBrowserNotification();
+            }, 45000);
         }
     } catch {
         /* ignore */
@@ -275,6 +330,7 @@ function destroyTwilioDevice() {
     if (!device) {
         return;
     }
+    const legExisted = activeCall !== null;
     if (heartbeatTimer) {
         clearInterval(heartbeatTimer);
         heartbeatTimer = null;
@@ -288,6 +344,11 @@ function destroyTwilioDevice() {
     }
     device = null;
     activeCall = null;
+    if (legExisted && !callEndNotifyDone) {
+        callEndNotifyDone = true;
+        void handleCallEnded(callReportId.value);
+    }
+    dismissIncomingCallUi();
     voicePipelineReady.value = false;
 }
 
@@ -441,7 +502,12 @@ async function setupTwilio(token) {
     });
 
     device.on('incoming', async call => {
+        callEndNotifyDone = false;
         activeCall = call;
+
+        call.on('disconnect', () => {
+            finalizeVoiceCallEnd(call);
+        });
 
         call.on('error', err => {
             logTwilioErrorDetails('Incoming / active call', err);
@@ -455,7 +521,11 @@ async function setupTwilio(token) {
                     'Temporarily unavailable (31480). Signaling/media may be blocked, or no operator Client could take the call — see Twilio Debugger and https://www.twilio.com/docs/api/errors/31480';
             }
             if (activeCall === call) {
-                endCall();
+                try {
+                    activeCall.disconnect();
+                } catch {
+                    finalizeVoiceCallEnd(call);
+                }
             }
         });
 
@@ -474,6 +544,7 @@ async function setupTwilio(token) {
 
         showAnswerButton.value = true;
         isAnswering.value = false;
+        callStatus.value = 'Incoming call — answer or reject.';
         toggleModal('Incoming Call', 'modal-call');
         notifyIncomingVoiceCall(callerName.value);
     });
@@ -511,24 +582,30 @@ async function answerCall() {
 }
 
 function rejectCall() {
-    if (activeCall) {
-        stopIncomingTitleFlash();
-        activeCall.reject();
-        endCall();
+    const c = activeCall;
+    if (!c) {
+        return;
+    }
+    try {
+        c.reject();
+    } catch (e) {
+        console.warn('[Twilio] reject', e);
+        finalizeVoiceCallEnd(c);
     }
 }
 
 function endCall() {
-    stopIncomingTitleFlash();
-    if (activeCall) {
-        activeCall.disconnect();
+    const c = activeCall;
+    if (!c) {
+        dismissIncomingCallUi();
+        return;
     }
-    callStatus.value = 'Call ended';
-    isAnswering.value = false;
-    showAnswerButton.value = true;
-    activeCall = null;
-    toggleModal('', 'modal-call');
-    handleCallEnded(callReportId.value);
+    try {
+        c.disconnect();
+    } catch (e) {
+        console.warn('[Twilio] disconnect', e);
+        finalizeVoiceCallEnd(c);
+    }
 }
 
 onMounted(() => {
@@ -539,6 +616,13 @@ onMounted(() => {
     keepTwilioOnline = true;
     /** Do not register Twilio.Device on mount — Chrome blocks AudioContext without a user gesture (autoplay policy). */
     attachTwilioVoiceAfterUserGesture();
+    nextTick(() => {
+        const modalEl = document.getElementById('modal-call');
+        if (modalEl && !modalCallHiddenHandlerBound) {
+            modalCallHiddenHandlerBound = true;
+            modalEl.addEventListener('hidden.bs.modal', onModalCallHiddenBootstrap);
+        }
+    });
     try {
         window.addEventListener('beforeunload', beaconVoiceReadyFalse);
         window.addEventListener('pagehide', beaconVoiceReadyFalse);
@@ -557,6 +641,13 @@ onUnmounted(() => {
     if (heartbeatTimer) {
         clearInterval(heartbeatTimer);
         heartbeatTimer = null;
+    }
+    if (modalCallHiddenHandlerBound) {
+        const modalEl = document.getElementById('modal-call');
+        if (modalEl) {
+            modalEl.removeEventListener('hidden.bs.modal', onModalCallHiddenBootstrap);
+        }
+        modalCallHiddenHandlerBound = false;
     }
     destroyTwilioDevice();
     beaconVoiceReadyFalse();
