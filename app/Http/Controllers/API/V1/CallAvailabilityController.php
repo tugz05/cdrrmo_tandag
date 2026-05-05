@@ -16,7 +16,11 @@ class CallAvailabilityController extends Controller
     public function show(): JsonResponse
     {
         try {
-            $snap = $this->staffPresence->getCachedAvailabilitySnapshot();
+            /*
+             * Uncached snapshot so twilio_dial_identity, can_connect, and counts stay aligned with
+             * GET /api/v1/voice/token (dial_to) and TwiML at /twilio/voice (no availability JSON cache skew).
+             */
+            $snap = $this->staffPresence->getAvailabilitySnapshot();
         } catch (Throwable $e) {
             $failOpen = (bool) config('call.presence_fail_open', false);
             Log::error('Call availability: staff presence lookup failed', [
@@ -28,13 +32,15 @@ class CallAvailabilityController extends Controller
                 $adminRaw = trim((string) config('services.twilio.admin_identity'));
                 $adminId = TwilioClientIdentity::sanitize($adminRaw !== '' ? $adminRaw : (string) config('services.twilio.admin_identity'));
                 $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
+                $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
                 $snap = [
                     'can_connect' => true,
-                    'available_operators' => 0,
+                    'available_operators' => 1,
+                    'available_operators_strict' => 0,
                     'available_operators_for_voice' => 1,
                     'total_operators' => 1,
                     'block_reason' => null,
-                    'heartbeat_ttl_seconds' => (int) config('call.staff_heartbeat_ttl', 90),
+                    'heartbeat_ttl_seconds' => $ttl,
                     'operator_twilio_client_identity' => $dispatchRing,
                     'dispatch_twilio_client_identity' => $dispatchRing,
                     'voice_ready_operator_twilio_identities' => [],
@@ -42,31 +48,45 @@ class CallAvailabilityController extends Controller
                     'twiml_dial_operator_count' => 0,
                     'legacy_admin_twilio_client_identity' => $adminId,
                     'require_voice_client_ready' => (bool) config('call.require_voice_client_ready', true),
+                    'strict_presence_ttl_seconds' => $ttl,
+                    'twiml_presence_ttl_seconds' => $ttl,
                     'resolution_hint' => 'Presence check failed; proceeding because CALL_PRESENCE_FAIL_OPEN=true.',
                 ];
             } else {
-                return response()->json([
+                $note = $this->staffPresence->twilioDialContractNote();
+                $msg = 'Temporary error checking operator availability. Please try again in a moment.';
+                $data = [
+                    'success' => false,
                     'can_connect' => false,
                     'code' => 'PRESENCE_CHECK_FAILED',
-                    'message' => 'Temporary error checking operator availability. Please try again in a moment.',
-                ], 503);
+                    'message' => $msg,
+                    'twilio_note' => $note,
+                ];
+
+                return response()->json(array_merge($data, ['data' => $data]), 503);
             }
         }
 
-        $body = array_merge(
+        $payload = array_merge(
             $snap,
             [
                 'code' => $snap['can_connect'] ? 'OK' : 'ALL_OPERATORS_BUSY',
                 'message' => $snap['can_connect']
                     ? 'An operator is available to take your call.'
                     : 'All emergency operators are currently busy. Please try again in a few minutes or use a text report if available.',
-                'twilio_dial_identity' => $snap['operator_twilio_client_identity'] ?? '',
-                'twilio_note' => 'Pass twilio_dial_identity as device.connect params.To. When it is a numeric user id, that operator is dialed; when it is the ring-group token (e.g. dispatch), the server expands it to every reachable operator Client. Operators register Twilio Voice with their own user id, not dispatch.',
+                'twilio_dial_identity' => (string) ($snap['operator_twilio_client_identity'] ?? ''),
+                'twilio_note' => $this->staffPresence->twilioDialContractNote(),
             ]
         );
 
         $status = $snap['can_connect'] ? 200 : 503;
 
-        return response()->json($body, $status);
+        $inner = array_merge($payload, [
+            'success' => (bool) $snap['can_connect'],
+        ]);
+
+        return response()->json(array_merge($inner, [
+            'data' => $inner,
+        ]), $status);
     }
 }

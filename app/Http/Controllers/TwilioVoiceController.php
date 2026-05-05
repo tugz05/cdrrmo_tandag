@@ -102,25 +102,47 @@ class TwilioVoiceController extends Controller
         $identity = TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
-            return response()->json([
-                'message' => $configMessage,
+            $note = $this->staffPresence->twilioDialContractNote();
+            $payload = [
                 'identity' => $identity,
-            ], 503);
+                'message' => $configMessage,
+                'twilio_note' => $note,
+            ];
+
+            $inner = array_merge($payload, [
+                'success' => false,
+            ]);
+
+            return response()->json(array_merge($inner, [
+                'data' => $inner,
+            ]), 503);
         }
 
         $dialTo = $this->staffPresence->voiceOutboundDialToIdentity();
         $legacyRaw = trim((string) config('services.twilio.admin_identity'));
         $legacyAdmin = $legacyRaw !== '' ? TwilioClientIdentity::sanitize($legacyRaw) : null;
+        $note = $this->staffPresence->twilioDialContractNote();
 
-        return response()->json([
+        $payload = [
             'identity' => $identity,
             'token' => $this->makeVoiceAccessToken($identity),
-            /** Pass as `device.connect({ params: { To: dial_to } })` — ring-group token or single operator user id; see /api/v1/call/availability. */
+            /** Same opaque value as GET /api/v1/call/availability `twilio_dial_identity` when both are read back-to-back. */
             'dial_to' => $dialTo,
+            'twilio_dial_identity' => $dialTo,
             'operator_twilio_client_identity' => $dialTo,
             'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(false),
             'legacy_admin_twilio_client_identity' => $legacyAdmin ?? '',
+            'twilio_note' => $note,
+        ];
+
+        $inner = array_merge($payload, [
+            'success' => true,
+            'message' => 'Voice token issued.',
         ]);
+
+        return response()->json(array_merge($inner, [
+            'data' => $inner,
+        ]));
     }
 
     /**

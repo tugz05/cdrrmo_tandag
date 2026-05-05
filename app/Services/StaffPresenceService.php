@@ -163,6 +163,14 @@ class StaffPresenceService
         return count($twimlDialIds) === 1 ? $twimlDialIds[0] : $dispatchRing;
     }
 
+    /**
+     * Shared copy for GET /api/v1/call/availability and GET /api/v1/voice/token (Flutter / mobile contract).
+     */
+    public function twilioDialContractNote(): string
+    {
+        return 'Opaque string for Twilio device.connect params.To: a numeric Client identity when exactly one operator is voice-reachable, otherwise the ring-group token (see dispatch_twilio_client_identity) expanded on /twilio/voice. Not users.id. dial_to from the voice token must match twilio_dial_identity from availability when both are read without other calls in between.';
+    }
+
     public function getAvailabilitySnapshot(): array
     {
         $total = $this->totalOperatorCount();
@@ -200,9 +208,11 @@ class StaffPresenceService
 
         return [
             'can_connect' => $canConnect,
-            /** Strict voice-ready count (historical meaning of available_operators). */
-            'available_operators' => $strictCount,
-            /** Operators /twilio/voice would actually try to ring. */
+            /** Operators /twilio/voice would try to ring (mobile contract: primary “lines available”). */
+            'available_operators' => $twimlCount,
+            /** Stricter heartbeat + voice-ready window (diagnostics / dashboards). */
+            'available_operators_strict' => $strictCount,
+            /** @deprecated Use available_operators (same as TwiML dial count). Kept for older clients. */
             'available_operators_for_voice' => $twimlCount,
             'total_operators' => $total,
             'block_reason' => $blockReason,

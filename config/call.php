@@ -21,6 +21,9 @@ return [
     | Short TTL to absorb bursts of mobile clients checking capacity without
     | hammering the database on every request.
     |
+    | Note: GET /api/v1/call/availability uses an uncached snapshot so dial targets stay
+    | aligned with GET /api/v1/voice/token and TwiML; this cache is for other readers
+    | (e.g. /twilio/health) only.
     */
     'availability_cache_seconds' => (int) env('CALL_AVAILABILITY_CACHE_SECONDS', 2),
 
