@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppMobileRole;
 use App\Enums\UserTypeEnum;
 use App\Helpers\JHelper;
 use App\Models\User;
@@ -50,6 +51,7 @@ class UserService
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
+            'app_role' => AppMobileRole::Citizen,
         ]);
 
         $user->addRole('user');

@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SituationalIncidentReportManageController;
 use App\Http\Controllers\SafetyTipsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StaffPresenceController;
@@ -28,6 +29,10 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('situational-incident-reports', [SituationalIncidentReportManageController::class, 'index'])->name('situational-incident-reports.index');
+    Route::get('situational-incident-reports/{situational_incident_report}/print', [SituationalIncidentReportManageController::class, 'print'])->name('situational-incident-reports.print');
+    Route::get('situational-incident-reports/{situational_incident_report}', [SituationalIncidentReportManageController::class, 'show'])->name('situational-incident-reports.show');
 
     Route::put('users/verification-status/{id}', [UserController::class, 'verify'])->name('users.verify');
     // Route::get('users/show/{user}', [UserController::class, 'show'])->name('users.show');

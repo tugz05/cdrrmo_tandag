@@ -19,6 +19,15 @@ const baseNavLinks = [
         superAdminOnly: false,
     },
     {
+        icon: 'clipboard2-pulse',
+        title: 'SIR forms',
+        route: 'situational-incident-reports.index',
+        param: '',
+        active: 'situational-incident',
+        items: [],
+        superAdminOnly: false,
+    },
+    {
         icon: 'graph-up',
         title: 'Reports',
         route: 'reports.index',
@@ -61,7 +70,11 @@ const navlinks = computed(() => {
 });
 
 const isActiveWhenRouteContains = (param) => {
-    return window.location.pathname.toLocaleLowerCase().indexOf(param) !== -1;
+    const path = typeof window !== 'undefined' ? window.location.pathname.toLocaleLowerCase() : '';
+    if (param === 'situational-incident') {
+        return path.indexOf('situational-incident') !== -1;
+    }
+    return path.indexOf(param) !== -1;
 };
 </script>
 <template>

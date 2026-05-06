@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1\Auth;
 
 use App\Enums\JStatusCode;
+use App\Enums\UserTypeEnum;
 use App\Http\Requests\API\V1\Auth\LoginPostRequest;
 use App\Support\MobileLoginPayload;
 use App\Traits\JResponseApiTrait;
@@ -23,7 +24,7 @@ class LoginController extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! $this->isValidLoginCredentials($request)) {
+        if (! Auth::attempt($request->validated())) {
             RateLimiter::hit($this->throttleKey());
 
             return $this->responseError(
@@ -34,6 +35,29 @@ class LoginController extends FormRequest
         }
 
         $user = Auth::user();
+
+        if ($user->hasRole([UserTypeEnum::ADMIN, UserTypeEnum::SUPER_ADMIN])) {
+            Auth::logout();
+
+            return $this->responseError(
+                'Dashboard administrator accounts cannot sign in to the mobile app.',
+                [],
+                403
+            );
+        }
+
+        if (! $user->canAccessMobileApp()) {
+            Auth::logout();
+
+            return $this->responseError(
+                'This account is not enabled for the mobile app. Use a citizen or staff/rescuer account.',
+                [],
+                403
+            );
+        }
+
+        $user->syncAppRoleFromRoles();
+        $user->refresh();
 
         if (! $this->isEmailVerified($user, $request)) {
             $data['success'] = true;
@@ -50,12 +74,6 @@ class LoginController extends FormRequest
             MobileLoginPayload::data($user, $user->createToken('user-token')->plainTextToken),
             'Login successfully.'
         );
-    }
-
-    private function isValidLoginCredentials($request)
-    {
-        return Auth::attempt($request->validated()) &&
-            ! Auth::user()->hasRole(['admin', 'super_admin']);
     }
 
     private function isEmailVerified($user, $request)

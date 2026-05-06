@@ -3,7 +3,9 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\AppMobileRole;
 use App\Enums\ReportTypeEnum;
+use App\Enums\UserTypeEnum;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,11 +16,12 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, SoftDeletes, HasRolesAndPermissions, HasApiTokens;
+    use HasApiTokens, HasFactory, HasRolesAndPermissions, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
         'email',
+        'app_role',
         'google_id',
         'password',
 
@@ -34,15 +37,14 @@ class User extends Authenticatable
         'longitude',
     ];
 
-
     protected function fullName(): Attribute
     {
         return Attribute::make(
             get: fn () => trim(
-                $this->fname . ' ' . 
-                ($this->mname ? $this->mname[0] . '. ' : '') . 
-                $this->lname . 
-                ($this->suffix ? ', ' . $this->suffix : '')
+                $this->fname.' '.
+                ($this->mname ? $this->mname[0].'. ' : '').
+                $this->lname.
+                ($this->suffix ? ', '.$this->suffix : '')
             ),
         );
     }
@@ -67,6 +69,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'app_role' => AppMobileRole::class,
         ];
     }
 
@@ -94,6 +97,45 @@ class User extends Authenticatable
     // {
     //     return $this->hasMany(News::class);
     // }
+
+    public function situational_incident_reports()
+    {
+        return $this->hasMany(SituationalIncidentReport::class);
+    }
+
+    /**
+     * Whether this account may use the Flutter mobile app (citizen or staff/rescuer).
+     */
+    public function canAccessMobileApp(): bool
+    {
+        return $this->hasRole(UserTypeEnum::mobileAppRoleNames());
+    }
+
+    /**
+     * Keep users.app_role aligned with Laratrust roles (staff wins over citizen).
+     */
+    public function syncAppRoleFromRoles(): void
+    {
+        $next = $this->inferAppMobileRoleFromRoles();
+        if ($next === null) {
+            return;
+        }
+        if ($this->app_role !== $next) {
+            $this->forceFill(['app_role' => $next])->save();
+        }
+    }
+
+    public function inferAppMobileRoleFromRoles(): ?AppMobileRole
+    {
+        if ($this->hasRole(UserTypeEnum::STAFF)) {
+            return AppMobileRole::Staff;
+        }
+        if ($this->hasRole(UserTypeEnum::USER)) {
+            return AppMobileRole::Citizen;
+        }
+
+        return null;
+    }
 
     public function tips()
     {

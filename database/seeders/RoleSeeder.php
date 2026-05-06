@@ -21,5 +21,10 @@ class RoleSeeder extends Seeder
         Role::firstOrCreate([
             'name' => 'user',
         ]);
+        Role::firstOrCreate([
+            'name' => 'staff',
+            'display_name' => 'Staff / Rescuer',
+            'description' => 'Mobile app staff and field responders (not web dashboard admins).',
+        ]);
     }
 }

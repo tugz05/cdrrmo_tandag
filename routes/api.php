@@ -11,6 +11,7 @@ use App\Http\Controllers\API\V1\Auth\VerificationCodeController;
 use App\Http\Controllers\API\V1\Auth\VerificationController;
 use App\Http\Controllers\API\V1\CallAvailabilityController;
 use App\Http\Controllers\API\V1\ReportController;
+use App\Http\Controllers\API\V1\SituationalIncidentReportController;
 use App\Http\Controllers\API\V1\UserUploadController;
 use App\Http\Controllers\API\V1\ValidImageController;
 use App\Http\Controllers\CallerInfoController;
@@ -78,6 +79,13 @@ Route::prefix('v1')->group(function () {
         Route::put('/password', [UserController::class, 'updatePassword']);
         Route::get('report-history/{userId}', [ReportController::class, 'history'])->whereNumber('userId');
         Route::post('/report', [ReportController::class, 'store']);
+
+        Route::get('situational-incident-reports/history/{userId}', [SituationalIncidentReportController::class, 'history'])
+            ->whereNumber('userId');
+        Route::post('situational-incident-reports', [SituationalIncidentReportController::class, 'store']);
+        Route::get('situational-incident-reports/{situational_incident_report}', [SituationalIncidentReportController::class, 'show']);
+        Route::put('situational-incident-reports/{situational_incident_report}', [SituationalIncidentReportController::class, 'update']);
+        Route::delete('situational-incident-reports/{situational_incident_report}', [SituationalIncidentReportController::class, 'destroy']);
 
         Route::get('/voice/token', [TwilioVoiceController::class, 'tokenForMobile'])
             ->middleware('throttle:60,1');
