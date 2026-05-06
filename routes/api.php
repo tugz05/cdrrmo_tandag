@@ -79,6 +79,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/password', [UserController::class, 'updatePassword']);
         Route::get('report-history/all', [ReportController::class, 'historyAll']);
         Route::get('report-history/{userId}', [ReportController::class, 'history'])->whereNumber('userId');
+        Route::get('reports/{report}', [ReportController::class, 'show']);
         Route::post('/report', [ReportController::class, 'store']);
 
         Route::get('situational-incident-reports/history/{userId}', [SituationalIncidentReportController::class, 'history'])
