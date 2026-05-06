@@ -69,13 +69,29 @@ const navlinks = computed(() => {
     return baseNavLinks.filter((l) => !l.superAdminOnly || isSuper);
 });
 
-const isActiveWhenRouteContains = (param) => {
-    const path = typeof window !== 'undefined' ? window.location.pathname.toLocaleLowerCase() : '';
-    if (param === 'situational-incident') {
-        return path.indexOf('situational-incident') !== -1;
+/**
+ * One active nav item at a time. Avoid substring collisions (e.g. "reports" inside "situational-incident-reports").
+ */
+function isNavItemActive(nav) {
+    const path = (typeof window !== 'undefined' ? window.location.pathname : page.url || '').toLowerCase();
+
+    switch (nav.active) {
+        case 'dashboard':
+            return /\/admin\/dashboard\/?$/.test(path);
+        case 'situational-incident':
+            return path.includes('/admin/situational-incident-reports');
+        case 'reports':
+            return /\/admin\/reports(\/|$)/.test(path) && !path.includes('situational-incident');
+        case 'users':
+            return /\/admin\/users(\/|$)/.test(path);
+        case 'posts':
+            return /\/admin\/posts(\/|$)/.test(path);
+        case 'administrators':
+            return path.includes('/admin/administrators');
+        default:
+            return false;
     }
-    return path.indexOf(param) !== -1;
-};
+}
 </script>
 <template>
     <div class="navigation">
@@ -104,7 +120,7 @@ const isActiveWhenRouteContains = (param) => {
         </div>
         <ul v-if="$page.props.auth.canAccessAdmin">
             <li v-for="nav in navlinks" :key="nav.route">
-                <div :class="`list ${isActiveWhenRouteContains(nav.active) ? 'active' : ''}`">
+                <div :class="`list ${isNavItemActive(nav) ? 'active' : ''}`">
                     <b></b>
                     <b></b>
                     <Link :href="route(nav.route, nav.param)">

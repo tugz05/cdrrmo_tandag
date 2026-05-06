@@ -37,10 +37,10 @@ main {
   position: relative;
   display: flex;
   list-style: none;
-  width: 100%;
-  border-top-left-radius: 30px;
-  border-bottom-left-radius: 30px;
-  margin-bottom: 0.7rem;
+  width: calc(100% - 16px);
+  margin: 0 8px 6px 8px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .navigation ul li div:not(:first-child) {
@@ -49,7 +49,8 @@ main {
 }
 
 .navigation ul li div:first-child.active {
-  background-color: white;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .navigation ul li div:first-child.active a {
@@ -95,49 +96,9 @@ main {
   white-space: normal;
 }
 
-.navigation ul li b:nth-child(1) {
-  position: absolute;
-  top: -20px;
-  height: 20px;
-  width: 100%;
-  background-color: white;
-  display: none;
-}
-
-.navigation ul li b:nth-child(1)::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-bottom-right-radius: 20px;
-  background-color: var(--cdrrmo-800, #075985);
-}
-
+.navigation ul li b:nth-child(1),
 .navigation ul li b:nth-child(2) {
-  position: absolute;
-  top: 60px;
-  height: 20px;
-  width: 100%;
-  background-color: white;
-  display: none;
-}
-
-.navigation ul li b:nth-child(2)::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-top-right-radius: 20px;
-  background-color: var(--cdrrmo-800, #075985);
-}
-
-.navigation ul li div:first-child.active b:nth-child(1),
-.navigation ul li div:first-child.active b:nth-child(2) {
-  display: block;
+  display: none !important;
 }
 
 .toggle {

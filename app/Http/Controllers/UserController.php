@@ -26,9 +26,13 @@ class UserController extends Controller
     {
         $this->userService->store($request->validated());
 
+        $message = ($request->validated()['account_type'] ?? 'resident') === 'staff'
+            ? 'Mobile staff (rescuer) account created.'
+            : 'Resident account created.';
+
         return redirect()
             ->back()
-            ->with(JToastEnum::SUCCESS, 'Resident account created.');
+            ->with(JToastEnum::SUCCESS, $message);
     }
 
     public function show(User $user)

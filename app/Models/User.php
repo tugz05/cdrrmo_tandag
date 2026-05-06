@@ -40,12 +40,16 @@ class User extends Authenticatable
     protected function fullName(): Attribute
     {
         return Attribute::make(
-            get: fn () => trim(
-                $this->fname.' '.
-                ($this->mname ? $this->mname[0].'. ' : '').
-                $this->lname.
-                ($this->suffix ? ', '.$this->suffix : '')
-            ),
+            get: function () {
+                $fromParts = trim(
+                    ($this->fname ?? '').' '.
+                    ($this->mname ? $this->mname[0].'. ' : '').
+                    ($this->lname ?? '').
+                    ($this->suffix ? ', '.$this->suffix : '')
+                );
+
+                return $fromParts !== '' ? $fromParts : (string) ($this->name ?? '');
+            },
         );
     }
 

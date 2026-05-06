@@ -33,19 +33,49 @@ const residentForm = useForm({
     email: '',
     password: '',
     password_confirmation: '',
+    account_type: 'resident',
+});
+
+const staffForm = useForm({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    account_type: 'staff',
 });
 
 const openResidentModal = () => {
     residentForm.reset();
+    residentForm.account_type = 'resident';
     residentForm.clearErrors();
     toggleModal('Add resident account', 'modal-resident');
 };
 
+const openStaffModal = () => {
+    staffForm.reset();
+    staffForm.account_type = 'staff';
+    staffForm.clearErrors();
+    toggleModal('Add mobile staff (rescuer)', 'modal-staff');
+};
+
+const submitStaff = () => {
+    staffForm.post(route('users.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            staffForm.reset();
+            staffForm.account_type = 'staff';
+            toggleModal('', 'modal-staff');
+        },
+    });
+};
+
 const submitResident = () => {
+    residentForm.account_type = 'resident';
     residentForm.post(route('users.store'), {
         preserveScroll: true,
         onSuccess: () => {
             residentForm.reset();
+            residentForm.account_type = 'resident';
             toggleModal('', 'modal-resident');
         },
     });
@@ -64,11 +94,9 @@ const mountDataTable = () => {
                 { orderable: true },
                 { orderable: true },
                 { orderable: true },
+                { orderable: true },
                 { orderable: false },
                 { orderable: false },
-                // { orderable: true },
-                // { orderable: true },
-                // { orderable: true },
             ],
             pageLength: 10,
         })
@@ -83,12 +111,20 @@ const mountDataTable = () => {
 
     <JHeaderTitle title="User Accounts" :breadcrumb-items="[{title: 'User Accounts' }]"/>
 
-        <div class="d-flex align-items-center justify-content-end mb-4">
+        <div class="d-flex align-items-center justify-content-end mb-4 gap-2 flex-wrap">
+            <JButton
+                v-if="isSuperAdmin"
+                primary
+                outline
+                icon="briefcase"
+                text="Add mobile staff"
+                @click="openStaffModal"
+            />
             <JButton
                 v-if="isSuperAdmin"
                 primary
                 icon="person-plus"
-                text="Add resident account"
+                text="Add resident"
                 @click="openResidentModal"
             />
         </div>
@@ -139,6 +175,52 @@ const mountDataTable = () => {
             </template>
         </JModal>
 
+        <JModal sm id="modal-staff">
+            <form id="form-staff" @submit.prevent="submitStaff">
+                <p class="small text-muted mb-3">
+                    Creates a <strong>staff / rescuer</strong> account for the mobile app (Laratrust role
+                    <code>staff</code>, <code>app_role</code> staff). Not a web dashboard admin.
+                </p>
+                <JFloatingInput
+                    label="Full name"
+                    v-model="staffForm.name"
+                    :error="staffForm.errors.name"
+                    required
+                />
+                <JFloatingInput
+                    label="Email"
+                    type="email"
+                    v-model="staffForm.email"
+                    :error="staffForm.errors.email"
+                    required
+                />
+                <JFloatingInput
+                    label="Password"
+                    type="password"
+                    v-model="staffForm.password"
+                    :error="staffForm.errors.password"
+                    required
+                />
+                <JFloatingInput
+                    label="Confirm password"
+                    type="password"
+                    v-model="staffForm.password_confirmation"
+                    :error="staffForm.errors.password_confirmation"
+                    required
+                />
+            </form>
+            <template #footerend>
+                <JModalButtonClose v-if="!staffForm.processing" />
+                <JButton
+                    type="submit"
+                    primary
+                    form="form-staff"
+                    :processing="staffForm.processing"
+                    text="Create staff account"
+                />
+            </template>
+        </JModal>
+
         <div>
             <div class="table-responsive">
                 <table class="table table-stripe table-hover table-striped bg-transparent datatable-users">
@@ -146,6 +228,7 @@ const mountDataTable = () => {
                         <tr>
                             <th>#</th>
                             <th>Name</th>
+                            <th>App role</th>
                             <th>Address</th>
                             <th>Joined</th>
                             <th style="width: 6rem"></th>
@@ -158,6 +241,14 @@ const mountDataTable = () => {
                             <td>
                                 <b>{{ user.fullname }}</b>
                                 <div class="opacity-50" style="font-size:small">{{ user.email }}</div>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge rounded-pill"
+                                    :class="user.app_role === 'staff' ? 'bg-primary' : 'bg-secondary'"
+                                >
+                                    {{ user.app_role === 'staff' ? 'Staff' : 'Citizen' }}
+                                </span>
                             </td>
                             <td>{{ user.address }}</td>
                             <td>{{ timeAgo(user.created_at) }}</td>

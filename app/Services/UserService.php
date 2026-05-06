@@ -25,6 +25,7 @@ class UserService
                         'id' => $user->id,
                         'email' => $user->email,
                         'fullname' => $user->full_name,
+                        'app_role' => $user->app_role?->value ?? 'citizen',
                         'confirmed_at' => $user->confirmed_at,
                         'image' => $user->image,
                         'latitude' => $user->latitude,
@@ -47,14 +48,16 @@ class UserService
 
     public function store(array $data): User
     {
+        $isStaff = ($data['account_type'] ?? 'resident') === 'staff';
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
-            'app_role' => AppMobileRole::Citizen,
+            'app_role' => $isStaff ? AppMobileRole::Staff : AppMobileRole::Citizen,
         ]);
 
-        $user->addRole('user');
+        $user->addRole($isStaff ? UserTypeEnum::STAFF : UserTypeEnum::USER);
 
         return $user;
     }
