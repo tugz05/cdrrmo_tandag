@@ -15,8 +15,7 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      */
-    public function register(): void
-    {}
+    public function register(): void {}
 
     /**
      * Bootstrap any application services.
@@ -26,5 +25,13 @@ class AppServiceProvider extends ServiceProvider
         Report::observe(ReportObserver::class);
         User::observe(AdministratorObserver::class);
         Post::observe(PostObserver::class);
+
+        $syncAppRole = function (User $user): void {
+            $user->syncAppRoleFromRoles();
+        };
+
+        User::roleAdded($syncAppRole);
+        User::roleRemoved($syncAppRole);
+        User::roleSynced($syncAppRole);
     }
 }

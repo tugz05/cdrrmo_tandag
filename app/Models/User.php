@@ -142,16 +142,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Keep users.app_role aligned with Laratrust roles for DB / admin UI.
+     * Persist users.app_role from Laratrust roles (roles / role_user).
+     * Uses saveQuietly() so role-only updates do not fire unrelated user observers.
      */
     public function syncAppRoleFromRoles(): void
     {
-        $next = $this->inferAppMobileRoleFromRoles();
-        if ($next === null) {
-            return;
-        }
+        $this->unsetRelation('roles');
+
+        $next = $this->inferAppMobileRoleFromRoles() ?? AppMobileRole::Citizen;
+
         if ($this->app_role !== $next) {
-            $this->forceFill(['app_role' => $next])->save();
+            $this->forceFill(['app_role' => $next]);
+            $this->saveQuietly();
         }
     }
 
