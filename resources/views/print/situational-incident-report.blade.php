@@ -36,6 +36,15 @@
     $refYes = $ref === 'yes';
     $refNo = $ref === 'no';
 
+    /** AVPU / DCAP-BTLS: normalize DB & JSON (bool, 0/1, "true"/"false") for print checkmarks. */
+    $sirBool = static function ($value): bool {
+        if ($value === null) {
+            return false;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    };
+
     $details = $fillLines($report->details_of_incident, 4);
     $vehicles = $fillLines($report->vehicles_involved, 2);
     $examNotes = $fillLines($report->examination_notes, 6);
@@ -462,22 +471,22 @@
         <div class="responsive-title">Assessing Responsiveness</div>
 
         <div class="check-row">
-            <span class="box">{{ $report->is_alert_response ? '✓' : '' }}</span>
+            <span class="box">{{ $sirBool($report->is_alert_response) ? '✓' : '' }}</span>
             A - ALERT RESPONSE
         </div>
 
         <div class="check-row">
-            <span class="box">{{ $report->is_verbal_response ? '✓' : '' }}</span>
+            <span class="box">{{ $sirBool($report->is_verbal_response) ? '✓' : '' }}</span>
             V - VERBAL RESPONSE
         </div>
 
         <div class="check-row">
-            <span class="box">{{ $report->is_pain_response ? '✓' : '' }}</span>
+            <span class="box">{{ $sirBool($report->is_pain_response) ? '✓' : '' }}</span>
             P - PAIN RESPONSE
         </div>
 
         <div class="check-row">
-            <span class="box">{{ $report->is_unconscious ? '✓' : '' }}</span>
+            <span class="box">{{ $sirBool($report->is_unconscious) ? '✓' : '' }}</span>
             U - UNCONSCIOUS
         </div>
     </div>
@@ -488,37 +497,37 @@
     <div class="exam-grid">
         <div class="injury-list">
             <div class="check-row injury">
-                <span class="box">{{ $report->has_deformity ? '✓' : '' }}</span>
+                <span class="box">{{ $sirBool($report->has_deformity) ? '✓' : '' }}</span>
                 <span class="injury-text">D- DEFORMITY</span>
             </div>
 
             <div class="check-row injury">
-                <span class="box">{{ $report->has_contusion ? '✓' : '' }}</span>
+                <span class="box">{{ $sirBool($report->has_contusion) ? '✓' : '' }}</span>
                 <span class="injury-text">C- CONTUSION</span>
             </div>
 
             <div class="check-row injury">
-                <span class="box">{{ $report->has_abrasion ? '✓' : '' }}</span>
+                <span class="box">{{ $sirBool($report->has_abrasion) ? '✓' : '' }}</span>
                 <span class="injury-text">A- ABRASION</span>
             </div>
 
             <div class="check-row injury">
-                <span class="box">{{ $report->has_puncture_penetration ? '✓' : '' }}</span>
+                <span class="box">{{ $sirBool($report->has_puncture_penetration) ? '✓' : '' }}</span>
                 <span class="injury-text">P- PUNCTURE PENETRATION</span>
             </div>
 
             <div class="check-row injury">
-                <span class="box">{{ $report->has_tenderness ? '✓' : '' }}</span>
+                <span class="box">{{ $sirBool($report->has_tenderness) ? '✓' : '' }}</span>
                 <span class="injury-text">T- TENDERNESS</span>
             </div>
 
             <div class="check-row injury">
-                <span class="box">{{ $report->has_laceration ? '✓' : '' }}</span>
+                <span class="box">{{ $sirBool($report->has_laceration) ? '✓' : '' }}</span>
                 <span class="injury-text">L- LACERATION</span>
             </div>
 
             <div class="check-row injury">
-                <span class="box">{{ $report->has_swelling ? '✓' : '' }}</span>
+                <span class="box">{{ $sirBool($report->has_swelling) ? '✓' : '' }}</span>
                 <span class="injury-text">S- SWELLING</span>
             </div>
         </div>
