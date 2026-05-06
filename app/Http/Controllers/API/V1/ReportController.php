@@ -2,17 +2,43 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Enums\AppMobileRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReportStoreRequest;
 use App\Models\Report;
 use App\Models\ReportImage;
 use App\Traits\JResponseApiTrait;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends Controller
 {
     use JResponseApiTrait;
+
+    /**
+     * All call/message reports (staff app). Citizens may only use {@see history}.
+     */
+    public function historyAll(Request $request): JsonResponse
+    {
+        if ($request->user()->mobileApiAppRole() !== AppMobileRole::Staff) {
+            return $this->responseError(
+                'Only staff may view all report history.',
+                [],
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        $reports = Report::query()
+            ->with([
+                'user' => static fn ($q) => $q->select('id', 'name', 'phone', 'email'),
+                'report_images',
+            ])
+            ->orderByDesc('id')
+            ->get();
+
+        return $this->responseOK($reports);
+    }
 
     public function history(Request $request, int $userId)
     {

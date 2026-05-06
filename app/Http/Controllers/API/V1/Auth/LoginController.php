@@ -59,9 +59,8 @@ class LoginController extends FormRequest
         // $this->userIsActiveAt($user);
         RateLimiter::clear($this->throttleKey());
 
-        return $this->responseOK(
-            MobileLoginPayload::data($user, $user->createToken('user-token')->plainTextToken),
-            'Login successfully.'
+        return response()->json(
+            MobileLoginPayload::mobileAuthJson($user, $user->createToken('user-token')->plainTextToken)
         );
     }
 

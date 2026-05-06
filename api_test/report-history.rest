@@ -1,0 +1,11 @@
+### Report history (Sanctum Bearer required)
+@base = https://cdrrmo-tandag.com/api/v1
+@token = YOUR_BEARER_TOKEN
+
+### Staff only — all users' call/message reports
+GET {{base}}/report-history/all
+Authorization: Bearer {{token}}
+
+### Own history (userId must match authenticated user)
+GET {{base}}/report-history/1
+Authorization: Bearer {{token}}

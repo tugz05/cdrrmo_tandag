@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\AppMobileRole;
 use App\Helpers\JHelper;
 use App\Models\User;
 use DateTimeInterface;
@@ -26,7 +27,29 @@ final class MobileLoginPayload
     }
 
     /**
+     * Full JSON body for successful mobile password / Google auth.
+     * Top-level `app_role` and booleans are for Flutter switches without digging only into `data`.
+     *
+     * @return array{success: true, message: string, app_role: string, is_staff: bool, is_citizen: bool, data: array<string, mixed>}
+     */
+    public static function mobileAuthJson(User $user, string $plainTextToken, string $message = 'Login successfully.'): array
+    {
+        $data = self::data($user, $plainTextToken);
+        $appRole = $data['app_role'];
+
+        return [
+            'success' => true,
+            'message' => $message,
+            'app_role' => $appRole,
+            'is_staff' => $appRole === AppMobileRole::Staff->value,
+            'is_citizen' => $appRole === AppMobileRole::Citizen->value,
+            'data' => $data,
+        ];
+    }
+
+    /**
      * @return array{
+     *     app_role: string,
      *     id: int,
      *     name: string,
      *     email: string,
@@ -35,13 +58,15 @@ final class MobileLoginPayload
      *     email_verified_at: string,
      *     confirmed_at: string,
      *     status: string,
-     *     token: string,
-     *     app_role: string
+     *     token: string
      * }
      */
     public static function data(User $user, string $plainTextToken): array
     {
+        $appRole = $user->mobileApiAppRole()->value;
+
         return [
+            'app_role' => $appRole,
             'id' => (int) $user->id,
             'name' => (string) ($user->name ?? ''),
             'email' => (string) ($user->email ?? ''),
@@ -51,7 +76,6 @@ final class MobileLoginPayload
             'confirmed_at' => self::dateOrEmpty($user->confirmed_at),
             'status' => self::accountStatus($user),
             'token' => $plainTextToken,
-            'app_role' => $user->mobileApiAppRole()->value,
         ];
     }
 

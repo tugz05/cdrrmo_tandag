@@ -120,9 +120,8 @@ class GoogleAuthController extends Controller
         $user->syncAppRoleFromRoles();
         $user->refresh();
 
-        return $this->responseOK(
-            MobileLoginPayload::data($user, $user->createToken('user-token')->plainTextToken),
-            'Login successfully.'
+        return response()->json(
+            MobileLoginPayload::mobileAuthJson($user, $user->createToken('user-token')->plainTextToken)
         );
     }
 
