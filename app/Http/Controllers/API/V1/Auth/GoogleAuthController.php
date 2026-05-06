@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\API\V1\Auth;
 
 use App\Enums\AppMobileRole;
-use App\Enums\JStatusCode;
-use App\Enums\UserTypeEnum;
 use App\Exceptions\GoogleIdTokenVerificationException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\V1\Auth\GoogleIdTokenRequest;
@@ -111,17 +109,9 @@ class GoogleAuthController extends Controller
 
         $user->refresh();
 
-        if ($user->hasRole([UserTypeEnum::ADMIN, UserTypeEnum::SUPER_ADMIN])) {
-            return $this->responseError(
-                'These credentials do not match our records..',
-                [],
-                JStatusCode::ACCEPTED
-            );
-        }
-
         if (! $user->canAccessMobileApp()) {
             return $this->responseError(
-                'This account is not enabled for the mobile app. Use a citizen or staff/rescuer account.',
+                'This account is not enabled for the mobile app. Use an account with a valid role.',
                 [],
                 403
             );

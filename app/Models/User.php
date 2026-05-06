@@ -108,7 +108,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Whether this account may use the Flutter mobile app (citizen or staff/rescuer).
+     * Whether this account may use the Flutter mobile app (roles from Laratrust `roles` / `role_user`).
      */
     public function canAccessMobileApp(): bool
     {
@@ -116,7 +116,33 @@ class User extends Authenticatable
     }
 
     /**
-     * Keep users.app_role aligned with Laratrust roles (staff wins over citizen).
+     * Map Laratrust roles to mobile `app_role`: admin & super_admin → staff (rescuer); `staff` → staff; `user` → citizen.
+     */
+    public function inferAppMobileRoleFromRoles(): ?AppMobileRole
+    {
+        if ($this->hasRole([UserTypeEnum::SUPER_ADMIN, UserTypeEnum::ADMIN])) {
+            return AppMobileRole::Staff;
+        }
+        if ($this->hasRole(UserTypeEnum::STAFF)) {
+            return AppMobileRole::Staff;
+        }
+        if ($this->hasRole(UserTypeEnum::USER)) {
+            return AppMobileRole::Citizen;
+        }
+
+        return null;
+    }
+
+    /**
+     * Value returned on mobile login / profile payloads (`citizen` | `staff`).
+     */
+    public function mobileApiAppRole(): AppMobileRole
+    {
+        return $this->inferAppMobileRoleFromRoles() ?? AppMobileRole::Citizen;
+    }
+
+    /**
+     * Keep users.app_role aligned with Laratrust roles for DB / admin UI.
      */
     public function syncAppRoleFromRoles(): void
     {
@@ -127,18 +153,6 @@ class User extends Authenticatable
         if ($this->app_role !== $next) {
             $this->forceFill(['app_role' => $next])->save();
         }
-    }
-
-    public function inferAppMobileRoleFromRoles(): ?AppMobileRole
-    {
-        if ($this->hasRole(UserTypeEnum::STAFF)) {
-            return AppMobileRole::Staff;
-        }
-        if ($this->hasRole(UserTypeEnum::USER)) {
-            return AppMobileRole::Citizen;
-        }
-
-        return null;
     }
 
     public function tips()

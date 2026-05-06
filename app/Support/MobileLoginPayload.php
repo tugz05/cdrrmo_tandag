@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Enums\AppMobileRole;
 use App\Helpers\JHelper;
 use App\Models\User;
 use DateTimeInterface;
@@ -52,9 +51,7 @@ final class MobileLoginPayload
             'confirmed_at' => self::dateOrEmpty($user->confirmed_at),
             'status' => self::accountStatus($user),
             'token' => $plainTextToken,
-            'app_role' => $user->app_role instanceof AppMobileRole
-                ? $user->app_role->value
-                : AppMobileRole::Citizen->value,
+            'app_role' => $user->mobileApiAppRole()->value,
         ];
     }
 

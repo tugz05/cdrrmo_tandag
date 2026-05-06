@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API\V1\Auth;
 
 use App\Enums\JStatusCode;
-use App\Enums\UserTypeEnum;
 use App\Http\Requests\API\V1\Auth\LoginPostRequest;
 use App\Support\MobileLoginPayload;
 use App\Traits\JResponseApiTrait;
@@ -36,21 +35,11 @@ class LoginController extends FormRequest
 
         $user = Auth::user();
 
-        if ($user->hasRole([UserTypeEnum::ADMIN, UserTypeEnum::SUPER_ADMIN])) {
-            Auth::logout();
-
-            return $this->responseError(
-                'Dashboard administrator accounts cannot sign in to the mobile app.',
-                [],
-                403
-            );
-        }
-
         if (! $user->canAccessMobileApp()) {
             Auth::logout();
 
             return $this->responseError(
-                'This account is not enabled for the mobile app. Use a citizen or staff/rescuer account.',
+                'This account is not enabled for the mobile app. Use an account with a valid role.',
                 [],
                 403
             );

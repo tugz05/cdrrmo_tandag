@@ -25,7 +25,7 @@ class UserService
                         'id' => $user->id,
                         'email' => $user->email,
                         'fullname' => $user->full_name,
-                        'app_role' => $user->app_role?->value ?? 'citizen',
+                        'app_role' => $user->mobileApiAppRole()->value,
                         'confirmed_at' => $user->confirmed_at,
                         'image' => $user->image,
                         'latitude' => $user->latitude,

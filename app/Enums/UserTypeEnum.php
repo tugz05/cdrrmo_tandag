@@ -15,7 +15,8 @@ abstract class UserTypeEnum
     public const STAFF = 'staff';
 
     /**
-     * Roles that may sign in to the Flutter mobile app (not web dashboard admins).
+     * Roles that may sign in to the Flutter mobile app (Laratrust `roles` table).
+     * Admin / super_admin use the app as staff/rescuer; `user` = citizen; `staff` = field staff.
      *
      * @return list<string>
      */
@@ -24,6 +25,8 @@ abstract class UserTypeEnum
         return [
             self::USER,
             self::STAFF,
+            self::ADMIN,
+            self::SUPER_ADMIN,
         ];
     }
 
