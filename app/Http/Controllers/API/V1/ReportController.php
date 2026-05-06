@@ -8,14 +8,19 @@ use App\Models\Report;
 use App\Models\ReportImage;
 use App\Traits\JResponseApiTrait;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends Controller
 {
     use JResponseApiTrait;
 
-    public function history(Request $request)
+    public function history(Request $request, int $userId)
     {
-        $reports = Report::whereUserId($request->user()->id)->get();
+        if ((int) $request->user()->id !== $userId) {
+            return $this->responseError('You may only view your own report history.', [], Response::HTTP_FORBIDDEN);
+        }
+
+        $reports = Report::whereUserId($userId)->get();
 
         return $this->responseOK($reports);
     }

@@ -76,7 +76,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::put('/profile', [UserController::class, 'updateProfile']);
         Route::put('/password', [UserController::class, 'updatePassword']);
-        Route::get('report-history', [ReportController::class, 'history']);
+        Route::get('report-history/{userId}', [ReportController::class, 'history'])->whereNumber('userId');
         Route::post('/report', [ReportController::class, 'store']);
 
         Route::get('/voice/token', [TwilioVoiceController::class, 'tokenForMobile'])
