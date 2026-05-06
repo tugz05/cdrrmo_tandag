@@ -4,11 +4,11 @@ namespace App\Http\Controllers\API\V1\Auth;
 
 use App\Enums\JStatusCode;
 use App\Exceptions\GoogleIdTokenVerificationException;
-use App\Helpers\JHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\V1\Auth\GoogleIdTokenRequest;
 use App\Models\User;
 use App\Services\Auth\GoogleIdTokenVerifier;
+use App\Support\MobileLoginPayload;
 use App\Traits\JResponseApiTrait;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -116,17 +116,10 @@ class GoogleAuthController extends Controller
             );
         }
 
-        return $this->responseOK([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'address' => $user->address,
-            'email_verified_at' => $user->email_verified_at,
-            'confirmed_at' => $user->confirmed_at,
-            'status' => $this->accountStatus($user),
-            'token' => $user->createToken('user-token')->plainTextToken,
-        ], 'Login successfully.');
+        return $this->responseOK(
+            MobileLoginPayload::data($user, $user->createToken('user-token')->plainTextToken),
+            'Login successfully.'
+        );
     }
 
     private function syncEmailVerificationFromGoogle(User $user, bool $emailVerified): void
@@ -170,18 +163,5 @@ class GoogleAuthController extends Controller
             'fname' => array_shift($parts),
             'lname' => implode(' ', $parts),
         ];
-    }
-
-    private function accountStatus(User $user): string
-    {
-        if (! is_null($user->confirmed_at)) {
-            return 'verified';
-        }
-
-        if (count(JHelper::getValidImages($user->id)) > 0) {
-            return 'pending_verification';
-        }
-
-        return 'for_verification';
     }
 }

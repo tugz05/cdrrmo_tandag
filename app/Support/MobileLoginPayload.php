@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Support;
+
+use App\Helpers\JHelper;
+use App\Models\User;
+use DateTimeInterface;
+
+/**
+ * Success payload for POST /api/v1/auth/login and POST /api/v1/auth/google (mobile).
+ * Coerces nullables so JSON never sends null for keys the Flutter client maps to non-nullable String.
+ */
+final class MobileLoginPayload
+{
+    public static function accountStatus(User $user): string
+    {
+        if (! is_null($user->confirmed_at)) {
+            return 'verified';
+        }
+
+        if (count(JHelper::getValidImages($user->id)) > 0) {
+            return 'pending_verification';
+        }
+
+        return 'for_verification';
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     email: string,
+     *     phone: string,
+     *     address: string,
+     *     email_verified_at: string,
+     *     confirmed_at: string,
+     *     status: string,
+     *     token: string
+     * }
+     */
+    public static function data(User $user, string $plainTextToken): array
+    {
+        return [
+            'id' => (int) $user->id,
+            'name' => (string) ($user->name ?? ''),
+            'email' => (string) ($user->email ?? ''),
+            'phone' => (string) ($user->phone ?? ''),
+            'address' => (string) ($user->address ?? ''),
+            'email_verified_at' => self::dateOrEmpty($user->email_verified_at),
+            'confirmed_at' => self::dateOrEmpty($user->confirmed_at),
+            'status' => self::accountStatus($user),
+            'token' => $plainTextToken,
+        ];
+    }
+
+    private static function dateOrEmpty(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        if ($value instanceof DateTimeInterface) {
+            return $value->format(DateTimeInterface::ATOM);
+        }
+
+        return (string) $value;
+    }
+}
