@@ -4,10 +4,22 @@
     $fillLines = function (?string $text, int $count): array {
         $lines = preg_split("/\r\n|\n|\r/", (string) ($text ?? ''), -1, PREG_SPLIT_NO_EMPTY);
         $lines = array_values(array_map('trim', $lines));
-        $out = [];
 
+        $out = [];
         for ($i = 0; $i < $count; $i++) {
             $out[] = $lines[$i] ?? '';
+        }
+
+        return $out;
+    };
+
+    $fillResponders = function (?string $text, int $count): array {
+        $items = preg_split('/\r\n|\n|\r|,|;/', (string) ($text ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+        $items = array_values(array_filter(array_map('trim', $items), fn ($v) => $v !== ''));
+
+        $out = [];
+        for ($i = 0; $i < $count; $i++) {
+            $out[] = $items[$i] ?? '';
         }
 
         return $out;
@@ -28,7 +40,10 @@
     $vehicles = $fillLines($report->vehicles_involved, 2);
     $examNotes = $fillLines($report->examination_notes, 6);
     $actions = $fillLines($report->action_taken, 3);
-    $responders = $fillLines($report->name_of_responders, 6);
+
+    $responders = $fillResponders($report->name_of_responders, 6);
+    $respondersLeft = array_slice($responders, 0, 3);
+    $respondersRight = array_slice($responders, 3, 3);
 @endphp
 
 <!DOCTYPE html>
@@ -84,54 +99,61 @@
             width: 190mm;
             height: 283mm;
             margin: 0 auto;
-            position: relative;
             overflow: hidden;
         }
 
         /* HEADER */
         .header {
-            position: relative;
-            height: 39mm;
-            text-align: center;
-            font-weight: bold;
+            display: grid;
+            grid-template-columns: 28mm 1fr 32mm;
+            column-gap: 4mm;
+            align-items: start;
+            margin-bottom: 4mm;
+        }
+
+        .logo-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
         }
 
         .logo-left {
-            position: absolute;
-            top: 1mm;
-            left: 29mm;
             width: 20mm;
             height: 20mm;
             object-fit: contain;
         }
 
         .logo-right {
-            position: absolute;
-            top: 4mm;
-            right: 34mm;
-            width: 29mm;
-            height: 16mm;
+            width: 27mm;
+            height: auto;
+            max-height: 20mm;
             object-fit: contain;
+            margin-top: 2mm;
         }
 
-        .gov {
-            padding-top: 1mm;
-            font-size: 10.2pt;
-            line-height: 1.05;
+        .header-center {
+            text-align: center;
+            font-weight: bold;
         }
 
-        .office {
-            margin-top: 13mm;
+        .header-top {
             font-size: 10pt;
-            line-height: 1.12;
+            line-height: 1.08;
         }
 
-        .title {
-            font-size: 10pt;
+        .header-middle {
+            margin-top: 8mm;
+            font-size: 8.7pt;
+            line-height: 1.15;
+        }
+
+        .header-title {
             margin-top: 1mm;
+            font-size: 9pt;
+            line-height: 1.1;
         }
 
-        /* FORM ROWS */
+        /* COMMON FORM */
         .row {
             display: flex;
             align-items: flex-end;
@@ -203,39 +225,40 @@
         }
 
         .check-row {
-            height: 6.1mm;
+            height: 6mm;
             display: flex;
             align-items: center;
-            font-size: 9.2pt;
+            font-size: 9pt;
             font-weight: bold;
         }
 
         .box {
-            width: 7.7mm;
-            height: 5.7mm;
+            width: 7.2mm;
+            height: 5.5mm;
             border: 1.2px solid #000;
-            margin-right: 3mm;
+            margin-right: 2.5mm;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 10pt;
             font-weight: bold;
             line-height: 1;
+            flex: 0 0 7.2mm;
         }
 
-        /* HEAD TO TOE */
+        /* EXAMINATION AREA */
         .exam-title {
             text-align: center;
             font-weight: bold;
-            font-size: 10pt;
+            font-size: 9.5pt;
             margin-top: 1mm;
             margin-bottom: 2mm;
         }
 
         .exam-grid {
             display: grid;
-            grid-template-columns: 43mm 47mm 1fr;
-            column-gap: 6mm;
+            grid-template-columns: 52mm 35mm 1fr;
+            column-gap: 5mm;
             align-items: start;
         }
 
@@ -243,13 +266,25 @@
             padding-top: 2mm;
         }
 
+        .check-row.injury {
+            height: 5.8mm;
+            font-size: 8.4pt;
+            align-items: flex-start;
+        }
+
+        .injury-text {
+            white-space: nowrap;
+            display: inline-block;
+            padding-top: 0.6mm;
+        }
+
         .human-wrap {
             text-align: center;
         }
 
         .human-img {
-            width: 42mm;
-            height: 55mm;
+            width: 32mm;
+            height: 52mm;
             object-fit: contain;
         }
 
@@ -261,7 +296,7 @@
         .action-title {
             font-weight: bold;
             text-align: center;
-            font-size: 11pt;
+            font-size: 10pt;
             margin-top: 2mm;
             margin-bottom: 1mm;
         }
@@ -308,11 +343,21 @@
             min-height: 4mm;
         }
 
+        /* RESPONDERS */
         .responders-area {
             display: grid;
             grid-template-columns: 1fr 1fr;
             column-gap: 12mm;
-            margin-top: 7mm;
+            margin-top: 6mm;
+        }
+
+        .responders-right {
+            padding-top: 7.2mm;
+        }
+
+        .responder-line {
+            font-size: 8pt;
+            white-space: nowrap;
         }
 
         .response-vehicle {
@@ -330,21 +375,30 @@
 
     {{-- HEADER --}}
     <div class="header">
-        <img class="logo-left" src="{{ asset('assets/images/tandag_logo.png') }}" alt="">
-        <img class="logo-right" src="{{ asset('assets/images/icon.png') }}" alt="">
-
-        <div class="gov">
-            REPUBLIC OF THE PHILIPPINES<br>
-            PROVINCE OF SURIGAO DEL SUR<br>
-            TANDAG CITY
+        <div class="logo-wrap">
+            <img class="logo-left" src="{{ asset('assets/images/tandag_logo.png') }}" alt="">
         </div>
 
-        <div class="office">
-            City Disaster Risk Reduction and Management Office<br>
-            SEARCH AND EMERGENCY RESPONSE TEAM OF SURIGAO DEL SUR
+        <div class="header-center">
+            <div class="header-top">
+                REPUBLIC OF THE PHILIPPINES<br>
+                PROVINCE OF SURIGAO DEL SUR<br>
+                TANDAG CITY
+            </div>
+
+            <div class="header-middle">
+                City Disaster Risk Reduction and Management Office<br>
+                SEARCH AND EMERGENCY RESPONSE TEAM OF SURIGAO DEL SUR
+            </div>
+
+            <div class="header-title">
+                Situational Incident Report
+            </div>
         </div>
 
-        <div class="title">Situational Incident Report</div>
+        <div class="logo-wrap">
+            <img class="logo-right" src="{{ asset('assets/images/icon.png') }}" alt="">
+        </div>
     </div>
 
     {{-- BASIC INFORMATION --}}
@@ -414,17 +468,17 @@
 
         <div class="check-row">
             <span class="box">{{ $report->is_verbal_response ? '✓' : '' }}</span>
-            V – VERBAL RESPONSE
+            V - VERBAL RESPONSE
         </div>
 
         <div class="check-row">
             <span class="box">{{ $report->is_pain_response ? '✓' : '' }}</span>
-            P – PAIN RESPONSE
+            P - PAIN RESPONSE
         </div>
 
         <div class="check-row">
             <span class="box">{{ $report->is_unconscious ? '✓' : '' }}</span>
-            U – UNCONSCIOUS
+            U - UNCONSCIOUS
         </div>
     </div>
 
@@ -433,39 +487,39 @@
 
     <div class="exam-grid">
         <div class="injury-list">
-            <div class="check-row">
+            <div class="check-row injury">
                 <span class="box">{{ $report->has_deformity ? '✓' : '' }}</span>
-                D- DEFORMITY
+                <span class="injury-text">D- DEFORMITY</span>
             </div>
 
-            <div class="check-row">
+            <div class="check-row injury">
                 <span class="box">{{ $report->has_contusion ? '✓' : '' }}</span>
-                C- CONTUSION
+                <span class="injury-text">C- CONTUSION</span>
             </div>
 
-            <div class="check-row">
+            <div class="check-row injury">
                 <span class="box">{{ $report->has_abrasion ? '✓' : '' }}</span>
-                A-ABRASION
+                <span class="injury-text">A- ABRASION</span>
             </div>
 
-            <div class="check-row">
+            <div class="check-row injury">
                 <span class="box">{{ $report->has_puncture_penetration ? '✓' : '' }}</span>
-                P- PUNCTURE PENETRATION
+                <span class="injury-text">P- PUNCTURE PENETRATION</span>
             </div>
 
-            <div class="check-row">
+            <div class="check-row injury">
                 <span class="box">{{ $report->has_tenderness ? '✓' : '' }}</span>
-                T- TENDERNESS
+                <span class="injury-text">T- TENDERNESS</span>
             </div>
 
-            <div class="check-row">
+            <div class="check-row injury">
                 <span class="box">{{ $report->has_laceration ? '✓' : '' }}</span>
-                L- LACERATION
+                <span class="injury-text">L- LACERATION</span>
             </div>
 
-            <div class="check-row">
+            <div class="check-row injury">
                 <span class="box">{{ $report->has_swelling ? '✓' : '' }}</span>
-                S- SWELLING
+                <span class="injury-text">S- SWELLING</span>
             </div>
         </div>
 
@@ -515,14 +569,14 @@
         <div>
             <div class="section-label">Name of Responders:</div>
 
-            @foreach (array_slice($responders, 0, 3) as $ln)
-                <div class="line-tight">{{ $ln }}</div>
+            @foreach ($respondersLeft as $ln)
+                <div class="line-tight responder-line">{{ $ln }}</div>
             @endforeach
         </div>
 
-        <div style="padding-top: 7.5mm;">
-            @foreach (array_slice($responders, 3, 3) as $ln)
-                <div class="line-tight">{{ $ln }}</div>
+        <div class="responders-right">
+            @foreach ($respondersRight as $ln)
+                <div class="line-tight responder-line">{{ $ln }}</div>
             @endforeach
         </div>
     </div>
