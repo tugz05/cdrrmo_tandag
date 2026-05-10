@@ -108,6 +108,11 @@ class User extends Authenticatable
         return $this->hasMany(SituationalIncidentReport::class);
     }
 
+    public function device_fcm_tokens()
+    {
+        return $this->hasMany(UserDeviceFcmToken::class);
+    }
+
     /**
      * Users who may appear in the Twilio Voice dispatch pool (heartbeat + {@code <Client>} targets).
      */

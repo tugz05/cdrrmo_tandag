@@ -88,14 +88,36 @@ Flutter only needs to ensure **TwiML App Voice URL** in Twilio Console matches t
 
 ---
 
-## 5. List all SIRs (staff / admin only)
+## 5. FCM device token (Firebase push)
+
+**`POST /api/v1/device/fcm-token`**  
+**Auth:** **`Authorization: Bearer` required** (Sanctum). Unauthenticated requests receive **401** — the backend does not store anonymous device rows.
+
+**Headers:** `Accept: application/json`, `Content-Type: application/json`
+
+**Body (JSON):**
+
+```json
+{
+  "fcm_token": "<Firebase registration token>",
+  "platform": "android"
+}
+```
+
+`platform` must be **`android`** or **`ios`**. The server **upserts** one row per `(user_id, platform)` and removes the same `fcm_token` from any other user (or other platform) so notifications are not delivered to the wrong account.
+
+**Success:** **200** (updated) or **201** (first registration for that user + platform), JSON `{ "success": true, "message": "...", "data": { "id", "user_id", "platform", "updated_at" } }`.
+
+---
+
+## 6. List all SIRs (staff / admin only)
 
 **`GET /api/v1/situational-incident-reports/history/all`**  
 **Auth:** Bearer — **`staff`**, **`admin`**, or **`super_admin`** only.
 
 ---
 
-## 6. Twilio Console (ops checklist)
+## 7. Twilio Console (ops checklist)
 
 1. TwiML App **Voice URL** = `https://YOUR_DOMAIN/twilio/voice` (same host as `TWILIO_WEBHOOK_PUBLIC_ORIGIN` if you use a reverse proxy).
 2. **API Key** (SK…) + secret for JWT; **Auth token** for webhook signature validation.

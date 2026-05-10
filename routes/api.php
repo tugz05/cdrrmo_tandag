@@ -10,6 +10,7 @@ use App\Http\Controllers\API\V1\Auth\RegisterController;
 use App\Http\Controllers\API\V1\Auth\VerificationCodeController;
 use App\Http\Controllers\API\V1\Auth\VerificationController;
 use App\Http\Controllers\API\V1\CallAvailabilityController;
+use App\Http\Controllers\API\V1\DeviceFcmTokenController;
 use App\Http\Controllers\API\V1\ReportController;
 use App\Http\Controllers\API\V1\SituationalIncidentReportController;
 use App\Http\Controllers\API\V1\UserUploadController;
@@ -96,6 +97,9 @@ Route::prefix('v1')->group(function () {
         /** Same presence as POST /admin/staff/heartbeat — use from Flutter dispatch so availability API can return 200 without the web dashboard. */
         Route::post('/staff/heartbeat', [StaffPresenceController::class, 'heartbeat'])
             ->middleware('throttle:120,1');
+
+        Route::post('/device/fcm-token', [DeviceFcmTokenController::class, 'store'])
+            ->middleware('throttle:30,1');
     });
 
     // Route::get('/twilio/token', [TwilioVoiceController::class, 'token']);
