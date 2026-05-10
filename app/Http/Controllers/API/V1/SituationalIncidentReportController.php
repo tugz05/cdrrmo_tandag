@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\API\V1;
 
-use App\Enums\AppMobileRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\V1\SituationalIncidentReportRequest;
 use App\Models\SituationalIncidentReport;
@@ -15,13 +14,35 @@ class SituationalIncidentReportController extends Controller
 {
     use JResponseApiTrait;
 
+    /**
+     * All situational incident reports (staff / admin / super_admin app). Citizens use {@see history}.
+     */
+    public function historyAll(Request $request): JsonResponse
+    {
+        if (! $request->user()->mayAccessAllSituationalIncidentReportsViaApi()) {
+            return $this->responseError(
+                'Only staff or administrators may view all situational incident reports.',
+                [],
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        $reports = SituationalIncidentReport::query()
+            ->with([
+                'user' => static fn ($q) => $q->select('id', 'name', 'phone', 'email'),
+            ])
+            ->orderByDesc('id')
+            ->get();
+
+        return $this->responseOK($reports);
+    }
+
     public function history(Request $request, int $userId): JsonResponse
     {
         $user = $request->user();
         $isOwn = (int) $user->id === $userId;
-        $isStaff = $user->mobileApiAppRole() === AppMobileRole::Staff;
 
-        if (! $isOwn && ! $isStaff) {
+        if (! $isOwn && ! $user->mayAccessAllSituationalIncidentReportsViaApi()) {
             return $this->responseError('You may only view your own situational incident reports.', [], Response::HTTP_FORBIDDEN);
         }
 

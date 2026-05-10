@@ -142,6 +142,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Field staff, admin, or super_admin — may access any situational incident report via the mobile API.
+     */
+    public function mayAccessAllSituationalIncidentReportsViaApi(): bool
+    {
+        return $this->hasRole([
+            UserTypeEnum::STAFF,
+            UserTypeEnum::ADMIN,
+            UserTypeEnum::SUPER_ADMIN,
+        ]);
+    }
+
+    /**
      * Persist users.app_role from Laratrust roles (roles / role_user).
      * Uses saveQuietly() so role-only updates do not fire unrelated user observers.
      */

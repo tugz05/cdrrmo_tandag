@@ -82,6 +82,7 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/{report}', [ReportController::class, 'show']);
         Route::post('/report', [ReportController::class, 'store']);
 
+        Route::get('situational-incident-reports/history/all', [SituationalIncidentReportController::class, 'historyAll']);
         Route::get('situational-incident-reports/history/{userId}', [SituationalIncidentReportController::class, 'history'])
             ->whereNumber('userId');
         Route::post('situational-incident-reports', [SituationalIncidentReportController::class, 'store']);
