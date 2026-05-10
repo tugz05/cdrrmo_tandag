@@ -1,6 +1,8 @@
 /* Uses global --cdrrmo-* tokens from resources/css/app.css (loaded via Vite) */
 :root {
   --app-admin-sidebar-width: 230px;
+  --app-admin-sidebar-border: 5px;
+  --app-admin-sidebar-outer: calc(var(--app-admin-sidebar-width) + var(--app-admin-sidebar-border));
   --app-footer-reserved-pad: 6rem;
 }
 
@@ -12,6 +14,7 @@
   top: 0;
   left: 0;
   bottom: 0;
+  z-index: 1040;
   width: 100%;
   max-width: var(--app-admin-sidebar-width);
   box-sizing: initial;
@@ -131,7 +134,9 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: 100%;
     min-height: 0;
+    overflow-x: hidden;
 }
 
 /* —— App shell: column; .app-shell__content grows so main can fill viewport minus alert —— */
@@ -140,7 +145,9 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: 100%;
     min-height: 0;
+    overflow-x: hidden;
 }
 
 .app-shell__content {
@@ -148,17 +155,19 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: 100%;
     min-width: 0;
     min-height: 0;
+    overflow-x: hidden;
 }
 
 main.app-shell__main {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    margin-left: var(--app-admin-sidebar-width);
-    width: calc(100% - var(--app-admin-sidebar-width));
-    max-width: calc(100vw - var(--app-admin-sidebar-width));
+    margin-left: var(--app-admin-sidebar-outer);
+    width: calc(100% - var(--app-admin-sidebar-outer));
+    max-width: calc(100% - var(--app-admin-sidebar-outer));
     box-sizing: border-box;
     min-width: 0;
     min-height: 0;
@@ -171,16 +180,34 @@ main.app-shell__main {
     flex: 1 1 auto;
     min-height: 0;
     min-width: 0;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+/* DataTables + Bootstrap 5: .row negative margins extend past wrapper and widen the page */
+.app-shell__page .dataTables_wrapper {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.app-shell__page .dataTables_wrapper > .row {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 100%;
+}
+
+.app-shell__page .dataTables_wrapper > .row > [class^="col-"] {
+    max-width: 100%;
 }
 
 /* Fixed to viewport bottom inside the main column (right of sidebar) */
 .app-shell__footer {
     position: fixed;
     bottom: 0;
-    left: var(--app-admin-sidebar-width);
+    left: var(--app-admin-sidebar-outer);
     right: 0;
     z-index: 1020;
     width: auto;
