@@ -4,10 +4,7 @@
   --app-footer-reserved-pad: 6rem;
 }
 
-main {
-  padding: 0 2rem;
-  margin-left: var(--app-admin-sidebar-width);
-}
+/* Sidebar is fixed; main must not use width:100% + margin-left (overflows viewport). */
 
 .navigation {
   overflow-y: auto;
@@ -151,6 +148,7 @@ main {
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-width: 0;
     min-height: 0;
 }
 
@@ -158,18 +156,24 @@ main.app-shell__main {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    width: 100%;
+    margin-left: var(--app-admin-sidebar-width);
+    width: calc(100% - var(--app-admin-sidebar-width));
+    max-width: calc(100vw - var(--app-admin-sidebar-width));
+    box-sizing: border-box;
     min-width: 0;
     min-height: 0;
     position: relative;
+    padding: 0 2rem;
     padding-bottom: calc(var(--app-footer-reserved-pad) + env(safe-area-inset-bottom, 0px));
 }
 
 .app-shell__page {
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    overflow-x: auto;
 }
 
 /* Fixed to viewport bottom inside the main column (right of sidebar) */
