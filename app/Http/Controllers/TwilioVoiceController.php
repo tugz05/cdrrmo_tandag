@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 use Twilio\Jwt\AccessToken;
 use Twilio\Jwt\Grants\VoiceGrant;
+use Twilio\Security\RequestValidator;
 use Twilio\TwiML\VoiceResponse;
 
 class TwilioVoiceController extends Controller
@@ -92,9 +93,10 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * Mobile app (Flutter): JWT identity is the operator’s user id; outbound {@code To} is {@code dial_to} —
-     * a single voice-ready operator user id when only one is reachable, otherwise the ring-group token expanded
-     * on `/twilio/voice` to every voice-ready operator {@code <Client>}.
+     * Mobile app (Flutter): JWT identity is the user id (sanitized); outbound {@code To} is {@code dial_to} —
+     * a single voice-ready operator Client identity when only one is reachable, otherwise the ring-group token expanded
+     * on {@code /twilio/voice} to every voice-ready operator {@code <Client>}. Citizens get {@code incoming_allow} false;
+     * Laratrust staff / admin / super_admin get true so they can receive incoming Client legs (FCM + SDK).
      */
     public function tokenForMobile(Request $request): JsonResponse
     {
@@ -122,10 +124,11 @@ class TwilioVoiceController extends Controller
         $legacyRaw = trim((string) config('services.twilio.admin_identity'));
         $legacyAdmin = $legacyRaw !== '' ? TwilioClientIdentity::sanitize($legacyRaw) : null;
         $note = $this->staffPresence->twilioDialContractNote();
+        $incomingAllow = $user->isVoiceDispatchOperator();
 
         $payload = [
             'identity' => $identity,
-            'token' => $this->makeVoiceAccessToken($identity),
+            'token' => $this->makeVoiceAccessToken($identity, $incomingAllow),
             /** Same opaque value as GET /api/v1/call/availability `twilio_dial_identity` when both are read back-to-back. */
             'dial_to' => $dialTo,
             'twilio_dial_identity' => $dialTo,
@@ -133,6 +136,8 @@ class TwilioVoiceController extends Controller
             'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(false),
             'legacy_admin_twilio_client_identity' => $legacyAdmin ?? '',
             'twilio_note' => $note,
+            /** When true, VoiceGrant allows incoming Client calls (dispatch staff / admins). Citizens should be false. */
+            'incoming_allow' => $incomingAllow,
         ];
 
         $inner = array_merge($payload, [
@@ -192,7 +197,10 @@ class TwilioVoiceController extends Controller
         return implode(' ', $issues);
     }
 
-    protected function makeVoiceAccessToken(string $identity): string
+    /**
+     * @param  bool  $incomingAllow  false for citizens (outbound emergency calls only); true for dispatch staff receiving {@code <Client>} legs.
+     */
+    protected function makeVoiceAccessToken(string $identity, bool $incomingAllow = true): string
     {
         $region = config('services.twilio.voice_home_region');
         $region = is_string($region) && $region !== '' ? $region : null;
@@ -208,10 +216,48 @@ class TwilioVoiceController extends Controller
 
         $voiceGrant = new VoiceGrant;
         $voiceGrant->setOutgoingApplicationSid(config('services.twilio.twiml_app_sid'));
-        $voiceGrant->setIncomingAllow(true);
+        $voiceGrant->setIncomingAllow($incomingAllow);
         $token->addGrant($voiceGrant);
 
         return $token->toJWT();
+    }
+
+    /**
+     * Validate Twilio {@code X-Twilio-Signature} against the exact public URL (see {@code TWILIO_WEBHOOK_PUBLIC_ORIGIN})
+     * and form POST parameters (or query string for GET).
+     */
+    protected function validateTwilioWebhookSignature(Request $request, string $absolutePath): void
+    {
+        if (! (bool) config('call.validate_twilio_webhook_signature', false)) {
+            return;
+        }
+
+        $authToken = trim((string) config('services.twilio.auth_token'));
+        if ($authToken === '') {
+            Log::error('Twilio webhook rejected: TWILIO_AUTH_TOKEN is empty (required to validate X-Twilio-Signature).');
+
+            abort(503, 'Twilio webhook misconfigured.');
+        }
+
+        $signature = (string) $request->header('X-Twilio-Signature', '');
+        if ($signature === '') {
+            Log::warning('Twilio webhook: missing X-Twilio-Signature header.');
+
+            abort(403, 'Forbidden');
+        }
+
+        $url = rtrim($this->publicTwilioWebhookOrigin($request), '/').$absolutePath;
+        $data = $request->isMethod('GET') ? $request->query->all() : $request->request->all();
+
+        $validator = new RequestValidator($authToken);
+        if (! $validator->validate($signature, $url, $data)) {
+            Log::warning('Twilio webhook: invalid X-Twilio-Signature.', [
+                'path' => $absolutePath,
+                'url_used_for_validation' => $url,
+            ]);
+
+            abort(403, 'Forbidden');
+        }
     }
 
     /**
@@ -266,6 +312,8 @@ class TwilioVoiceController extends Controller
 
     public function handleVoice(Request $request)
     {
+        $this->validateTwilioWebhookSignature($request, '/twilio/voice');
+
         $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
         $failOpen = filter_var((string) config('call.presence_fail_open', app()->environment('local')), FILTER_VALIDATE_BOOL);
 
@@ -418,6 +466,8 @@ class TwilioVoiceController extends Controller
      */
     public function dialStatus(Request $request): Response
     {
+        $this->validateTwilioWebhookSignature($request, '/twilio/voice/dial-status');
+
         $dialStatus = (string) $request->input('DialCallStatus', '');
         $sip = $request->input('DialSipResponseCode') ?? $request->input('DialCallSIPResponseCode');
 
@@ -461,6 +511,8 @@ class TwilioVoiceController extends Controller
      */
     public function clientStatus(Request $request): Response
     {
+        $this->validateTwilioWebhookSignature($request, '/twilio/voice/client-status');
+
         Log::info('Twilio client status callback', [
             'CallSid' => $request->input('CallSid'),
             'ParentCallSid' => $request->input('ParentCallSid'),

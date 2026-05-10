@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Enums\AppMobileRole;
 use App\Enums\ReportTypeEnum;
 use App\Enums\UserTypeEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -108,6 +109,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Users who may appear in the Twilio Voice dispatch pool (heartbeat + {@code <Client>} targets).
+     */
+    public function scopeVoiceDispatchOperators(Builder $query): Builder
+    {
+        return $query->whereHas('roles', function ($q) {
+            $q->whereIn('name', [
+                UserTypeEnum::STAFF,
+                UserTypeEnum::ADMIN,
+                UserTypeEnum::SUPER_ADMIN,
+            ]);
+        });
+    }
+
+    /**
+     * Field staff, admin, or super_admin — dispatch app / Twilio Voice operator.
+     */
+    public function isVoiceDispatchOperator(): bool
+    {
+        return $this->hasRole([
+            UserTypeEnum::STAFF,
+            UserTypeEnum::ADMIN,
+            UserTypeEnum::SUPER_ADMIN,
+        ]);
+    }
+
+    /**
      * Whether this account may use the Flutter mobile app (roles from Laratrust `roles` / `role_user`).
      */
     public function canAccessMobileApp(): bool
@@ -146,11 +173,7 @@ class User extends Authenticatable
      */
     public function mayAccessAllSituationalIncidentReportsViaApi(): bool
     {
-        return $this->hasRole([
-            UserTypeEnum::STAFF,
-            UserTypeEnum::ADMIN,
-            UserTypeEnum::SUPER_ADMIN,
-        ]);
+        return $this->isVoiceDispatchOperator();
     }
 
     /**

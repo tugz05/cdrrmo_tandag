@@ -13,7 +13,7 @@ All API examples below use prefix:  {BASE}/api/v1
 --------------------------------------------------------------------------------
 
 Before a resident starts a voice call to the operations center, the app must
-know whether at least one staff member (admin / super admin) is ONLINE and
+know whether at least one dispatch operator (Laratrust roles staff / admin / super_admin) is ONLINE and
 AVAILABLE to answer. The backend enforces the same rules when storing the call
 location report and on the Twilio voice webhook so users cannot bypass checks.
 
@@ -36,8 +36,8 @@ Step A — Lightweight capacity check (poll sparingly; see section 5).
     GET  /api/v1/call/availability
 
     If you test mobile voice WITHOUT the web admin dashboard open, you MUST have
-    a dispatch client (Flutter or other) logged in as admin and calling:
-    POST /api/v1/staff/heartbeat  (Bearer admin Sanctum token, same interval as web ~30s)
+    a dispatch client (Flutter or other) logged in as staff, admin, or super_admin and calling:
+    POST /api/v1/staff/heartbeat  (Bearer Sanctum token, same interval as web ~30s)
     Otherwise `can_connect` stays false (503) and Twilio may later return 31603
     because no `<Dial><Client>` target is registered.
 
@@ -101,7 +101,7 @@ JSON body (both 200 and 503 include the same keys for parsing convenience):
   total_operators                    int     — count of users with admin roles (configured)
   code                               string  — "OK" or "ALL_OPERATORS_BUSY"
   message                            string  — human-readable message for dialogs/snackbars
-  block_reason                       string|null — "NO_ADMIN_ROLE_USERS" | "NO_OPERATOR_ONLINE" | null when OK
+  block_reason                       string|null — "NO_VOICE_DISPATCH_USERS" | "NO_OPERATOR_ONLINE" | null when OK
   heartbeat_ttl_seconds              int     — heartbeats must arrive within this window (see CALL_STAFF_HEARTBEAT_TTL)
   operator_twilio_client_identity    string  — must match dispatch Twilio Device.register identity (ADMIN_IDENTITY)
   resolution_hint                    string  — non-empty when blocked; explains 503 / 31603 alignment

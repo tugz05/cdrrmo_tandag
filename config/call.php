@@ -4,6 +4,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Twilio webhook signature (X-Twilio-Signature)
+    |--------------------------------------------------------------------------
+    |
+    | When true, GET|POST /twilio/voice, /twilio/voice/dial-status, and /twilio/voice/client-status
+    | reject requests unless X-Twilio-Signature validates for the exact public URL built from
+    | TWILIO_WEBHOOK_PUBLIC_ORIGIN (or APP_URL when HTTPS) + path, using TWILIO_AUTH_TOKEN.
+    |
+    | Defaults to false in local/testing so curl works; set TWILIO_VALIDATE_WEBHOOK_SIGNATURE=true
+    | in staging/production, or override per-environment in .env.
+    |
+    */
+    'validate_twilio_webhook_signature' => env('TWILIO_VALIDATE_WEBHOOK_SIGNATURE') === null
+        ? ! in_array((string) config('app.env', 'production'), ['local', 'testing'], true)
+        : filter_var(env('TWILIO_VALIDATE_WEBHOOK_SIGNATURE'), FILTER_VALIDATE_BOOL),
+
+    /*
+    |--------------------------------------------------------------------------
     | Staff online window
     |--------------------------------------------------------------------------
     |

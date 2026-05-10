@@ -12,6 +12,14 @@ class StaffPresenceController extends Controller
 
     public function heartbeat(Request $request): JsonResponse
     {
+        if (! $request->user()->isVoiceDispatchOperator()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'NOT_VOICE_DISPATCH_OPERATOR',
+                'message' => 'Only dispatch staff may send voice presence heartbeats.',
+            ], 403);
+        }
+
         $voiceReady = $request->has('twilio_voice_ready')
             ? $request->boolean('twilio_voice_ready')
             : null;

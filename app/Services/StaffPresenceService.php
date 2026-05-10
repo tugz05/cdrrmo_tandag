@@ -18,9 +18,7 @@ class StaffPresenceService
     public function operatorUserIds(): array
     {
         return User::query()
-            ->whereHas('roles', function ($q) {
-                $q->whereIn('name', ['admin', 'super_admin']);
-            })
+            ->voiceDispatchOperators()
             ->pluck('id')
             ->all();
     }
@@ -242,7 +240,7 @@ class StaffPresenceService
      */
     public function twilioDialContractNote(): string
     {
-        return 'Opaque string for Twilio device.connect params.To: one operator’s Client id when exactly one is voice-ready; otherwise the ring-group token (dispatch) — /twilio/voice resolves it. With CALL_VOICE_OUTBOUND_DIAL_MODE=single and several operators ready, TwiML rings only one admin per attempt (round_robin or lowest_user_id); outbound_twilio_client_leg_count is 1. Not users.id.';
+        return 'Opaque string for Twilio device.connect params.To: one operator’s Client id when exactly one is voice-ready; otherwise the ring-group token (dispatch) — /twilio/voice resolves it. With CALL_VOICE_OUTBOUND_DIAL_MODE=single and several operators ready, TwiML rings only one operator per attempt (round_robin or lowest_user_id); outbound_twilio_client_leg_count is 1. Operator pool = Laratrust staff, admin, super_admin (sanitized users.id as Client identity).';
     }
 
     public function getAvailabilitySnapshot(): array
@@ -260,7 +258,7 @@ class StaffPresenceService
 
         $blockReason = null;
         if ($total === 0) {
-            $blockReason = 'NO_ADMIN_ROLE_USERS';
+            $blockReason = 'NO_VOICE_DISPATCH_USERS';
         } elseif (! $canConnect) {
             $blockReason = 'NO_OPERATOR_ONLINE';
         }
@@ -275,9 +273,9 @@ class StaffPresenceService
         $legCount = $this->outboundTwilioClientLegCount($twimlDialIds);
 
         $resolutionHint = match ($blockReason) {
-            'NO_ADMIN_ROLE_USERS' => 'Assign the admin or super_admin role to at least one user in the database.',
+            'NO_VOICE_DISPATCH_USERS' => 'Assign the Laratrust staff, admin, or super_admin role to at least one user who should answer dispatch VoIP.',
             'NO_OPERATOR_ONLINE' => ($requireVoice
-                ? 'No operator is reachable for voice: open /admin with a fresh heartbeat; Twilio Device should register (twilio_voice_ready). To is the ring-group '.$dispatchRing.' unless exactly one operator is online (then To is their user id). ADMIN_IDENTITY ('.$adminClientIdentity.') is only a TwiML fallback when nobody is listed.'
+                ? 'No operator is reachable for voice within the heartbeat window: staff must POST /api/v1/staff/heartbeat with twilio_voice_ready true after the Twilio Voice SDK registers. To is the ring-group '.$dispatchRing.' unless exactly one operator is online (then To is their Client identity). ADMIN_IDENTITY ('.$adminClientIdentity.') is only a TwiML fallback when nobody is listed.'
                 : 'No operator has a fresh presence heartbeat. Web: keep /admin open. Mobile: POST /api/v1/staff/heartbeat.'),
             default => '',
         };
@@ -334,7 +332,7 @@ class StaffPresenceService
 
     public function touchHeartbeat(User $user, ?bool $twilioVoiceReady = null): void
     {
-        if (! $user->hasRole(['admin', 'super_admin'])) {
+        if (! $user->isVoiceDispatchOperator()) {
             return;
         }
 
@@ -357,7 +355,7 @@ class StaffPresenceService
 
     public function markBusy(User $user): void
     {
-        if (! $user->hasRole(['admin', 'super_admin'])) {
+        if (! $user->isVoiceDispatchOperator()) {
             return;
         }
 
@@ -374,7 +372,7 @@ class StaffPresenceService
 
     public function markAvailable(User $user): void
     {
-        if (! $user->hasRole(['admin', 'super_admin'])) {
+        if (! $user->isVoiceDispatchOperator()) {
             return;
         }
 

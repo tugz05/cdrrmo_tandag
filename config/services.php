@@ -38,6 +38,13 @@ return [
     | Voice browser client: use npm @twilio/voice-sdk (pinned in package.json) via Vite.
     | Admin UI: resources/js/app.js + AuthenticatedLayout.vue. Test pages: caller-page.js, receiver-page.js.
     | Do not load a different major/minor from jsDelivr for those surfaces or behavior can diverge.
+    |
+    | Twilio Console → Programmable Voice → TwiML Apps → your app:
+    |   Voice URL = {TWILIO_WEBHOOK_PUBLIC_ORIGIN or APP_URL}/twilio/voice  (GET|POST; same host you set below)
+    | Status callback URLs optional: .../twilio/voice/dial-status and .../twilio/voice/client-status
+    |
+    | Android staff incoming (FCM): create a Push Credential in Twilio and attach to access tokens if you
+    | add push grants later; this Laravel app issues Voice JWT + Client identity for SDK register().
     */
     'twilio' => [
         'sid' => env('TWILIO_ACCOUNT_SID'),
