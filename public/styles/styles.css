@@ -6,21 +6,47 @@
   --app-footer-reserved-pad: 6rem;
 }
 
+/*
+ * Prevent horizontal drag/pan from moving the whole document over the fixed sidebar.
+ * (Wide tables still scroll inside .app-shell__page where overflow-x: auto is set.)
+ */
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+#app {
+  max-width: 100%;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
 /* Sidebar is fixed; main must not use width:100% + margin-left (overflows viewport). */
 
 .navigation {
   overflow-y: auto;
+  overflow-x: hidden;
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
   z-index: 1040;
-  width: 100%;
-  max-width: var(--app-admin-sidebar-width);
-  box-sizing: initial;
+  box-sizing: border-box;
+  width: var(--app-admin-sidebar-outer);
+  min-width: var(--app-admin-sidebar-outer);
+  max-width: var(--app-admin-sidebar-outer);
   border-left: 5px solid var(--cdrrmo-600, #0284c7);
   background: var(--cdrrmo-sidebar, linear-gradient(180deg, #075985 0%, #0c4a6e 100%));
   transition: 0.5s;
+  isolation: isolate;
+  pointer-events: auto;
 }
 
 .navigation ul {
@@ -172,6 +198,7 @@ main.app-shell__main {
     min-width: 0;
     min-height: 0;
     position: relative;
+    z-index: 0;
     padding: 0 2rem;
     padding-bottom: calc(var(--app-footer-reserved-pad) + env(safe-area-inset-bottom, 0px));
 }
