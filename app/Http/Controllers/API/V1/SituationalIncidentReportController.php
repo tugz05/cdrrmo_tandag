@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Enums\AppMobileRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\V1\SituationalIncidentReportRequest;
 use App\Models\SituationalIncidentReport;
@@ -16,7 +17,11 @@ class SituationalIncidentReportController extends Controller
 
     public function history(Request $request, int $userId): JsonResponse
     {
-        if ((int) $request->user()->id !== $userId) {
+        $user = $request->user();
+        $isOwn = (int) $user->id === $userId;
+        $isStaff = $user->mobileApiAppRole() === AppMobileRole::Staff;
+
+        if (! $isOwn && ! $isStaff) {
             return $this->responseError('You may only view your own situational incident reports.', [], Response::HTTP_FORBIDDEN);
         }
 
