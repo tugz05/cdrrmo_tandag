@@ -24,11 +24,17 @@ class Report extends Model
         'accuracy',
         'reporters_address',
         'is_manually_added',
+        'rescue_status',
+        'rescuer_user_id',
+        'rescue_started_at',
+        'rescue_arrived_at',
     ];
 
     protected $casts = [
         'call_started_at' => 'datetime',
         'call_ended_at' => 'datetime',
+        'rescue_started_at' => 'datetime',
+        'rescue_arrived_at' => 'datetime',
     ];
 
     // Mark call as started
@@ -53,7 +59,12 @@ class Report extends Model
     
     public function user()
     {
-        return $this->belongsTo(User::class);   
+        return $this->belongsTo(User::class);
+    }
+
+    public function rescuer()
+    {
+        return $this->belongsTo(User::class, 'rescuer_user_id');
     }
 
     public function report_images()

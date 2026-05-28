@@ -1,0 +1,102 @@
+/**
+ * Print layout for admin Inertia pages (dashboard, reports, users, SIR list).
+ * Use `no-print` on controls; the Inertia shell uses `.navigation` (not `.sidebar`).
+ */
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    html,
+    body {
+        background: #fff !important;
+        color: #111 !important;
+        font-size: 11pt;
+    }
+
+    .layout-root,
+    .app-shell,
+    .content,
+    .app-shell__main,
+    .app-shell__page {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        float: none !important;
+    }
+
+    /* Primary nav is `.navigation` inside AuthenticatedLayout */
+    .navigation,
+    .app-shell__footer,
+    .sidebar,
+    aside,
+    nav,
+    .navbar,
+    .btn:not(.print-keep),
+    .dropdown,
+    .modal,
+    .offcanvas,
+    footer,
+    .pagination a:not(.active) {
+        display: none !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
+    }
+
+    .print-root,
+    .print-root .table-responsive {
+        overflow: visible !important;
+    }
+
+    .print-root table {
+        width: 100% !important;
+        font-size: 10pt !important;
+        page-break-inside: auto;
+    }
+
+    .print-root tr,
+    .print-root td,
+    .print-root th {
+        page-break-inside: avoid;
+    }
+
+    .card,
+    .print-root .rounded-4,
+    .print-root .rounded-3 {
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+    }
+
+    /* Apex / map: keep on page, avoid awkward splits */
+    .apexcharts-canvas {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .leaflet-container {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        min-height: 320px !important;
+        height: 360px !important;
+        border: 1px solid #94a3b8 !important;
+    }
+
+    .leaflet-control-container {
+        display: none !important;
+    }
+
+    @page {
+        margin: 14mm;
+        size: A4 portrait;
+    }
+}

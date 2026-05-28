@@ -12,10 +12,10 @@ class ReportController extends Controller
 {
     public function __construct(private ReportService $reportService) {}
 
-    public function index(string $type = 'All', ?string $status = null)
+    public function index(Request $request, string $type = 'All', ?string $status = null)
     {
         return Inertia::render('Reports/Index',
-            $this->reportService->index($type, $status)
+            $this->reportService->index($type, $status, trim((string) $request->input('q', '')))
         );
     }
 

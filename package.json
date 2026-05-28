@@ -22,6 +22,8 @@
         "apexcharts": "^4.0.0",
         "datatables.net": "1.13.6",
         "javascript-time-ago": "^2.5.11",
-        "jquery": "3.7.1"
+        "jquery": "3.7.1",
+        "leaflet": "^1.9.4",
+        "leaflet.heat": "^0.2.0"
     }
 }

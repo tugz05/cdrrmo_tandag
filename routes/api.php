@@ -12,6 +12,7 @@ use App\Http\Controllers\API\V1\Auth\VerificationController;
 use App\Http\Controllers\API\V1\CallAvailabilityController;
 use App\Http\Controllers\API\V1\DeviceFcmTokenController;
 use App\Http\Controllers\API\V1\ReportController;
+use App\Http\Controllers\API\V1\RescueController;
 use App\Http\Controllers\API\V1\SituationalIncidentReportController;
 use App\Http\Controllers\API\V1\UserUploadController;
 use App\Http\Controllers\API\V1\ValidImageController;
@@ -100,6 +101,13 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/device/fcm-token', [DeviceFcmTokenController::class, 'store'])
             ->middleware('throttle:30,1');
+
+        Route::prefix('reports/{report}')->group(function () {
+            Route::post('start-rescue',    [RescueController::class, 'startRescue']);
+            Route::post('rescue-arrived',  [RescueController::class, 'rescueArrived']);
+            Route::post('rescue-complete', [RescueController::class, 'rescueComplete']);
+            Route::get('rescue-status',    [RescueController::class, 'rescueStatus']);
+        });
     });
 
     // Route::get('/twilio/token', [TwilioVoiceController::class, 'token']);

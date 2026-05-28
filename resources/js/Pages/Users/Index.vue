@@ -4,6 +4,7 @@ import { dataTable } from '@/Helpers/JHelper';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, onMounted } from 'vue';
 import JButton from '@/Components/JButton.vue';
+import PagePrintBar from '@/Components/PagePrintBar.vue';
 import JDropdownMenu from '@/Components/JDropdownMenu.vue';
 import JDropdownItem from '@/Components/JDropdownItem.vue';
 import JOffCanvas from '@/Components/JOffCanvas.vue';
@@ -111,7 +112,11 @@ const mountDataTable = () => {
 
     <JHeaderTitle title="User Accounts" :breadcrumb-items="[{title: 'User Accounts' }]"/>
 
-        <div class="d-flex align-items-center justify-content-end mb-4 gap-2 flex-wrap">
+        <div class="no-print mb-3">
+            <PagePrintBar label="Print user list" />
+        </div>
+
+        <div class="d-flex align-items-center justify-content-end mb-4 gap-2 flex-wrap no-print">
             <JButton
                 v-if="isSuperAdmin"
                 primary
@@ -221,7 +226,7 @@ const mountDataTable = () => {
             </template>
         </JModal>
 
-        <div>
+        <div class="print-root">
             <div class="table-responsive">
                 <table class="table table-stripe table-hover table-striped bg-transparent datatable-users">
                     <thead>

@@ -8,13 +8,10 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function __construct(private DashboardService $dashboardService)
-    {}
+    public function __construct(private DashboardService $dashboardService) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('Dashboard/Index',
-            $this->dashboardService->all()
-        );
+        return Inertia::render('Dashboard/Index', $this->dashboardService->all($request));
     }
 }

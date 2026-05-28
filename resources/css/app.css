@@ -2,6 +2,8 @@
  * CDRRMO global palette — light blue system colors.
  * Use var(--cdrrmo-*) or semantic aliases in components and public CSS.
  */
+@import './print.css';
+
 :root {
     /* Scale (sky / light blue) */
     --cdrrmo-50: #f0f9ff;

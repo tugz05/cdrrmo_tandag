@@ -1,5 +1,6 @@
 <script setup>
 import JModal from '@/Components/JModal.vue';
+import PagePrintBar from '@/Components/PagePrintBar.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { dataTable, toggleModal, toggleOffCanvas } from '@/Helpers/JHelper';
 import { Head, router } from '@inertiajs/vue3';
@@ -34,12 +35,19 @@ const props = defineProps({
     stats: {
         type: Object,
         default: () => ({})
-    }
+    },
+    search: {
+        type: String,
+        default: '',
+    },
 })
 
-console.log(props.active_status)
-
-console.log(props.stats)
+watch(
+    () => props.search,
+    (v) => {
+        searchQ.value = v ?? '';
+    }
+);
 
 const { form, reportImages, create, store, edit, updateStatus, destroy, details } = useReport()
 
@@ -72,12 +80,28 @@ const verify = () => {
 
 const filter_type = ref(props.active_type);
 const filter_status = ref(props.active_status);
+const searchQ = ref(props.search ?? '');
+
+let searchDebounce = null;
 
 const filterStatus = async () => {
-    router.get(route('reports.index', {
-        type: filter_type.value,
-        status: filter_status.value
-    }));
+    await router.get(
+        route('reports.index', {
+            type: filter_type.value,
+            status: filter_status.value || undefined,
+        }),
+        {
+            q: searchQ.value?.trim() ? searchQ.value.trim() : undefined,
+        },
+        { preserveState: true, replace: true }
+    );
+};
+
+const onSearchInput = () => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+        void filterStatus();
+    }, 400);
 };
 
 // Use watch to monitor changes
@@ -93,7 +117,6 @@ watch(filter_type, async (newType, oldType) => {
 watch(filter_status, async () => {
     await filterStatus(); // Call filterStatus when filter_status changes
 });
-
 
 const addReport = () => {
     toggleModal('Add Report')
@@ -118,7 +141,24 @@ const formatDateTime = (datetime) => {
 
 <template>
     <Head title="Reports" />
-    <JHeaderTitle title="Reports" :breadcrumb-items="[{title: 'Reports' }]"/>
+    <JHeaderTitle title="Reports" :breadcrumb-items="[{ title: 'Reports' }]" />
+
+        <div class="no-print d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <PagePrintBar label="Print report list" />
+            <div class="flex-grow-1" style="max-width: 22rem">
+                <label class="visually-hidden" for="reports-search">Search reports</label>
+                <input
+                    id="reports-search"
+                    v-model="searchQ"
+                    type="search"
+                    class="form-control form-control-sm"
+                    placeholder="Search details, address, reporter…"
+                    autocomplete="off"
+                    @input="onSearchInput"
+                />
+            </div>
+        </div>
+
         <!-- <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Dashboard</h2>
         </template> -->
@@ -130,7 +170,7 @@ const formatDateTime = (datetime) => {
             </div>
         </div> -->
 
-        <div class="d-flex justify-content-between gap-4 align-items-center mb-10">
+        <div class="no-print d-flex justify-content-between gap-4 align-items-center mb-10">
             <div class="d-flex gap-5">
                 <div class="btn-group text-nowrap" role="group" aria-label="Basic example">
                     <button @click="filter_type = 'All'" type="button" class="btn btn-default" :class="{'active' : active_type === 'All'}">
@@ -155,7 +195,7 @@ const formatDateTime = (datetime) => {
             <JButton primary @click="create()" class="text-nowrap" icon="plus-lg" text="Add Report"/>
         </div>
 
-        <div>
+        <div class="print-root">
             <div class="table-responsive">
                 <table class="table table-stripe bg-transparent datatable-users">
                     <thead>
