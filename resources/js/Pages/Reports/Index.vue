@@ -54,25 +54,12 @@ const { form, reportImages, geocodedLocation, geocodingLoading, create, store, e
 const tableAddresses = ref({})
 let dtInstance = null
 
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+
 function refreshDataTable() {
     if (!dtInstance) return
     dtInstance.destroy()
     dtInstance = dataTable('datatable-users', { pageLength: 10 })
-}
-
-async function persistAddress(reportId, address) {
-    try {
-        await fetch(route('reports.save-address', reportId), {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-            },
-            body: JSON.stringify({ address }),
-        })
-    } catch {
-        // best-effort — address is already shown in the table
-    }
 }
 
 async function geocodeAll() {
@@ -84,27 +71,27 @@ async function geocodeAll() {
     for (let i = 0; i < toGeocode.length; i++) {
         const r = toGeocode[i]
         try {
-            const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${r.latitude}&lon=${r.longitude}`,
-                { headers: { 'Accept-Language': 'en' } }
-            )
+            const res = await fetch(route('reports.resolve-address', r.id), {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            })
             const data = await res.json()
-            const address = data?.display_name ?? null
-            if (address) {
-                tableAddresses.value = { ...tableAddresses.value, [r.id]: address }
-                persistAddress(r.id, address)
+            if (data?.address) {
+                tableAddresses.value = { ...tableAddresses.value, [r.id]: data.address }
             }
         } catch {
-            // network error — leave coordinates showing
+            // leave coordinates showing on network failure
         }
 
-        // Nominatim ToS: max 1 request/second
+        // 1 s between requests so the server never hammers Nominatim
         if (i < toGeocode.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1050))
+            await new Promise(resolve => setTimeout(resolve, 1000))
         }
     }
 
-    // One final DataTable refresh after all addresses are resolved
     await nextTick()
     refreshDataTable()
 }
@@ -112,7 +99,7 @@ async function geocodeAll() {
 onMounted(async () => {
     await nextTick()
     dtInstance = dataTable('datatable-users', { pageLength: 10 })
-    geocodeAll()   // sequential geocoding in background; table stays usable throughout
+    geocodeAll()   // runs sequentially in background; table is usable the whole time
 })
 
 const verify = () => {

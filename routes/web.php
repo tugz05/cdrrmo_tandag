@@ -38,7 +38,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(fu
     // Route::get('users/show/{user}', [UserController::class, 'show'])->name('users.show');
     Route::resource('users', UserController::class)->only(['index', 'show', 'destroy']);
     Route::put('reports/update-status', [ReportController::class, 'updateStatus'])->name('reports.update-status');
-    Route::patch('reports/{report}/address', [ReportController::class, 'saveAddress'])->name('reports.save-address');
+    Route::post('reports/{report}/resolve-address', [ReportController::class, 'resolveAddress'])->name('reports.resolve-address');
     Route::get('/reports/{type}/{status?}', [ReportController::class, 'index'])->name('reports.index');
     Route::resource('reports', ReportController::class)->only(['store', 'destroy']);
     // Route::resource('reports', ReportController::class)->only(['index']);
