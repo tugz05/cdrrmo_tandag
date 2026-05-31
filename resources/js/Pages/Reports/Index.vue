@@ -56,22 +56,28 @@ const loadingIds = ref({})
 
 async function fetchTableAddresses() {
     const toGeocode = props.reports.filter(r => r.latitude && r.longitude && !r.address)
-    for (const report of toGeocode) {
-        loadingIds.value[report.id] = true
-        try {
-            const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${report.latitude}&lon=${report.longitude}`,
+    if (!toGeocode.length) return
+
+    toGeocode.forEach(r => { loadingIds.value[r.id] = true })
+
+    const results = await Promise.allSettled(
+        toGeocode.map(r =>
+            fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${r.latitude}&lon=${r.longitude}`,
                 { headers: { 'Accept-Language': 'en' } }
-            )
-            const data = await res.json()
-            tableAddresses.value[report.id] = data?.display_name ?? null
-        } catch {
-            tableAddresses.value[report.id] = null
-        } finally {
-            delete loadingIds.value[report.id]
+            ).then(res => res.json()).then(data => ({ id: r.id, address: data?.display_name ?? null }))
+        )
+    )
+
+    const resolved = {}
+    results.forEach(result => {
+        if (result.status === 'fulfilled') {
+            resolved[result.value.id] = result.value.address
         }
-        await new Promise(r => setTimeout(r, 1100))
-    }
+    })
+
+    tableAddresses.value = resolved
+    loadingIds.value = {}
 }
 
 onMounted(() => {
