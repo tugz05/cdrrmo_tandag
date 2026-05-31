@@ -49,7 +49,7 @@ watch(
     }
 );
 
-const { form, reportImages, create, store, edit, updateStatus, destroy, details } = useReport()
+const { form, reportImages, geocodedLocation, geocodingLoading, create, store, edit, updateStatus, destroy, details } = useReport()
 
 onMounted(() => {
     mountDataTable()
@@ -305,15 +305,47 @@ const formatDateTime = (datetime) => {
                         <span v-if="form.status === 'Rescued'">Already been rescued.</span>
                     </div>
                 </div>
-                <div class="col-12 d-flex justify-content-between gap-3 fs-sm text-muted">
-                    <a v-if="form.latitude && form.longitude" :href="`https://www.google.com/maps/@${form.latitude},${form.longitude},13z`" target="_blank"><i class="bi bi-geo-alt"></i> View Location</a>
-                    <span v-else>N/A</span>
-                    <div><i class="bi bi-clock"></i> {{ timeAgo(form.created_at) }}</div>
+                <!-- Time -->
+                <div class="col-12 d-flex justify-content-end">
+                    <span class="small text-muted"><i class="bi bi-clock me-1"></i>{{ timeAgo(form.created_at) }}</span>
                 </div>
+
+                <!-- Location -->
                 <div class="col-12">
+                    <div class="small fw-semibold text-uppercase text-muted mb-2" style="letter-spacing:0.06em">
+                        <i class="bi bi-geo-alt-fill text-primary me-1"></i>Location
+                    </div>
+                    <template v-if="form.latitude && form.longitude">
+                        <div v-if="geocodingLoading" class="small text-muted d-flex align-items-center gap-2 mb-1">
+                            <span class="spinner-border spinner-border-sm" style="width:0.7rem;height:0.7rem" aria-hidden="true"></span>
+                            Looking up address…
+                        </div>
+                        <div v-else-if="geocodedLocation" class="small mb-1">{{ geocodedLocation }}</div>
+                        <div class="small text-muted mb-2">
+                            <i class="bi bi-crosshair me-1"></i>{{ form.latitude }}, {{ form.longitude }}
+                        </div>
+                        <a
+                            :href="`https://www.google.com/maps/@${form.latitude},${form.longitude},15z`"
+                            target="_blank"
+                            rel="noopener"
+                            class="btn btn-sm btn-outline-primary"
+                        >
+                            <i class="bi bi-map me-1"></i>Open in Google Maps
+                        </a>
+                    </template>
+                    <span v-else class="small text-muted">No location data.</span>
+                </div>
+
+                <!-- Description -->
+                <div class="col-12">
+                    <div class="small fw-semibold text-uppercase text-muted mb-2" style="letter-spacing:0.06em">
+                        <i class="bi bi-chat-text me-1"></i>Description
+                    </div>
                     <p v-if="form.details" class="m-0">{{ form.details }}</p>
-                    <p v-else class="m-0"><i>No Details.</i></p>
-                    <p v-if="form.address" class="m-0 text-muted mt-2">{{ form.address }}</p>
+                    <p v-else class="m-0 text-muted fst-italic small">No text description provided.</p>
+                    <p v-if="form.address" class="m-0 text-muted mt-2">
+                        <i class="bi bi-house me-1"></i>{{ form.address }}
+                    </p>
                 </div>
 
                 <div class="col-12 d-flex gap-3 flex-wrap">

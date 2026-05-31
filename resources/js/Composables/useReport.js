@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { confirmDialog } from "@/Helpers/JConfirmDialog"
 import { toggleModal } from "@/Helpers/JModal"
 import { toggleOffCanvas } from "@/Helpers/JOffcanvas"
@@ -7,6 +8,9 @@ import { useForm } from "@inertiajs/vue3"
 export function useReport() {
 
     const { reportImages, fetchReportImages } = useReportImages()
+
+    const geocodedLocation = ref(null)
+    const geocodingLoading = ref(false)
 
     const form = useForm({
         id: '',
@@ -26,12 +30,29 @@ export function useReport() {
         is_manually_added: true
     })
 
+    const reverseGeocode = async (lat, lng) => {
+        geocodingLoading.value = true
+        geocodedLocation.value = null
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+                { headers: { 'Accept-Language': 'en' } }
+            )
+            const data = await res.json()
+            geocodedLocation.value = data?.display_name ?? null
+        } catch {
+            geocodedLocation.value = null
+        } finally {
+            geocodingLoading.value = false
+        }
+    }
+
     const create = () => {
         form.reset()
         toggleModal('Add Report')
     }
 
-    const store = () => {        
+    const store = () => {
         form.post(route('reports.store'), {
             onSuccess: () => {
                 form.reset()
@@ -45,17 +66,18 @@ export function useReport() {
         form.details = report.details;
         form.status = report.status;
         form.created_at = report.created_at;
-        form.address = report.address; 
+        form.address = report.address;
         form.reported_by = report.reported_by;
         form.reporters_address = report.reporters_address;
         toggleModal()
     }
 
-    const details = async (report) => { 
+    const details = async (report) => {
         form.reset()
+        geocodedLocation.value = null
 
-        toggleOffCanvas('offcanvas-reports')
-
+        // Populate all fields BEFORE opening the offcanvas so the panel
+        // never renders with stale reset values.
         form.user_id = report.user_id;
         form.latitude = report.latitude;
         form.longitude = report.longitude;
@@ -65,13 +87,19 @@ export function useReport() {
         form.user = report.user;
         form.status = report.status;
         form.type = report.type;
-        form.created_at = report.created_at
-        form.address = report.address
-        form.is_manually_added = report.is_manually_added
-        form.reported_by = report.reported_by
-        form.reporters_address = report.reporters_address
-        // console.log('report id', report.id);
-        await fetchReportImages(report.id)
+        form.created_at = report.created_at;
+        form.address = report.address;
+        form.is_manually_added = report.is_manually_added;
+        form.reported_by = report.reported_by;
+        form.reporters_address = report.reporters_address;
+
+        toggleOffCanvas('offcanvas-reports');
+
+        if (report.latitude && report.longitude) {
+            void reverseGeocode(report.latitude, report.longitude)
+        }
+
+        await fetchReportImages(report.id);
     }
 
     const destroy = (id) => {
@@ -101,6 +129,8 @@ export function useReport() {
     return {
         form,
         reportImages,
+        geocodedLocation,
+        geocodingLoading,
         create,
         store,
         edit,

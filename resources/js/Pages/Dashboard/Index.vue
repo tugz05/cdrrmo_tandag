@@ -263,8 +263,10 @@ async function mountHeatmap() {
         return;
     }
 
-    const L = (await import('leaflet')).default;
-    await import('leaflet/dist/leaflet.css');
+    const [{ default: L }] = await Promise.all([
+        import('leaflet'),
+        import('leaflet/dist/leaflet.css'),
+    ]);
     window.L = L;
     await import('leaflet.heat/dist/leaflet-heat.js');
 
@@ -276,6 +278,8 @@ async function mountHeatmap() {
         scrollWheelZoom: false,
         zoomControl: true,
     }).setView(center, zoom);
+
+    mapInstance.invalidateSize();
 
     /**
      * Realistic satellite base (Esri World Imagery) + reference labels for place names.
@@ -477,7 +481,7 @@ watch(
             <div
                 ref="mapEl"
                 class="rounded-3 border"
-                style="min-height: 440px; z-index: 1"
+                style="height: 440px; z-index: 1"
                 role="presentation"
             />
             <p v-if="!heatmap_points.length" class="small text-muted mt-2 mb-0">
