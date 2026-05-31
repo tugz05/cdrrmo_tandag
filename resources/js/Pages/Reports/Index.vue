@@ -55,29 +55,30 @@ const tableAddresses = ref({})
 const loadingIds = ref({})
 
 async function fetchTableAddresses() {
-    const toGeocode = props.reports.filter(r => r.latitude && r.longitude && !r.address)
+    const toGeocode = props.reports.filter(
+        r => r.latitude && r.longitude && !r.address && !r.reporters_address
+    )
     if (!toGeocode.length) return
 
-    toGeocode.forEach(r => { loadingIds.value[r.id] = true })
-
-    const results = await Promise.allSettled(
-        toGeocode.map(r =>
-            fetch(
+    for (const r of toGeocode) {
+        loadingIds.value[r.id] = true
+        try {
+            const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${r.latitude}&lon=${r.longitude}`,
                 { headers: { 'Accept-Language': 'en' } }
-            ).then(res => res.json()).then(data => ({ id: r.id, address: data?.display_name ?? null }))
-        )
-    )
-
-    const resolved = {}
-    results.forEach(result => {
-        if (result.status === 'fulfilled') {
-            resolved[result.value.id] = result.value.address
+            )
+            const data = await res.json()
+            if (data?.display_name) {
+                tableAddresses.value = { ...tableAddresses.value, [r.id]: data.display_name }
+            }
+        } catch {
+            // silently skip failed lookups
+        } finally {
+            loadingIds.value = { ...loadingIds.value, [r.id]: false }
         }
-    })
-
-    tableAddresses.value = resolved
-    loadingIds.value = {}
+        // Nominatim ToS: max 1 request per second
+        await new Promise(resolve => setTimeout(resolve, 1100))
+    }
 }
 
 onMounted(async () => {
@@ -260,6 +261,9 @@ const formatDateTime = (datetime) => {
                                     <template v-else>
                                         <template v-if="report.address">
                                             <i class="bi bi-geo-alt me-1 text-muted"></i><span>{{ report.address }}</span>
+                                        </template>
+                                        <template v-else-if="report.reporters_address">
+                                            <i class="bi bi-geo-alt me-1 text-muted"></i><span>{{ report.reporters_address }}</span>
                                         </template>
                                         <template v-else-if="loadingIds[report.id]">
                                             <span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem"></span>
