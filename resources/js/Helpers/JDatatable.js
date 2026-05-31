@@ -19,14 +19,5 @@ export const dataTable = (className, options = {}) => {
     options.language = language
     options.dom = dom
 
-    // $(`#${tableId}`).DataTable(options);
-
-    new DataTable(`table.${className}`, options)
-
-    // $('#example_wrapper #example_info').addClass('fw-light')
-    // $('#example_wrapper .dataTables_length label').addClass('fw-light')
-
-    // $('.dataTables_length label').addClass('fw-light')
-    // $('.dataTables_info').addClass('fw-light')
-
+    return new DataTable(`table.${className}`, options)
 }

@@ -52,7 +52,7 @@ watch(
 const { form, reportImages, geocodedLocation, geocodingLoading, create, store, edit, updateStatus, destroy, details } = useReport()
 
 const tableAddresses = ref({})
-const loadingIds = ref({})
+let dtInstance = null
 
 async function fetchTableAddresses() {
     const toGeocode = props.reports.filter(
@@ -60,31 +60,39 @@ async function fetchTableAddresses() {
     )
     if (!toGeocode.length) return
 
-    for (const r of toGeocode) {
-        loadingIds.value[r.id] = true
-        try {
-            const res = await fetch(
+    const results = await Promise.allSettled(
+        toGeocode.map(r =>
+            fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${r.latitude}&lon=${r.longitude}`,
                 { headers: { 'Accept-Language': 'en' } }
             )
-            const data = await res.json()
-            if (data?.display_name) {
-                tableAddresses.value = { ...tableAddresses.value, [r.id]: data.display_name }
-            }
-        } catch {
-            // silently skip failed lookups
-        } finally {
-            loadingIds.value = { ...loadingIds.value, [r.id]: false }
+                .then(res => res.json())
+                .then(data => ({ id: r.id, address: data?.display_name ?? null }))
+                .catch(() => ({ id: r.id, address: null }))
+        )
+    )
+
+    const resolved = {}
+    results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.address) {
+            resolved[result.value.id] = result.value.address
         }
-        // Nominatim ToS: max 1 request per second
-        await new Promise(resolve => setTimeout(resolve, 1100))
+    })
+
+    tableAddresses.value = resolved
+
+    // Tell DataTable to re-read the DOM cells it already captured
+    await nextTick()
+    if (dtInstance) {
+        dtInstance.rows().invalidate().draw(false)
     }
 }
 
 onMounted(async () => {
-    await fetchTableAddresses()
     await nextTick()
-    dataTable("datatable-users", { pageLength: 10 })
+    dtInstance = dataTable("datatable-users", { pageLength: 10 })
+    // Geocode in background — DataTable redraws when done
+    fetchTableAddresses()
 })
 
 const verify = () => {
@@ -243,39 +251,19 @@ const formatDateTime = (datetime) => {
                             </td>
                             <td>
                                 <div>
-                                    <template v-if="report.details">
-                                        <span>{{ report.details }}</span>
-                                        <div class="text-muted small mt-1">
-                                            <template v-if="report.address">
-                                                <i class="bi bi-geo-alt me-1"></i>{{ report.address }}
-                                            </template>
-                                            <template v-else-if="loadingIds[report.id]">
-                                                <span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem"></span>
-                                                Looking up address…
-                                            </template>
-                                            <template v-else-if="tableAddresses[report.id]">
-                                                <i class="bi bi-geo-alt me-1"></i>{{ tableAddresses[report.id] }}
-                                            </template>
-                                        </div>
-                                    </template>
-                                    <template v-else>
+                                    <span v-if="report.details">{{ report.details }}</span>
+                                    <div class="text-muted small mt-1">
                                         <template v-if="report.address">
-                                            <i class="bi bi-geo-alt me-1 text-muted"></i><span>{{ report.address }}</span>
+                                            <i class="bi bi-geo-alt me-1"></i>{{ report.address }}
                                         </template>
                                         <template v-else-if="report.reporters_address">
-                                            <i class="bi bi-geo-alt me-1 text-muted"></i><span>{{ report.reporters_address }}</span>
-                                        </template>
-                                        <template v-else-if="loadingIds[report.id]">
-                                            <span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem"></span>
-                                            <span class="text-muted small">Looking up address…</span>
+                                            <i class="bi bi-geo-alt me-1"></i>{{ report.reporters_address }}
                                         </template>
                                         <template v-else-if="tableAddresses[report.id]">
-                                            <i class="bi bi-geo-alt me-1 text-muted"></i><span>{{ tableAddresses[report.id] }}</span>
+                                            <i class="bi bi-geo-alt me-1"></i>{{ tableAddresses[report.id] }}
                                         </template>
-                                        <template v-else>
-                                            <i class="text-muted">No Details</i>
-                                        </template>
-                                    </template>
+                                    </div>
+                                    <i v-if="!report.details && !report.address && !report.reporters_address && !tableAddresses[report.id]" class="text-muted">No Details</i>
                                 </div>
                                 <div v-if="report.latitude && report.longitude" class="text-muted pt-1" style="font-size: smaller">
                                     <a :href="`https://www.google.com/maps/place/${report.latitude},${report.longitude}/@${report.latitude},${report.longitude},15z`" target="_blank">
