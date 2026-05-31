@@ -54,45 +54,65 @@ const { form, reportImages, geocodedLocation, geocodingLoading, create, store, e
 const tableAddresses = ref({})
 let dtInstance = null
 
+function refreshDataTable() {
+    if (!dtInstance) return
+    dtInstance.destroy()
+    dtInstance = dataTable('datatable-users', { pageLength: 10 })
+}
+
+async function persistAddress(reportId, address) {
+    try {
+        await fetch(route('reports.save-address', reportId), {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+            },
+            body: JSON.stringify({ address }),
+        })
+    } catch {
+        // best-effort — address is already shown in the table
+    }
+}
+
 async function geocodeAll() {
     const toGeocode = props.reports.filter(
         r => r.latitude && r.longitude && !r.address && !r.reporters_address
     )
     if (!toGeocode.length) return
 
-    const results = await Promise.allSettled(
-        toGeocode.map(r =>
-            fetch(
+    for (let i = 0; i < toGeocode.length; i++) {
+        const r = toGeocode[i]
+        try {
+            const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${r.latitude}&lon=${r.longitude}`,
                 { headers: { 'Accept-Language': 'en' } }
             )
-                .then(res => res.json())
-                .then(data => ({ id: r.id, address: data?.display_name ?? null }))
-                .catch(() => ({ id: r.id, address: null }))
-        )
-    )
-
-    const resolved = {}
-    results.forEach(result => {
-        if (result.status === 'fulfilled' && result.value.address) {
-            resolved[result.value.id] = result.value.address
+            const data = await res.json()
+            const address = data?.display_name ?? null
+            if (address) {
+                tableAddresses.value = { ...tableAddresses.value, [r.id]: address }
+                persistAddress(r.id, address)
+            }
+        } catch {
+            // network error — leave coordinates showing
         }
-    })
 
-    tableAddresses.value = resolved
-
-    // Destroy and reinit DataTable so it re-reads the now-geocoded DOM cells
-    await nextTick()
-    if (dtInstance) {
-        dtInstance.destroy()
-        dtInstance = dataTable('datatable-users', { pageLength: 10 })
+        // Nominatim ToS: max 1 request/second
+        if (i < toGeocode.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1050))
+        }
     }
+
+    // One final DataTable refresh after all addresses are resolved
+    await nextTick()
+    refreshDataTable()
 }
 
 onMounted(async () => {
     await nextTick()
     dtInstance = dataTable('datatable-users', { pageLength: 10 })
-    geocodeAll()   // runs in background; reinits DataTable when done
+    geocodeAll()   // sequential geocoding in background; table stays usable throughout
 })
 
 const verify = () => {
