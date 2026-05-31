@@ -50,24 +50,40 @@ const kpis = computed(() => {
             value: s.all ?? 0,
             hint: `Year ${props.year}`,
             tone: 'primary',
+            icon: 'clipboard2-pulse',
+            iconBg: 'rgba(2, 132, 199, 0.1)',
+            iconColor: '#0284c7',
+            accentColor: '#0284c7',
         },
         {
             title: 'Pending',
             value: s.pending ?? 0,
             hint: 'Awaiting dispatch',
             tone: 'warning',
+            icon: 'hourglass-split',
+            iconBg: 'rgba(217, 119, 6, 0.1)',
+            iconColor: '#d97706',
+            accentColor: '#f59e0b',
         },
         {
             title: 'In progress',
             value: s.in_progress ?? 0,
             hint: 'Active response',
             tone: 'info',
+            icon: 'arrow-clockwise',
+            iconBg: 'rgba(8, 145, 178, 0.1)',
+            iconColor: '#0891b2',
+            accentColor: '#06b6d4',
         },
         {
             title: 'Rescued',
             value: s.rescued ?? 0,
             hint: 'Closed successfully',
             tone: 'success',
+            icon: 'check-circle-fill',
+            iconBg: 'rgba(22, 163, 74, 0.1)',
+            iconColor: '#16a34a',
+            accentColor: '#22c55e',
         },
     ];
 });
@@ -398,16 +414,22 @@ watch(
         <div class="row g-3 g-lg-4 mb-4">
             <div v-for="(k, i) in kpis" :key="i" class="col-6 col-xl-3">
                 <div
-                    class="rounded-4 border-0 shadow-sm h-100 p-3 p-lg-4 position-relative overflow-hidden"
-                    style="background: linear-gradient(135deg, #ffffff 0%, var(--cdrrmo-50) 100%)"
+                    class="kpi-card rounded-4 shadow-sm h-100 p-3 p-lg-4 position-relative overflow-hidden"
+                    :style="{
+                        background: 'linear-gradient(135deg, #ffffff 0%, var(--cdrrmo-50) 100%)',
+                        borderTop: `3px solid ${k.accentColor}`,
+                    }"
                 >
-                    <div
-                        class="dashboard-kpi-watermark no-print position-absolute top-0 end-0 rounded-circle border border-2 border-primary opacity-25"
-                        style="width: 4.5rem; height: 4.5rem; transform: translate(12%, -12%)"
-                        aria-hidden="true"
-                    />
-                    <div class="small text-uppercase text-muted fw-semibold letter-spacing">
-                        {{ k.title }}
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                        <div class="small text-uppercase text-muted fw-semibold letter-spacing" style="font-size: 0.68rem !important; padding-top: 2px">
+                            {{ k.title }}
+                        </div>
+                        <div
+                            class="kpi-icon"
+                            :style="{ background: k.iconBg, width: '2.35rem', height: '2.35rem' }"
+                        >
+                            <i :class="`bi bi-${k.icon}`" :style="{ color: k.iconColor, fontSize: '1rem' }"></i>
+                        </div>
                     </div>
                     <div class="display-6 fw-bold mt-1" style="color: var(--cdrrmo-800)">
                         {{ k.value.toLocaleString() }}

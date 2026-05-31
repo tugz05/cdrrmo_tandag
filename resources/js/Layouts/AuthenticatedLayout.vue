@@ -16,6 +16,27 @@ import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioError
 
 const page = usePage();
 const canAccessAdmin = computed(() => page.props.auth?.canAccessAdmin === true);
+
+const greeting = computed(() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+});
+
+const firstName = computed(() => {
+    const name = page.props.auth?.user?.name ?? '';
+    return name.split(' ')[0] || name;
+});
+
+const currentDate = computed(() =>
+    new Date().toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    })
+);
 /**
  * Twilio Voice JS SDK Client identity for this operator (sanitized user id).
  * Falls back to legacy admin_identity when operator_client_identity is absent.
@@ -740,6 +761,10 @@ async function handleCallEnded(reportId) {
             <div class="content app-shell__content">
                 <SideBar />
                 <main class="app-shell__main">
+                    <div class="app-topstrip no-print">
+                        <span class="app-topstrip__greeting">{{ greeting }}, <strong>{{ firstName }}</strong></span>
+                        <span class="app-topstrip__date">{{ currentDate }}</span>
+                    </div>
                     <div class="app-shell__page">
                         <slot />
                     </div>

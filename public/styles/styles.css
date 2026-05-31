@@ -246,3 +246,238 @@ main.app-shell__main {
     box-shadow: 0 -6px 24px rgba(8, 47, 73, 0.04);
 }
 /*# sourceMappingURL=styles.css.map */
+
+/* ═══════════════════════════════════════════════════════════════
+   Enhanced UI — Modern & Polished
+   ═══════════════════════════════════════════════════════════════ */
+
+/* — Sidebar: smooth transitions & hover — */
+.navigation ul li div:first-child {
+    transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.navigation ul li div:first-child:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.09);
+}
+
+.navigation ul li div:first-child.active {
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.2);
+}
+
+/* Active item: icon inherits brand-blue */
+.navigation ul li div:first-child.active .icon {
+    color: var(--cdrrmo-600, #0284c7);
+}
+
+/* Tighter nav item height for cleaner feel */
+.navigation ul a .icon {
+    min-width: 52px;
+    height: 52px;
+    line-height: 52px;
+    font-size: 1.05rem;
+}
+
+/* Reset top padding since brand+user section sits above the ul now */
+.navigation ul {
+    padding-top: 4px;
+}
+
+/* — Sidebar brand section — */
+.nav-brand {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-brand__name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+}
+
+.nav-brand__tagline {
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* — Sidebar user trigger — */
+.nav-user__trigger {
+    transition: background-color 0.18s ease;
+    cursor: pointer;
+}
+
+.nav-user__trigger:hover {
+    background-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+.nav-user__name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.25;
+}
+
+.nav-user__email {
+    font-size: 0.62rem;
+    color: rgba(255, 255, 255, 0.48);
+    line-height: 1.25;
+}
+
+.nav-user__caret {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* — Sidebar separator — */
+.nav-sep {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* — Sidebar section label — */
+.nav-label {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* — Custom avatar in sidebar (replaces avatar-lg) — */
+.avatar-sidebar {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+}
+
+/* — Sidebar scrollbar — */
+.navigation::-webkit-scrollbar {
+    width: 4px;
+}
+
+.navigation::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+}
+
+.navigation::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+/* — Dashboard KPI card hover — */
+.kpi-card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.kpi-card:hover {
+    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.13) !important;
+    transform: translateY(-2px);
+}
+
+/* — KPI icon container — */
+.kpi-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+/* — Better table headers — */
+.table > thead th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cdrrmo-700, #0369a1);
+    background-color: var(--cdrrmo-50, #f0f9ff);
+    border-bottom: 2px solid var(--cdrrmo-200, #bae6fd) !important;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    white-space: nowrap;
+}
+
+/* — Greeting topstrip — */
+.app-topstrip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--cdrrmo-border, rgba(2, 132, 199, 0.1));
+    margin-bottom: 0;
+}
+
+.app-topstrip__greeting {
+    font-size: 0.8rem;
+    color: var(--cdrrmo-ink-muted, #64748b);
+}
+
+.app-topstrip__greeting strong {
+    color: var(--cdrrmo-700, #0369a1);
+}
+
+.app-topstrip__date {
+    font-size: 0.75rem;
+    color: var(--cdrrmo-ink-muted, #64748b);
+    white-space: nowrap;
+}
+
+/* — Utility classes — */
+.letter-spacing {
+    letter-spacing: 0.06em;
+}
+
+/* — Badge improvements — */
+.badge {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* — Card polish — */
+.card {
+    border-radius: 0.75rem;
+}
+
+.card.shadow-sm {
+    box-shadow: 0 1px 8px rgba(8, 47, 73, 0.07), 0 0 0 1px rgba(2, 132, 199, 0.06) !important;
+}
+
+/* — Btn-group filter tabs (Reports page) — */
+.btn-group .btn-default {
+    background: #fff;
+    border: 1px solid var(--bs-border-color, #cbd5e1);
+    color: var(--cdrrmo-ink-muted, #64748b);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+.btn-group .btn-default:hover {
+    background: var(--cdrrmo-50, #f0f9ff);
+    color: var(--cdrrmo-700, #0369a1);
+    border-color: var(--cdrrmo-300, #7dd3fc);
+}
+
+.btn-group .btn-default.active {
+    background: var(--cdrrmo-primary, #0284c7);
+    color: #fff;
+    border-color: var(--cdrrmo-primary, #0284c7);
+}
+

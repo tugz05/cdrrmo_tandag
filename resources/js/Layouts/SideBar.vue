@@ -95,34 +95,55 @@ function isNavItemActive(nav) {
 </script>
 <template>
     <div class="navigation">
-        <div class="d-flex align-items-center gap-3 justify-content-between px-3 mt-3">
-            <div><JLogo size="50px" /> </div>
+
+        <!-- Brand -->
+        <div class="nav-brand d-flex align-items-center gap-3 px-4 py-4">
+            <JLogo size="38px" />
+            <div>
+                <div class="nav-brand__name">CDRRMO</div>
+                <div class="nav-brand__tagline">Operations</div>
+            </div>
+        </div>
+
+        <!-- User profile -->
+        <div class="nav-user px-3 py-3">
             <div class="dropdown">
-                <button class="btn border-0" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="avatar avatar-lg">{{ $page.props.auth.user.name.charAt(0) }}</span>
+                <button class="btn p-0 border-0 w-100 text-start" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="nav-user__trigger d-flex align-items-center gap-2 rounded-3 px-2 py-2">
+                        <div class="avatar-sidebar">{{ $page.props.auth.user.name.charAt(0).toUpperCase() }}</div>
+                        <div class="flex-fill overflow-hidden">
+                            <div class="nav-user__name text-truncate">{{ $page.props.auth.user.name }}</div>
+                            <div class="nav-user__email text-truncate">{{ $page.props.auth.user.email }}</div>
+                        </div>
+                        <i class="bi bi-chevron-expand nav-user__caret"></i>
+                    </div>
                 </button>
                 <JDropdownMenu class="py-2">
-                    <div>
-                        <div class="px-3 py-3 text-center">
-                            <div class="fw-bold">{{ $page.props.auth.user.name }}</div>
-                            <span class="opacity-50" style="font-size:smaller">{{ $page.props.auth.user.email }}</span>
-                        </div>
-                        <JDropdownDivider/>
-                        <Link class="dropdown-item text-dark fw-normal" :href="route('profile.edit')">
-                            <i class="bi bi-person me-3"></i> Profile
-                        </Link>
-                        <Link class="dropdown-item text-danger" :href="route('logout')" method="post" as="button">
-                            <i class="bi bi-box-arrow-right me-2"></i> Logout
-                        </Link>
+                    <div class="px-3 py-2 border-bottom mb-2">
+                        <div class="fw-semibold small text-dark">{{ $page.props.auth.user.name }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem">{{ $page.props.auth.user.email }}</div>
                     </div>
+                    <Link class="dropdown-item text-dark fw-normal" :href="route('profile.edit')">
+                        <i class="bi bi-person me-3"></i> Profile
+                    </Link>
+                    <JDropdownDivider />
+                    <Link class="dropdown-item text-danger" :href="route('logout')" method="post" as="button">
+                        <i class="bi bi-box-arrow-right me-2"></i> Logout
+                    </Link>
                 </JDropdownMenu>
             </div>
         </div>
+
+        <!-- Separator -->
+        <div class="nav-sep mx-3"></div>
+
+        <!-- Section label -->
+        <div class="nav-label px-4 pt-3 pb-1">Menu</div>
+
+        <!-- Nav links -->
         <ul v-if="$page.props.auth.canAccessAdmin">
             <li v-for="nav in navlinks" :key="nav.route">
                 <div :class="`list ${isNavItemActive(nav) ? 'active' : ''}`">
-                    <b></b>
-                    <b></b>
                     <Link :href="route(nav.route, nav.param)">
                         <span class="icon"><i :class="`bi bi-${nav.icon}`"></i></span>
                         <span class="title">{{ nav.title }}</span>
@@ -130,6 +151,6 @@ function isNavItemActive(nav) {
                 </div>
             </li>
         </ul>
-        <div></div>
+
     </div>
 </template>
