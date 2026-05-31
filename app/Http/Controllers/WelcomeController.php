@@ -28,9 +28,7 @@ class WelcomeController extends Controller
             'mobileApp' => [
                 'android' => config('cdrrmo.mobile_app_android_url'),
                 'ios' => config('cdrrmo.mobile_app_ios_url'),
-                'direct' => file_exists(public_path('build/app-release.apk'))
-                    ? route('app.download')
-                    : config('cdrrmo.mobile_app_direct_url'),
+                'direct' => route('app.download'),
             ],
         ]);
     }
