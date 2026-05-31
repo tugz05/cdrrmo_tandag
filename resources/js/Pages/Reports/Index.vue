@@ -51,8 +51,32 @@ watch(
 
 const { form, reportImages, geocodedLocation, geocodingLoading, create, store, edit, updateStatus, destroy, details } = useReport()
 
+const tableAddresses = ref({})
+const loadingIds = ref({})
+
+async function fetchTableAddresses() {
+    const toGeocode = props.reports.filter(r => r.latitude && r.longitude && !r.address)
+    for (const report of toGeocode) {
+        loadingIds.value[report.id] = true
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${report.latitude}&lon=${report.longitude}`,
+                { headers: { 'Accept-Language': 'en' } }
+            )
+            const data = await res.json()
+            tableAddresses.value[report.id] = data?.display_name ?? null
+        } catch {
+            tableAddresses.value[report.id] = null
+        } finally {
+            delete loadingIds.value[report.id]
+        }
+        await new Promise(r => setTimeout(r, 1100))
+    }
+}
+
 onMounted(() => {
     mountDataTable()
+    void fetchTableAddresses()
 })
 
 
@@ -231,12 +255,23 @@ const formatDateTime = (datetime) => {
                             <td>
                                 <div>
                                     <span v-html="report.details ?? '<i>No Details</i>'"></span>
-                                    <div v-if="report.address" class="text-muted">{{ report.address }}</div>
+                                    <div class="text-muted small mt-1">
+                                        <template v-if="report.address">
+                                            <i class="bi bi-geo-alt me-1"></i>{{ report.address }}
+                                        </template>
+                                        <template v-else-if="loadingIds[report.id]">
+                                            <span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem"></span>
+                                            Looking up address…
+                                        </template>
+                                        <template v-else-if="tableAddresses[report.id]">
+                                            <i class="bi bi-geo-alt me-1"></i>{{ tableAddresses[report.id] }}
+                                        </template>
+                                    </div>
                                 </div>
                                 <div v-if="report.latitude && report.longitude" class="text-muted pt-1" style="font-size: smaller">
                                     <a :href="`https://www.google.com/maps/place/${report.latitude},${report.longitude}/@${report.latitude},${report.longitude},15z`" target="_blank">
                                         <i class="bi bi-geo-alt"></i> View Location
-                                      </a>
+                                    </a>
                                 </div>
                             </td>
                             <td>
