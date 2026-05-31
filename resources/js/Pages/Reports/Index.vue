@@ -54,7 +54,7 @@ const { form, reportImages, geocodedLocation, geocodingLoading, create, store, e
 const tableAddresses = ref({})
 let dtInstance = null
 
-async function fetchTableAddresses() {
+async function geocodeAll() {
     const toGeocode = props.reports.filter(
         r => r.latitude && r.longitude && !r.address && !r.reporters_address
     )
@@ -81,18 +81,18 @@ async function fetchTableAddresses() {
 
     tableAddresses.value = resolved
 
-    // Tell DataTable to re-read the DOM cells it already captured
+    // Destroy and reinit DataTable so it re-reads the now-geocoded DOM cells
     await nextTick()
     if (dtInstance) {
-        dtInstance.rows().invalidate().draw(false)
+        dtInstance.destroy()
+        dtInstance = dataTable('datatable-users', { pageLength: 10 })
     }
 }
 
 onMounted(async () => {
     await nextTick()
-    dtInstance = dataTable("datatable-users", { pageLength: 10 })
-    // Geocode in background — DataTable redraws when done
-    fetchTableAddresses()
+    dtInstance = dataTable('datatable-users', { pageLength: 10 })
+    geocodeAll()   // runs in background; reinits DataTable when done
 })
 
 const verify = () => {
@@ -262,8 +262,11 @@ const formatDateTime = (datetime) => {
                                         <template v-else-if="tableAddresses[report.id]">
                                             <i class="bi bi-geo-alt me-1"></i>{{ tableAddresses[report.id] }}
                                         </template>
+                                        <template v-else-if="report.latitude && report.longitude">
+                                            <i class="bi bi-crosshair me-1"></i>{{ report.latitude }}, {{ report.longitude }}
+                                        </template>
+                                        <i v-else class="text-muted small">No location data</i>
                                     </div>
-                                    <i v-if="!report.details && !report.address && !report.reporters_address && !tableAddresses[report.id]" class="text-muted">No Details</i>
                                 </div>
                                 <div v-if="report.latitude && report.longitude" class="text-muted pt-1" style="font-size: smaller">
                                     <a :href="`https://www.google.com/maps/place/${report.latitude},${report.longitude}/@${report.latitude},${report.longitude},15z`" target="_blank">
