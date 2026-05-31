@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Helpers\JHelper;
@@ -18,6 +19,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class);
+Route::get('/download/app', fn () => response()->download(public_path('build/app-release.apk')))->name('app.download');
 
 require __DIR__.'/web_routes/web_guest.php';
 
