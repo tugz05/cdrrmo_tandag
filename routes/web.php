@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class);
 Route::get('/download/app', function () {
-    $path = public_path('build/app-release.apk');
+    $path = public_path('downloads/app-release.apk');
     abort_unless(file_exists($path), 404);
     return response()->download($path, 'cdrrmo-app.apk');
 })->name('app.download');
