@@ -24,7 +24,7 @@
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
 
-        <link rel="stylesheet" href="{{ asset('styles/styles.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/styles.css') }}?v={{ filemtime(public_path('styles/styles.css')) }}">
 
     </head>
     <body class="font-sans antialiased">
@@ -36,24 +36,5 @@
         <script src="{{ asset('vendor/bootstrap-5-select/dselect.js') }}"></script>
 
 
-        <script>
-
-            let menuToggle = document.querySelectorAll('.toggle');
-            menuToggle.onClick = function() {
-                console.log('hey')
-                // menuToggle.className.toggle('active');
-            }
-
-            let list = document.querySelectorAll('.list');
-            for(let i=0; i<list.length; i++) {
-                list[i].onClick = function() {
-                    let j = 0;
-                    while(j < list.length) {
-                        list[j++].className = 'list';
-                    }
-                    list[i].className = 'list active';
-                }
-            }
-        </script>
     </body>
 </html>

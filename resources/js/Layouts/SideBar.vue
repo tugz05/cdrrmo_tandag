@@ -73,7 +73,7 @@ const navlinks = computed(() => {
  * One active nav item at a time. Avoid substring collisions (e.g. "reports" inside "situational-incident-reports").
  */
 function isNavItemActive(nav) {
-    const path = (typeof window !== 'undefined' ? window.location.pathname : page.url || '').toLowerCase();
+    const path = (page.url || (typeof window !== 'undefined' ? window.location.pathname : '')).toLowerCase();
 
     switch (nav.active) {
         case 'dashboard':

@@ -75,8 +75,8 @@ body {
 }
 
 .navigation ul li div:first-child.active {
-  background-color: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 3px 0 0 var(--cdrrmo-400, #38bdf8);
+  background-color: rgba(56, 189, 248, 0.18);
+  box-shadow: inset 3px 0 0 #38bdf8;
 }
 
 .navigation ul li div:first-child.active a {
