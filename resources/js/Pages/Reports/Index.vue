@@ -260,19 +260,36 @@ const formatDateTime = (datetime) => {
                             </td>
                             <td>
                                 <div>
-                                    <span v-html="report.details ?? '<i>No Details</i>'"></span>
-                                    <div class="text-muted small mt-1">
+                                    <template v-if="report.details">
+                                        <span>{{ report.details }}</span>
+                                        <div class="text-muted small mt-1">
+                                            <template v-if="report.address">
+                                                <i class="bi bi-geo-alt me-1"></i>{{ report.address }}
+                                            </template>
+                                            <template v-else-if="loadingIds[report.id]">
+                                                <span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem"></span>
+                                                Looking up address…
+                                            </template>
+                                            <template v-else-if="tableAddresses[report.id]">
+                                                <i class="bi bi-geo-alt me-1"></i>{{ tableAddresses[report.id] }}
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template v-else>
                                         <template v-if="report.address">
-                                            <i class="bi bi-geo-alt me-1"></i>{{ report.address }}
+                                            <i class="bi bi-geo-alt me-1 text-muted"></i><span>{{ report.address }}</span>
                                         </template>
                                         <template v-else-if="loadingIds[report.id]">
                                             <span class="spinner-border spinner-border-sm me-1" style="width:0.6rem;height:0.6rem"></span>
-                                            Looking up address…
+                                            <span class="text-muted small">Looking up address…</span>
                                         </template>
                                         <template v-else-if="tableAddresses[report.id]">
-                                            <i class="bi bi-geo-alt me-1"></i>{{ tableAddresses[report.id] }}
+                                            <i class="bi bi-geo-alt me-1 text-muted"></i><span>{{ tableAddresses[report.id] }}</span>
                                         </template>
-                                    </div>
+                                        <template v-else>
+                                            <i class="text-muted">No Details</i>
+                                        </template>
+                                    </template>
                                 </div>
                                 <div v-if="report.latitude && report.longitude" class="text-muted pt-1" style="font-size: smaller">
                                     <a :href="`https://www.google.com/maps/place/${report.latitude},${report.longitude}/@${report.latitude},${report.longitude},15z`" target="_blank">
