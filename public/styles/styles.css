@@ -75,12 +75,12 @@ body {
 }
 
 .navigation ul li div:first-child.active {
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  background-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 3px 0 0 var(--cdrrmo-400, #38bdf8);
 }
 
 .navigation ul li div:first-child.active a {
-  color: var(--cdrrmo-900, #0c4a6e);
+  color: #ffffff;
 }
 
 .navigation ul a .icon {
@@ -260,13 +260,9 @@ main.app-shell__main {
     background-color: rgba(255, 255, 255, 0.09);
 }
 
-.navigation ul li div:first-child.active {
-    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.2);
-}
-
-/* Active item: icon inherits brand-blue */
+/* Active item accent — icon stays white on the dark sidebar bg */
 .navigation ul li div:first-child.active .icon {
-    color: var(--cdrrmo-600, #0284c7);
+    color: var(--cdrrmo-300, #7dd3fc);
 }
 
 /* Tighter nav item height for cleaner feel */
