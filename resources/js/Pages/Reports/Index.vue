@@ -82,27 +82,9 @@ async function fetchTableAddresses() {
 
 onMounted(async () => {
     await fetchTableAddresses()
-    mountDataTable()
+    await nextTick()
+    dataTable("datatable-users", { pageLength: 10 })
 })
-
-
-const mountDataTable = () => {
-    nextTick(() => {
-        dataTable("datatable-users", {
-            // columns: [
-            //     { orderable: false },
-            //     { orderable: true },
-            //     { orderable: true },
-            //     { orderable: true },
-            //     { orderable: false },
-            //     // { orderable: true },
-            //     // { orderable: true },
-            //     // { orderable: true },
-            // ],
-            pageLength: 10,
-        })
-    })
-}
 
 const verify = () => {
     toggleOffCanvas('offcanvas-users')
