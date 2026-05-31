@@ -80,9 +80,9 @@ async function fetchTableAddresses() {
     loadingIds.value = {}
 }
 
-onMounted(() => {
+onMounted(async () => {
+    await fetchTableAddresses()
     mountDataTable()
-    void fetchTableAddresses()
 })
 
 
