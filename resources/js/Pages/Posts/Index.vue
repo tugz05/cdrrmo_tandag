@@ -292,7 +292,7 @@ const emptyMessage = computed(() => {
     </div>
 
     <JModal sm>
-        <form id="post-form" @submit.prevent="store()">
+        <form id="post-form" method="post" :action="route('posts.store')" @submit.prevent="store()">
             <JFloatingInput v-model="form.title" label="Title" type="textarea" required />
             <div class="mb-3">
                 <label class="form-label small fw-semibold mb-1">Featured image</label>

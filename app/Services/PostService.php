@@ -58,7 +58,7 @@ class PostService implements NewsInterface
             );
         }
 
-        return to_route('posts.edit', $post->id);
+        return to_route('posts.edit', $post->id, 303);
     }
 
     public function updateTitle($validatedData)

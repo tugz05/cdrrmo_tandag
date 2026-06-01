@@ -47,20 +47,17 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(fu
     Route::post('reports/{report}/resolve-address', [ReportController::class, 'resolveAddress'])->name('reports.resolve-address');
     Route::get('/reports/{type}/{status?}', [ReportController::class, 'index'])->name('reports.index');
     Route::resource('reports', ReportController::class)->only(['store', 'destroy']);
-    // Route::resource('reports', ReportController::class)->only(['index']);
-    /*
-     * Register literal paths and the resource before GET posts/{type?}, otherwise "create" is
-     * captured as {type} and POST /admin/posts can mis-route in some stacks (405 / wrong handler).
-     *
-     * POST admin/posts is explicit (not only from Route::resource) so POST always matches before
-     * any wildcard GET, including after route:cache or picky reverse proxies.
-     */
-    Route::put('posts/publish/{id}', [PostController::class, 'publish'])->name('posts.publish');
-    Route::put('posts/update-title', [PostController::class, 'updateTitle'])->name('posts.update-title');
-    Route::put('posts/update-type', [PostController::class, 'updateType'])->name('posts.update-type');
-    Route::post('posts', [PostController::class, 'store'])->name('posts.store');
-    Route::resource('posts', PostController::class)->only(['create', 'edit', 'destroy']);
-    Route::get('posts/{type?}', [PostController::class, 'index'])->name('posts.index');
+
+    // Posts — literal routes registered before the wildcard GET to prevent {type?} swallowing them.
+    // All methods are explicit; no Route::resource to avoid name/method conflicts.
+    Route::post('posts',              [PostController::class, 'store'])->name('posts.store');
+    Route::get('posts/create',        [PostController::class, 'create'])->name('posts.create');
+    Route::get('posts/{post}/edit',   [PostController::class, 'edit'])->name('posts.edit');
+    Route::delete('posts/{post}',     [PostController::class, 'destroy'])->name('posts.destroy');
+    Route::put('posts/publish/{id}',  [PostController::class, 'publish'])->name('posts.publish');
+    Route::put('posts/update-title',  [PostController::class, 'updateTitle'])->name('posts.update-title');
+    Route::put('posts/update-type',   [PostController::class, 'updateType'])->name('posts.update-type');
+    Route::get('posts/{type?}',       [PostController::class, 'index'])->name('posts.index');
     // Route::resource('safety-tips', SafetyTipsController::class)->only(['index','store','destroy']);
     Route::resource('settings', SettingsController::class)->only(['index']);
 
