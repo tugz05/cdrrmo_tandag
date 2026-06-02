@@ -14,11 +14,13 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StaffPresenceController;
 use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class);
+Route::get('/privacy-policy', PrivacyPolicyController::class)->name('privacy-policy');
 Route::get('/download/app', function () {
     $path = public_path('downloads/app-release.apk');
     abort_unless(file_exists($path), 404);
