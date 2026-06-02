@@ -763,9 +763,9 @@ function emptyCopy(tab) {
                     <JLogo size="28px" />
                     <span>&copy; {{ year }} CDRRMO · City Government of Tandag</span>
                 </div>
-                <div class="small welcome-footer__muted text-md-end">
-                    Life-threatening emergency? Follow official hotlines and instructions from authorities—not this website
-                    alone.
+                <div class="d-flex flex-wrap align-items-center justify-content-md-end gap-3 small welcome-footer__muted text-md-end">
+                    <span>Life-threatening emergency? Follow official hotlines and instructions from authorities—not this website alone.</span>
+                    <Link href="/privacy-policy" class="welcome-footer__policy-link">Privacy Policy</Link>
                 </div>
             </div>
         </footer>
@@ -1847,6 +1847,19 @@ function emptyCopy(tab) {
 
 .welcome-footer__muted {
     color: color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 88%, transparent);
+}
+
+.welcome-footer__policy-link {
+    color: color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 70%, transparent);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.welcome-footer__policy-link:hover {
+    color: var(--cdrrmo-200, #bae6fd);
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .welcome-dots {
