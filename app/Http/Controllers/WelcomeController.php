@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\PostTypeEnum;
 use App\Models\Post;
 use App\Models\Report;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
