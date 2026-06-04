@@ -13,44 +13,73 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    // Tandag City barangays (Surigao del Sur)
+    private static array $barangays = [
+        'Awasian', 'Bagong', 'Banahao', 'Bioto', 'Bongtod Pob.',
+        'Buenavista', 'Cantapoy', 'Dagocdoc', 'Figueroa', 'Mabini',
+        'Mabua', 'Mabuhay', 'Quezon', 'Rosario', 'Sabang',
+        'Salvacion', 'San Isidro', 'Telaje',
+    ];
+
+    // Common streets in Tandag City
+    private static array $streets = [
+        'Del Pilar St.', 'Fernandez St.', 'JP Rizal St.',
+        'Mabini St.', 'National Highway', 'P. Burgos St.',
+        'Quezon St.', 'Aguinaldo St.', 'Luna St.',
+        'Bonifacio St.', 'Magsaysay St.', 'Roxas Ave.',
+    ];
+
+    // Tandag City bounding box
+    private const LAT_MIN  = 9.0200;
+    private const LAT_MAX  = 9.1400;
+    private const LNG_MIN  = 126.1600;
+    private const LNG_MAX  = 126.2500;
+
+    private function tandagAddress(): string
+    {
+        $houseNo  = fake()->numberBetween(1, 999);
+        $street   = fake()->randomElement(self::$streets);
+        $barangay = fake()->randomElement(self::$barangays);
+
+        return "{$houseNo} {$street}, Brgy. {$barangay}, Tandag City, Surigao del Sur";
+    }
+
+    private function tandagLatitude(): float
+    {
+        return fake()->randomFloat(7, self::LAT_MIN, self::LAT_MAX);
+    }
+
+    private function tandagLongitude(): float
+    {
+        return fake()->randomFloat(7, self::LNG_MIN, self::LNG_MAX);
+    }
+
     public function definition(): array
     {
         $fname = fake()->firstName();
         $lname = fake()->lastName();
-        $name = $fname.' '.$lname;
 
         return [
-            'fname' => $fname,
-            'lname' => $lname,
-            'name' => $name,
-            'mname' => fake()->randomLetter(),
-            'email' => fake()->unique()->safeEmail(),
-            'confirmed_at' => now(),
-            'image' => 'image_path.png',
-            'latitude' => fake()->latitude(),
-            'address' => fake()->address(),
-            'longitude' => fake()->longitude(),
-            'phone' => fake()->phoneNumber(),
-            'email_verified_at' => now(),
-            'app_role' => AppMobileRole::Citizen,
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'fname'              => $fname,
+            'lname'              => $lname,
+            'name'               => $fname . ' ' . $lname,
+            'mname'              => fake()->randomLetter(),
+            'email'              => fake()->unique()->safeEmail(),
+            'confirmed_at'       => now(),
+            'image'              => 'image_path.png',
+            'address'            => $this->tandagAddress(),
+            'latitude'           => $this->tandagLatitude(),
+            'longitude'          => $this->tandagLongitude(),
+            'phone'              => fake()->numerify('09#########'),
+            'email_verified_at'  => now(),
+            'app_role'           => AppMobileRole::Citizen,
+            'password'           => static::$password ??= Hash::make('password'),
+            'remember_token'     => Str::random(10),
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [
