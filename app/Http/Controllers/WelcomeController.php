@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\PostTypeEnum;
 use App\Models\Post;
 use App\Models\Report;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +15,7 @@ class WelcomeController extends Controller
     {
         return Inertia::render('Welcome', [
             'canLogin' => Route::has('login'),
-            'canRegister' => Route::has('register'),
+            'canRegister' => false,
             'latestNews' => $this->latestPosts(PostTypeEnum::NEWS),
             'latestSafetyTips' => $this->latestPosts(PostTypeEnum::SAFETY_TIPS),
             'latestPreparedness' => $this->latestPosts(PostTypeEnum::EMERGENCY_PREPAREDNESS),
