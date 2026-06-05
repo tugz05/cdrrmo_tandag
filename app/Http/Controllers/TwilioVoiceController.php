@@ -26,7 +26,7 @@ class TwilioVoiceController extends Controller
     public function health(Request $request): JsonResponse
     {
         $adminIdentityRaw = (string) config('services.twilio.admin_identity');
-        $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
+        $adminIdentity = $this->staffPresence->fallbackAdminIdentity();
         $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
 
         $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
@@ -369,20 +369,7 @@ class TwilioVoiceController extends Controller
                 'staff_presence_fresh' => $availabilityLog,
             ]);
 
-            $adminIdentityRaw = trim((string) config('services.twilio.admin_identity'));
-            if ($adminIdentityRaw === '') {
-                Log::warning('Twilio handleVoice: ADMIN_IDENTITY is empty in .env (required for VoIP fallback)');
-
-                return $this->twimlResponse(function (VoiceResponse $twiml): void {
-                    $twiml->say(
-                        'Server configuration error. Please contact the administrator.',
-                        ['voice' => 'alice']
-                    );
-                    $twiml->hangup();
-                });
-            }
-
-            $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
+            $adminIdentity = $this->staffPresence->fallbackAdminIdentity();
 
             if ($presenceRequired && ! $routingAllowed) {
                 Log::notice('Twilio handleVoice: blocked by staff presence (busy TwiML)', [
@@ -781,16 +768,9 @@ class TwilioVoiceController extends Controller
             });
         }
 
-        $adminIdentityRaw = trim((string) config('services.twilio.admin_identity'));
-        if ($adminIdentityRaw === '') {
-            Cache::forget($key);
-
-            return null;
-        }
-
         $this->staffPresence->forgetAvailabilityCache();
 
-        $adminIdentity = TwilioClientIdentity::sanitize($adminIdentityRaw);
+        $adminIdentity = $this->staffPresence->fallbackAdminIdentity();
         $ringGroupIdentity = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
         $identities = $this->buildOutboundDialClientIdentities($request, $adminIdentity, $ringGroupIdentity);
 

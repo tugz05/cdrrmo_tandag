@@ -15,6 +15,54 @@ class StaffPresenceService
 
     public const STATE_BUSY = 'busy';
 
+    /**
+     * Resolve the Twilio Client identity used as the TwiML dial fallback.
+     * Uses ADMIN_IDENTITY from .env when set; otherwise discovers the first
+     * voice-dispatch operator in the DB so the value never needs to be hardcoded.
+     */
+    public function fallbackAdminIdentity(): string
+    {
+        $fromEnv = trim((string) config('services.twilio.admin_identity'));
+        if ($fromEnv !== '') {
+            return TwilioClientIdentity::sanitize($fromEnv);
+        }
+
+        $admin = User::query()->voiceDispatchOperators()->orderBy('id')->first(['id']);
+
+        return $admin ? TwilioClientIdentity::sanitize((string) $admin->id) : 'admin';
+    }
+
+    /**
+     * Human-readable label for the Twilio Client being dialed.
+     * Returned to mobile clients so they can display "Calling: ..." before audio connects.
+     *
+     * @param  string  $dialToIdentity  Sanitized identity from voiceOutboundDialToIdentity()
+     */
+    public function dialToDisplayName(string $dialToIdentity): string
+    {
+        $dispatchRing = TwilioClientIdentity::sanitize(
+            (string) config('call.dispatch_ring_group_client_name', 'dispatch')
+        );
+
+        if ($dialToIdentity === '' || $dialToIdentity === $dispatchRing) {
+            $count = count($this->voiceReadyOperatorIdentities(true));
+
+            return $count > 1 ? 'CDRRMO Emergency Response Team' : 'CDRRMO Emergency Line';
+        }
+
+        $userId = (int) $dialToIdentity;
+        if ($userId > 0) {
+            $user = User::find($userId, ['id', 'fname', 'lname', 'name']);
+            if ($user) {
+                $full = trim(($user->fname ?? '').' '.($user->lname ?? ''));
+
+                return $full !== '' ? $full : ($user->name ?? 'CDRRMO Operator');
+            }
+        }
+
+        return 'CDRRMO Emergency Line';
+    }
+
     public function operatorUserIds(): array
     {
         return User::query()
@@ -264,11 +312,11 @@ class StaffPresenceService
         }
 
         $ttl = max(15, (int) config('call.staff_heartbeat_ttl', 90));
-        $adminRaw = trim((string) config('services.twilio.admin_identity'));
-        $adminClientIdentity = TwilioClientIdentity::sanitize($adminRaw !== '' ? $adminRaw : (string) config('services.twilio.admin_identity'));
+        $adminClientIdentity = $this->fallbackAdminIdentity();
         $dispatchRing = TwilioClientIdentity::sanitize((string) config('call.dispatch_ring_group_client_name', 'dispatch'));
         $requireVoice = (bool) config('call.require_voice_client_ready', true);
         $dialTo = $this->voiceOutboundDialToIdentity();
+        $dialToName = $this->dialToDisplayName($dialTo);
         $dialMode = strtolower(trim((string) config('call.voice_outbound_dial_mode', 'single')));
         $legCount = $this->outboundTwilioClientLegCount($twimlDialIds);
 
@@ -296,6 +344,8 @@ class StaffPresenceService
              * ring-group token (not a registered Client — the server expands it to real operator Client ids).
              */
             'operator_twilio_client_identity' => $dialTo,
+            /** Human-readable name of the operator/team being dialed — show to mobile caller as "Calling: ...". */
+            'dial_to_name' => $dialToName,
             'dispatch_twilio_client_identity' => $dispatchRing,
             'voice_ready_operator_twilio_identities' => $voiceReadyIdsStrict,
             'twiml_dial_operator_identities' => $twimlDialIds,
