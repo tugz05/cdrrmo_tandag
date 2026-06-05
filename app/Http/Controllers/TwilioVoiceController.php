@@ -225,25 +225,33 @@ class TwilioVoiceController extends Controller
     /**
      * Validate Twilio {@code X-Twilio-Signature} against the exact public URL (see {@code TWILIO_WEBHOOK_PUBLIC_ORIGIN})
      * and form POST parameters (or query string for GET).
+     *
+     * Returns a TwiML error response instead of aborting — aborting returns HTML, which Twilio cannot parse
+     * as TwiML and causes "An application error has occurred" to be played to the caller (Twilio error 11200/12100).
      */
-    protected function validateTwilioWebhookSignature(Request $request, string $absolutePath): void
+    protected function validateTwilioWebhookSignature(Request $request, string $absolutePath): ?Response
     {
         if (! (bool) config('call.validate_twilio_webhook_signature', false)) {
-            return;
+            return null;
         }
 
         $authToken = trim((string) config('services.twilio.auth_token'));
         if ($authToken === '') {
             Log::error('Twilio webhook rejected: TWILIO_AUTH_TOKEN is empty (required to validate X-Twilio-Signature).');
 
-            abort(503, 'Twilio webhook misconfigured.');
+            return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                $twiml->say('Server configuration error. Please contact the administrator.', ['voice' => 'alice']);
+                $twiml->hangup();
+            });
         }
 
         $signature = (string) $request->header('X-Twilio-Signature', '');
         if ($signature === '') {
             Log::warning('Twilio webhook: missing X-Twilio-Signature header.');
 
-            abort(403, 'Forbidden');
+            return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                $twiml->hangup();
+            });
         }
 
         $url = rtrim($this->publicTwilioWebhookOrigin($request), '/').$absolutePath;
@@ -254,10 +262,15 @@ class TwilioVoiceController extends Controller
             Log::warning('Twilio webhook: invalid X-Twilio-Signature.', [
                 'path' => $absolutePath,
                 'url_used_for_validation' => $url,
+                'hint' => 'Set TWILIO_WEBHOOK_PUBLIC_ORIGIN=https://your-domain.com in .env if behind a reverse proxy.',
             ]);
 
-            abort(403, 'Forbidden');
+            return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                $twiml->hangup();
+            });
         }
+
+        return null;
     }
 
     /**
@@ -312,7 +325,9 @@ class TwilioVoiceController extends Controller
 
     public function handleVoice(Request $request)
     {
-        $this->validateTwilioWebhookSignature($request, '/twilio/voice');
+        if ($sigError = $this->validateTwilioWebhookSignature($request, '/twilio/voice')) {
+            return $sigError;
+        }
 
         $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
         $failOpen = filter_var((string) config('call.presence_fail_open', app()->environment('local')), FILTER_VALIDATE_BOOL);
@@ -466,7 +481,9 @@ class TwilioVoiceController extends Controller
      */
     public function dialStatus(Request $request): Response
     {
-        $this->validateTwilioWebhookSignature($request, '/twilio/voice/dial-status');
+        if ($sigError = $this->validateTwilioWebhookSignature($request, '/twilio/voice/dial-status')) {
+            return $sigError;
+        }
 
         $dialStatus = (string) $request->input('DialCallStatus', '');
         $sip = $request->input('DialSipResponseCode') ?? $request->input('DialCallSIPResponseCode');
@@ -511,7 +528,9 @@ class TwilioVoiceController extends Controller
      */
     public function clientStatus(Request $request): Response
     {
-        $this->validateTwilioWebhookSignature($request, '/twilio/voice/client-status');
+        if ($sigError = $this->validateTwilioWebhookSignature($request, '/twilio/voice/client-status')) {
+            return $sigError;
+        }
 
         Log::info('Twilio client status callback', [
             'CallSid' => $request->input('CallSid'),
