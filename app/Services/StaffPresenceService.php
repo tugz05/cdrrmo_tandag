@@ -47,7 +47,7 @@ class StaffPresenceService
         if ($dialToIdentity === '' || $dialToIdentity === $dispatchRing) {
             $count = count($this->voiceReadyOperatorIdentities(true));
 
-            return $count > 1 ? 'CDRRMO Emergency Response Team' : 'CDRRMO Emergency Line';
+            return $count > 1 ? 'MDRRMO Emergency Response Team' : 'MDRRMO Emergency Line';
         }
 
         $userId = (int) $dialToIdentity;
@@ -56,11 +56,11 @@ class StaffPresenceService
             if ($user) {
                 $full = trim(($user->fname ?? '').' '.($user->lname ?? ''));
 
-                return $full !== '' ? $full : ($user->name ?? 'CDRRMO Operator');
+                return $full !== '' ? $full : ($user->name ?? 'MDRRMO Operator');
             }
         }
 
-        return 'CDRRMO Emergency Line';
+        return 'MDRRMO Emergency Line';
     }
 
     public function operatorUserIds(): array

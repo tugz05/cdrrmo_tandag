@@ -9,7 +9,7 @@ id=1,
 &latitude=-79.17353400
 &longitude=-79.17353400
 &details=Some message
-&address=Tandag City
+&address=Tago
 &type=Message
 
 ###

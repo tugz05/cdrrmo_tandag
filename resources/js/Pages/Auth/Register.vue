@@ -23,7 +23,7 @@ const submit = () => {
 
         <h2 class="auth-title">Create an account</h2>
         <p class="auth-lead mb-0">
-            Register to use the CDRRMO services on the web and mobile app, including reports and your profile.
+            Register to use the MDRRMO services on the web and mobile app, including reports and your profile.
         </p>
 
         <form class="mt-3" @submit.prevent="submit">

@@ -385,18 +385,20 @@
     {{-- HEADER --}}
     <div class="header">
         <div class="logo-wrap">
-            <img class="logo-left" src="{{ asset('assets/images/tandag_logo.png') }}" alt="">
+            @if (file_exists(public_path('assets/images/tago_logo.png')))
+                <img class="logo-left" src="{{ asset('assets/images/tago_logo.png') }}" alt="">
+            @endif
         </div>
 
         <div class="header-center">
             <div class="header-top">
                 REPUBLIC OF THE PHILIPPINES<br>
                 PROVINCE OF SURIGAO DEL SUR<br>
-                TANDAG CITY
+                MUNICIPALITY OF TAGO
             </div>
 
             <div class="header-middle">
-                City Disaster Risk Reduction and Management Office<br>
+                Municipal Disaster Risk Reduction and Management Office<br>
                 SEARCH AND EMERGENCY RESPONSE TEAM OF SURIGAO DEL SUR
             </div>
 
@@ -406,7 +408,9 @@
         </div>
 
         <div class="logo-wrap">
-            <img class="logo-right" src="{{ asset('assets/images/icon.png') }}" alt="">
+            @if (file_exists(public_path('assets/images/mdrrmo_logo.png')))
+                <img class="logo-right" src="{{ asset('assets/images/mdrrmo_logo.png') }}" alt="">
+            @endif
         </div>
     </div>
 

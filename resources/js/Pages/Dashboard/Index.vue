@@ -271,7 +271,7 @@ async function mountHeatmap() {
     await import('leaflet.heat/dist/leaflet-heat.js');
 
     const pts = props.heatmap_points ?? [];
-    const center = [9.07245, 126.19356];
+    const center = [9.0195, 126.2331];
     const zoom = pts.length ? 11 : 10;
 
     mapInstance = L.map(mapEl.value, {
@@ -386,7 +386,7 @@ watch(
     <Head title="Dashboard" />
 
     <div class="print-only border-bottom pb-2 mb-4">
-        <div class="fw-bold fs-5 text-dark">CDRRMO — Operations dashboard</div>
+        <div class="fw-bold fs-5 text-dark">MDRRMO — Operations dashboard</div>
         <div class="small text-muted mt-1">
             Reporting year <strong>{{ year }}</strong>
             <span v-if="page.props.auth?.user?.name"> — Prepared for {{ page.props.auth.user.name }}</span>
@@ -420,7 +420,7 @@ watch(
                 <div
                     class="kpi-card rounded-4 shadow-sm h-100 p-3 p-lg-4 position-relative overflow-hidden"
                     :style="{
-                        background: 'linear-gradient(135deg, #ffffff 0%, var(--cdrrmo-50) 100%)',
+                        background: 'linear-gradient(135deg, #ffffff 0%, var(--mdrrmo-50) 100%)',
                         borderTop: `3px solid ${k.accentColor}`,
                     }"
                 >
@@ -435,7 +435,7 @@ watch(
                             <i :class="`bi bi-${k.icon}`" :style="{ color: k.iconColor, fontSize: '1rem' }"></i>
                         </div>
                     </div>
-                    <div class="display-6 fw-bold mt-1" style="color: var(--cdrrmo-800)">
+                    <div class="display-6 fw-bold mt-1" style="color: var(--mdrrmo-800)">
                         {{ k.value.toLocaleString() }}
                     </div>
                     <div class="small text-muted mt-2">{{ k.hint }}</div>

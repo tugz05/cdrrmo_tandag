@@ -18,7 +18,7 @@ class PostSeeder extends Seeder
             Post::create([
                 'user_id' => null,
                 // Placeholder so seeded posts appear on public API (must be non-empty when published)
-                'bg_image' => 'https://placehold.co/1200x630/e0f2fe/075985/?text=CDRRMO+Post',
+                'bg_image' => 'https://placehold.co/1200x630/e0f2fe/075985/?text=MDRRMO+Post',
                 'title' => fake()->realText(maxNbChars: 50),
                 'is_published' => true,
                 'type' => JHelper::getRandomValue(PostTypeEnum::all()),

@@ -26,8 +26,8 @@ class WelcomeController extends Controller
                 'channelsCalls' => Report::where('type', 'Call')->count(),
             ],
             'mobileApp' => [
-                'android' => config('cdrrmo.mobile_app_android_url'),
-                'ios' => config('cdrrmo.mobile_app_ios_url'),
+                'android' => config('mdrrmo.mobile_app_android_url'),
+                'ios' => config('mdrrmo.mobile_app_ios_url'),
                 'direct' => route('app.download'),
             ],
         ]);

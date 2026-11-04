@@ -12,5 +12,5 @@ const props = defineProps({
 </script>
 <template>
     <!-- <img v-if="labeled" id="logo-labeled" class="mb-4" src="../Assets/gts-logo.svg" alt="" style="width:25%"> -->
-    <img id="logo" src="../Assets/cdrrmo-logo.png" alt="" :style="`width:auto; height:${props.size}`">
+    <img id="logo" src="../Assets/mdrrmo-logo.svg" alt="" :style="`width:auto; height:${props.size}`">
 </template>

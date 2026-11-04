@@ -1,5 +1,5 @@
 ================================================================================
-PROMPT / SPEC FOR FLUTTER DEVELOPER — CDRRMO MOBILE APP (LARAVEL API BACKEND)
+PROMPT / SPEC FOR FLUTTER DEVELOPER — MDRRMO MOBILE APP (LARAVEL API BACKEND)
 ================================================================================
 
 Use this document as the product/technical brief when implementing voice-call
@@ -70,7 +70,7 @@ CALL SCREEN UI — REALTIME IN-APP SESSION:
     • Realtime connection states — Bind UI to SDK callbacks so labels update live:
         connecting / ringing / connected / reconnecting / disconnected / failed.
     • Visual polish — Clear typography hierarchy (status headline + subtitle),
-      branded colors consistent with CDRRMO, optional subtle pulse or waveform-style
+      branded colors consistent with MDRRMO, optional subtle pulse or waveform-style
       animation while ringing or connected (avoid clutter; calm “command center”
       feel suits emergency apps).
     • Live duration — Show an elapsed timer from first “connected” until hang-up.

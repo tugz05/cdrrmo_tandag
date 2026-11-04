@@ -23,7 +23,7 @@ Route::get('/privacy-policy', PrivacyPolicyController::class)->name('privacy-pol
 Route::get('/download/app', function () {
     $path = public_path('downloads/app-release.apk');
     abort_unless(file_exists($path), 404);
-    return response()->download($path, 'cdrrmo-app.apk');
+    return response()->download($path, 'mdrrmo-app.apk');
 })->name('app.download');
 
 require __DIR__.'/web_routes/web_guest.php';

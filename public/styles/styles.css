@@ -1,4 +1,4 @@
-/* Uses global --cdrrmo-* tokens from resources/css/app.css (loaded via Vite) */
+/* Uses global --mdrrmo-* tokens from resources/css/app.css (loaded via Vite) */
 :root {
   --app-admin-sidebar-width: 230px;
   --app-admin-sidebar-border: 5px;
@@ -42,8 +42,8 @@ body {
   width: var(--app-admin-sidebar-outer);
   min-width: var(--app-admin-sidebar-outer);
   max-width: var(--app-admin-sidebar-outer);
-  border-left: 5px solid var(--cdrrmo-600, #0284c7);
-  background: var(--cdrrmo-sidebar, linear-gradient(180deg, #075985 0%, #0c4a6e 100%));
+  border-left: 5px solid var(--mdrrmo-600, #0284c7);
+  background: var(--mdrrmo-sidebar, linear-gradient(180deg, #075985 0%, #0c4a6e 100%));
   transition: 0.5s;
   isolation: isolate;
   pointer-events: auto;
@@ -241,8 +241,8 @@ main.app-shell__main {
     margin-top: 0;
     padding-inline: 2rem;
     box-sizing: border-box;
-    background: var(--cdrrmo-surface-raised, #ffffff);
-    border-top: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent);
+    background: var(--mdrrmo-surface-raised, #ffffff);
+    border-top: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent);
     box-shadow: 0 -6px 24px rgba(8, 47, 73, 0.04);
 }
 /*# sourceMappingURL=styles.css.map */
@@ -262,7 +262,7 @@ main.app-shell__main {
 
 /* Active item accent — icon stays white on the dark sidebar bg */
 .navigation ul li div:first-child.active .icon {
-    color: var(--cdrrmo-300, #7dd3fc);
+    color: var(--mdrrmo-300, #7dd3fc);
 }
 
 /* Tighter nav item height for cleaner feel */
@@ -402,9 +402,9 @@ main.app-shell__main {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--cdrrmo-700, #0369a1);
-    background-color: var(--cdrrmo-50, #f0f9ff);
-    border-bottom: 2px solid var(--cdrrmo-200, #bae6fd) !important;
+    color: var(--mdrrmo-700, #0369a1);
+    background-color: var(--mdrrmo-50, #f0f9ff);
+    border-bottom: 2px solid var(--mdrrmo-200, #bae6fd) !important;
     padding-top: 0.8rem;
     padding-bottom: 0.8rem;
     white-space: nowrap;
@@ -417,22 +417,22 @@ main.app-shell__main {
     justify-content: space-between;
     gap: 1rem;
     padding: 0.6rem 0;
-    border-bottom: 1px solid var(--cdrrmo-border, rgba(2, 132, 199, 0.1));
+    border-bottom: 1px solid var(--mdrrmo-border, rgba(2, 132, 199, 0.1));
     margin-bottom: 0;
 }
 
 .app-topstrip__greeting {
     font-size: 0.8rem;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
 }
 
 .app-topstrip__greeting strong {
-    color: var(--cdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #0369a1);
 }
 
 .app-topstrip__date {
     font-size: 0.75rem;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     white-space: nowrap;
 }
 
@@ -460,20 +460,20 @@ main.app-shell__main {
 .btn-group .btn-default {
     background: #fff;
     border: 1px solid var(--bs-border-color, #cbd5e1);
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     font-size: 0.82rem;
     font-weight: 500;
 }
 
 .btn-group .btn-default:hover {
-    background: var(--cdrrmo-50, #f0f9ff);
-    color: var(--cdrrmo-700, #0369a1);
-    border-color: var(--cdrrmo-300, #7dd3fc);
+    background: var(--mdrrmo-50, #f0f9ff);
+    color: var(--mdrrmo-700, #0369a1);
+    border-color: var(--mdrrmo-300, #7dd3fc);
 }
 
 .btn-group .btn-default.active {
-    background: var(--cdrrmo-primary, #0284c7);
+    background: var(--mdrrmo-primary, #0284c7);
     color: #fff;
-    border-color: var(--cdrrmo-primary, #0284c7);
+    border-color: var(--mdrrmo-primary, #0284c7);
 }
 

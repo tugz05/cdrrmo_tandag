@@ -48,7 +48,7 @@ const togglePasswordVisible = () => {
 
         <h2 class="auth-title">Sign in</h2>
         <p class="auth-lead mb-0">
-            Use your email and password for your CDRRMO account—the same sign-in works on this website and in the mobile
+            Use your email and password for your MDRRMO account—the same sign-in works on this website and in the mobile
             app.
         </p>
 
@@ -115,7 +115,7 @@ const togglePasswordVisible = () => {
             </button>
 
             <div v-if="canRegister" class="text-center mt-3">
-                <span class="small text-muted">New to CDRRMO? </span>
+                <span class="small text-muted">New to MDRRMO? </span>
                 <Link :href="route('register')" class="auth-link small">Create an account</Link>
             </div>
         </form>

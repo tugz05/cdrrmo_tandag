@@ -56,7 +56,7 @@ const statCards = computed(() => [
         key: 'reports',
         value: formatCount(props.publicStats.reportsRecorded),
         label: 'Reports on record',
-        hint: 'Community reports shared with CDRRMO',
+        hint: 'Community reports shared with MDRRMO',
     },
     {
         key: 'msg',
@@ -274,10 +274,10 @@ function emptyCopy(tab) {
 
 <template>
     <Head>
-        <title>CDRRMO Tandag — Disaster resilience for every community</title>
+        <title>MDRRMO Tago — Disaster resilience for every community</title>
         <meta
             name="description"
-            content="Official City Disaster Risk Reduction and Management Office portal for Tandag City — preparedness, response, recovery, and public advisories."
+            content="Official Municipal Disaster Risk Reduction and Management Office portal for Tago — preparedness, response, recovery, and public advisories."
         />
     </Head>
 
@@ -290,8 +290,8 @@ function emptyCopy(tab) {
                 <Link href="/" class="welcome-brand">
                     <JLogo size="42px" />
                     <span class="welcome-brand__text">
-                        <span class="welcome-brand__title">CDRRMO</span>
-                        <span class="welcome-brand__sub">City of Tandag</span>
+                        <span class="welcome-brand__title">MDRRMO</span>
+                        <span class="welcome-brand__sub">Municipality of Tago</span>
                     </span>
                 </Link>
 
@@ -374,7 +374,7 @@ function emptyCopy(tab) {
                 <div class="row align-items-stretch g-4 g-lg-5 py-5">
                     <div class="col-lg-7 d-flex flex-column justify-content-center">
                         <p class="welcome-eyebrow welcome-hero-fade" style="animation-delay: 0.04s">
-                            City Disaster Risk Reduction and Management Office
+                            Municipal Disaster Risk Reduction and Management Office
                         </p>
                         <h1 class="welcome-title welcome-hero-fade" style="animation-delay: 0.1s">
                             Ready today.
@@ -382,7 +382,7 @@ function emptyCopy(tab) {
                         </h1>
                         <p class="welcome-lead welcome-hero-fade" style="animation-delay: 0.18s">
                             One place for official advisories, preparedness guidance, and updates for everyone in
-                            Tandag City—on the web or in your pocket with the mobile app.
+                            Tago—on the web or in your pocket with the mobile app.
                         </p>
                         <div class="d-flex flex-wrap gap-3 mt-3 welcome-hero-fade" style="animation-delay: 0.26s">
                             <a
@@ -410,7 +410,7 @@ function emptyCopy(tab) {
                                 <i class="bi bi-phone-fill welcome-download-hero__phone" aria-hidden="true" />
                                 <span class="welcome-download-hero__text">
                                     <span class="welcome-download-hero__kicker">Download</span>
-                                    <span class="welcome-download-hero__title">CDRRMO mobile app</span>
+                                    <span class="welcome-download-hero__title">MDRRMO mobile app</span>
                                     <span class="welcome-download-hero__hint">Report, read advisories, manage your profile</span>
                                 </span>
                                 <span class="welcome-download-hero__cta">
@@ -457,7 +457,7 @@ function emptyCopy(tab) {
                                     <div class="welcome-hero-card__icon">
                                         <i class="bi bi-geo-alt-fill" />
                                     </div>
-                                    <div class="text-white small fw-semibold">Tandag City</div>
+                                    <div class="text-white small fw-semibold">Tago</div>
                                     <div class="text-white-50 small">Surigao del Sur</div>
                                     <div class="welcome-hero-card__pulse" aria-hidden="true" />
                                 </div>
@@ -559,7 +559,7 @@ function emptyCopy(tab) {
                     <div class="col-lg-9 text-center welcome-reveal">
                         <h2 class="welcome-h2">Built for real-world emergencies</h2>
                         <p class="welcome-text text-muted mb-0">
-                            CDRRMO Tandag brings together advisories, barangay updates, and public alerts—so you get
+                            MDRRMO Tago brings together advisories, barangay updates, and public alerts—so you get
                             clear, trustworthy information when it matters most.
                         </p>
                     </div>
@@ -719,7 +719,7 @@ function emptyCopy(tab) {
                                 Create an account
                             </Link>
                             <p v-else class="small text-muted mb-0">
-                                Online registration is not open right now. Please contact CDRRMO if you need help
+                                Online registration is not open right now. Please contact MDRRMO if you need help
                                 joining.
                             </p>
                         </div>
@@ -731,7 +731,7 @@ function emptyCopy(tab) {
         <!-- CTA -->
         <section id="cta" class="welcome-cta welcome-anchor">
             <div class="container-xl text-center welcome-reveal">
-                <h2 class="welcome-h2 text-white mb-3">Stay connected with CDRRMO</h2>
+                <h2 class="welcome-h2 text-white mb-3">Stay connected with MDRRMO</h2>
                 <p class="text-white-50 mx-auto mb-4 welcome-cta__lead">
                     Create an account to use the mobile app and receive updates, or sign in if you already have one.
                 </p>
@@ -761,7 +761,7 @@ function emptyCopy(tab) {
             <div class="container-xl d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 py-4">
                 <div class="d-flex align-items-center gap-2 small welcome-footer__muted">
                     <JLogo size="28px" />
-                    <span>&copy; {{ year }} CDRRMO · City Government of Tandag</span>
+                    <span>&copy; {{ year }} MDRRMO · Municipal Government of Tago</span>
                 </div>
                 <div class="d-flex flex-wrap align-items-center justify-content-md-end gap-3 small welcome-footer__muted text-md-end">
                     <span>Life-threatening emergency? Follow official hotlines and instructions from authorities—not this website alone.</span>
@@ -794,8 +794,8 @@ function emptyCopy(tab) {
 .welcome-root {
     position: relative;
     min-height: 100vh;
-    background: var(--cdrrmo-surface, #f0f9ff);
-    color: var(--cdrrmo-ink, #0c4a6e);
+    background: var(--mdrrmo-surface, #f0f9ff);
+    color: var(--mdrrmo-ink, #0c4a6e);
     overflow-x: clip;
 }
 
@@ -806,9 +806,9 @@ function emptyCopy(tab) {
     z-index: 0;
     opacity: 0.55;
     background:
-        radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in srgb, var(--cdrrmo-300, #7dd3fc) 35%, transparent), transparent),
-        radial-gradient(ellipse 60% 40% at 90% 10%, color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 40%, transparent), transparent),
-        radial-gradient(ellipse 50% 30% at 50% 100%, color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 50%, transparent), transparent);
+        radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in srgb, var(--mdrrmo-300, #7dd3fc) 35%, transparent), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 10%, color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 40%, transparent), transparent),
+        radial-gradient(ellipse 50% 30% at 50% 100%, color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 50%, transparent), transparent);
 }
 
 .welcome-nav {
@@ -816,8 +816,8 @@ function emptyCopy(tab) {
     top: 0;
     z-index: 100;
     backdrop-filter: blur(16px);
-    background: color-mix(in srgb, var(--cdrrmo-surface, #f0f9ff) 88%, white);
-    border-bottom: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 16%, transparent);
+    background: color-mix(in srgb, var(--mdrrmo-surface, #f0f9ff) 88%, white);
+    border-bottom: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 16%, transparent);
 }
 
 .welcome-nav__inner {
@@ -836,7 +836,7 @@ function emptyCopy(tab) {
     font-size: 0.82rem;
     font-weight: 600;
     text-decoration: none;
-    color: var(--cdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #0369a1);
     border: 1px solid transparent;
     transition:
         background 0.2s ease,
@@ -845,13 +845,13 @@ function emptyCopy(tab) {
 }
 
 .welcome-nav-chip:hover {
-    background: color-mix(in srgb, var(--cdrrmo-primary, #0284c7) 10%, transparent);
+    background: color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 10%, transparent);
 }
 
 .welcome-nav-chip--active {
-    background: color-mix(in srgb, var(--cdrrmo-primary, #0284c7) 18%, transparent);
-    border-color: color-mix(in srgb, var(--cdrrmo-primary, #0284c7) 35%, transparent);
-    color: var(--cdrrmo-900, #0c4a6e);
+    background: color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 18%, transparent);
+    border-color: color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 35%, transparent);
+    color: var(--mdrrmo-900, #0c4a6e);
 }
 
 .welcome-nav__scroll {
@@ -875,9 +875,9 @@ function emptyCopy(tab) {
     letter-spacing: 0.02em;
     text-decoration: none;
     text-transform: uppercase;
-    color: var(--cdrrmo-700, #0369a1);
-    background: color-mix(in srgb, var(--cdrrmo-primary, #0284c7) 9%, transparent);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-primary, #0284c7) 18%, transparent);
+    color: var(--mdrrmo-700, #0369a1);
+    background: color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 9%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 18%, transparent);
 }
 
 .welcome-brand {
@@ -897,7 +897,7 @@ function emptyCopy(tab) {
 
 .welcome-brand__sub {
     font-size: 0.72rem;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     display: block;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -906,13 +906,13 @@ function emptyCopy(tab) {
 .welcome-btn-primary {
     background: linear-gradient(
         135deg,
-        var(--cdrrmo-500, #0ea5e9) 0%,
-        var(--cdrrmo-700, #0369a1) 100%
+        var(--mdrrmo-500, #0ea5e9) 0%,
+        var(--mdrrmo-700, #0369a1) 100%
     );
     border: none;
     color: #fff !important;
     font-weight: 700;
-    box-shadow: 0 6px 22px color-mix(in srgb, var(--cdrrmo-600, #0284c7) 38%, transparent);
+    box-shadow: 0 6px 22px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 38%, transparent);
     transition:
         transform 0.2s ease,
         box-shadow 0.2s ease;
@@ -920,19 +920,19 @@ function emptyCopy(tab) {
 
 .welcome-btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px color-mix(in srgb, var(--cdrrmo-600, #0284c7) 48%, transparent);
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 48%, transparent);
 }
 
 .welcome-btn-outline {
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-700, #0369a1) 22%, transparent);
-    background: var(--cdrrmo-surface-raised, #fff);
-    color: var(--cdrrmo-800, #075985);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-700, #0369a1) 22%, transparent);
+    background: var(--mdrrmo-surface-raised, #fff);
+    color: var(--mdrrmo-800, #075985);
     font-weight: 700;
 }
 
 .welcome-btn-outline:hover {
-    border-color: var(--cdrrmo-primary, #0284c7);
-    color: var(--cdrrmo-700, #0369a1);
+    border-color: var(--mdrrmo-primary, #0284c7);
+    color: var(--mdrrmo-700, #0369a1);
 }
 
 .welcome-btn-ghost {
@@ -948,7 +948,7 @@ function emptyCopy(tab) {
 
 .welcome-btn-soft {
     background: rgba(255, 255, 255, 0.95);
-    color: var(--cdrrmo-800, #075985) !important;
+    color: var(--mdrrmo-800, #075985) !important;
     font-weight: 700;
     border: none;
 }
@@ -958,9 +958,9 @@ function emptyCopy(tab) {
     padding-bottom: 0;
     background: linear-gradient(
         155deg,
-        var(--cdrrmo-900, #0c4a6e) 0%,
-        var(--cdrrmo-700, #0369a1) 38%,
-        var(--cdrrmo-500, #0ea5e9) 100%
+        var(--mdrrmo-900, #0c4a6e) 0%,
+        var(--mdrrmo-700, #0369a1) 38%,
+        var(--mdrrmo-500, #0ea5e9) 100%
     );
     color: #fff;
 }
@@ -984,7 +984,7 @@ function emptyCopy(tab) {
     top: -15%;
     background: radial-gradient(
         circle at 25% 25%,
-        color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 45%, transparent) 0%,
+        color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 45%, transparent) 0%,
         transparent 42%
     );
     pointer-events: none;
@@ -1179,7 +1179,7 @@ function emptyCopy(tab) {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 0.65rem;
-    background: color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 35%, transparent);
+    background: color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 35%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1212,7 +1212,7 @@ function emptyCopy(tab) {
 
 .welcome-hero__slant {
     height: 72px;
-    background: var(--cdrrmo-surface, #f0f9ff);
+    background: var(--mdrrmo-surface, #f0f9ff);
     clip-path: polygon(0 48%, 100% 0, 100% 100%, 0 100%);
     margin-top: -1px;
 }
@@ -1234,13 +1234,13 @@ function emptyCopy(tab) {
     color: #fff;
     background: linear-gradient(
         135deg,
-        color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 22%, rgba(255, 255, 255, 0.08)),
-        color-mix(in srgb, var(--cdrrmo-700, #0369a1) 45%, rgba(0, 0, 0, 0.2))
+        color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 22%, rgba(255, 255, 255, 0.08)),
+        color-mix(in srgb, var(--mdrrmo-700, #0369a1) 45%, rgba(0, 0, 0, 0.2))
     );
     border: 1px solid rgba(255, 255, 255, 0.28);
     box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 15%, transparent) inset,
-        0 18px 50px color-mix(in srgb, var(--cdrrmo-900, #0c4a6e) 45%, transparent);
+        0 0 0 1px color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 15%, transparent) inset,
+        0 18px 50px color-mix(in srgb, var(--mdrrmo-900, #0c4a6e) 45%, transparent);
     overflow: hidden;
     transition:
         transform 0.2s ease,
@@ -1253,12 +1253,12 @@ function emptyCopy(tab) {
     transform: translateY(-2px);
     box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.2) inset,
-        0 22px 55px color-mix(in srgb, var(--cdrrmo-900, #0c4a6e) 50%, transparent);
+        0 22px 55px color-mix(in srgb, var(--mdrrmo-900, #0c4a6e) 50%, transparent);
     border-color: rgba(255, 255, 255, 0.38);
 }
 
 .welcome-download-hero:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 75%, white);
+    outline: 3px solid color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 75%, white);
     outline-offset: 3px;
 }
 
@@ -1289,7 +1289,7 @@ function emptyCopy(tab) {
     position: relative;
     font-size: 1.65rem;
     line-height: 1;
-    color: color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 95%, white);
+    color: color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 95%, white);
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.18));
 }
 
@@ -1364,9 +1364,9 @@ function emptyCopy(tab) {
     padding: 3.25rem 1rem;
     background: linear-gradient(
         125deg,
-        var(--cdrrmo-800, #075985) 0%,
-        var(--cdrrmo-700, #0369a1) 42%,
-        color-mix(in srgb, var(--cdrrmo-900, #0c4a6e) 88%, black) 100%
+        var(--mdrrmo-800, #075985) 0%,
+        var(--mdrrmo-700, #0369a1) 42%,
+        color-mix(in srgb, var(--mdrrmo-900, #0c4a6e) 88%, black) 100%
     );
     overflow: hidden;
 }
@@ -1379,7 +1379,7 @@ function emptyCopy(tab) {
         radial-gradient(ellipse 80% 60% at 15% 20%, rgba(255, 255, 255, 0.12), transparent 50%),
         radial-gradient(
             ellipse 60% 50% at 90% 80%,
-            color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 35%, transparent),
+            color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 35%, transparent),
             transparent 55%
         );
     pointer-events: none;
@@ -1393,7 +1393,7 @@ function emptyCopy(tab) {
 .welcome-app-strip__inner {
     border-radius: 1.35rem;
     padding: 2rem 1.75rem 2.1rem;
-    background: color-mix(in srgb, var(--cdrrmo-950, #082f49) 35%, transparent);
+    background: color-mix(in srgb, var(--mdrrmo-950, #082f49) 35%, transparent);
     border: 1px solid rgba(255, 255, 255, 0.14);
     backdrop-filter: blur(8px);
 }
@@ -1474,8 +1474,8 @@ function emptyCopy(tab) {
     background: #fff;
     border-radius: 1.15rem;
     padding: 1.35rem 1.5rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 12%, transparent);
-    box-shadow: 0 18px 45px color-mix(in srgb, var(--cdrrmo-800, #075985) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 12%, transparent);
+    box-shadow: 0 18px 45px color-mix(in srgb, var(--mdrrmo-800, #075985) 8%, transparent);
     transition:
         transform 0.25s ease,
         box-shadow 0.25s ease;
@@ -1488,7 +1488,7 @@ function emptyCopy(tab) {
 .welcome-stat__value {
     font-size: 2rem;
     font-weight: 900;
-    color: var(--cdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #0369a1);
     letter-spacing: -0.03em;
     line-height: 1;
 }
@@ -1496,13 +1496,13 @@ function emptyCopy(tab) {
 .welcome-stat__label {
     font-size: 0.92rem;
     font-weight: 700;
-    color: var(--cdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0c4a6e);
     margin-top: 0.35rem;
 }
 
 .welcome-stat__hint {
     font-size: 0.78rem;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     margin-top: 0.35rem;
 }
 
@@ -1524,7 +1524,7 @@ function emptyCopy(tab) {
     font-size: clamp(1.55rem, 2.8vw, 2.15rem);
     font-weight: 900;
     letter-spacing: -0.03em;
-    color: var(--cdrrmo-ink, #0c4a6e);
+    color: var(--mdrrmo-ink, #0c4a6e);
 }
 
 .welcome-text {
@@ -1537,8 +1537,8 @@ function emptyCopy(tab) {
     background: #fff;
     border-radius: 1.25rem;
     padding: 1.75rem 1.75rem 1.85rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent);
-    box-shadow: 0 14px 40px color-mix(in srgb, var(--cdrrmo-800, #075985) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent);
+    box-shadow: 0 14px 40px color-mix(in srgb, var(--mdrrmo-800, #075985) 6%, transparent);
     transition:
         transform 0.3s ease,
         border-color 0.3s ease,
@@ -1548,8 +1548,8 @@ function emptyCopy(tab) {
 
 .welcome-card:hover {
     transform: translateY(-8px) rotate(-0.25deg);
-    border-color: color-mix(in srgb, var(--cdrrmo-primary, #0284c7) 38%, transparent);
-    box-shadow: 0 26px 55px color-mix(in srgb, var(--cdrrmo-800, #075985) 12%, transparent);
+    border-color: color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 38%, transparent);
+    box-shadow: 0 26px 55px color-mix(in srgb, var(--mdrrmo-800, #075985) 12%, transparent);
 }
 
 .welcome-card__num {
@@ -1558,7 +1558,7 @@ function emptyCopy(tab) {
     right: 1rem;
     font-size: 2.5rem;
     font-weight: 900;
-    color: color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 35%, transparent);
+    color: color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 35%, transparent);
     line-height: 1;
 }
 
@@ -1568,18 +1568,18 @@ function emptyCopy(tab) {
     border-radius: 0.85rem;
     background: linear-gradient(
         135deg,
-        color-mix(in srgb, var(--cdrrmo-600, #0284c7) 18%, transparent),
-        color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 24%, transparent)
+        color-mix(in srgb, var(--mdrrmo-600, #0284c7) 18%, transparent),
+        color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 24%, transparent)
     );
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.35rem;
-    color: var(--cdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #0369a1);
 }
 
 .welcome-section--dark {
-    background: linear-gradient(165deg, var(--cdrrmo-950, #082f49) 0%, var(--cdrrmo-800, #075985) 55%, var(--cdrrmo-700, #0369a1) 100%);
+    background: linear-gradient(165deg, var(--mdrrmo-950, #082f49) 0%, var(--mdrrmo-800, #075985) 55%, var(--mdrrmo-700, #0369a1) 100%);
     color: #fff;
     padding-top: 4.5rem;
     padding-bottom: 4.5rem;
@@ -1615,7 +1615,7 @@ function emptyCopy(tab) {
 
 .welcome-tab--active {
     background: rgba(255, 255, 255, 0.95);
-    color: var(--cdrrmo-800, #075985);
+    color: var(--mdrrmo-800, #075985);
     border-color: transparent;
 }
 
@@ -1708,35 +1708,35 @@ function emptyCopy(tab) {
     background: #fff;
     border-radius: 1.35rem;
     padding: 2rem 2rem 2.25rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 12%, transparent);
-    box-shadow: 0 16px 42px color-mix(in srgb, var(--cdrrmo-800, #075985) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 12%, transparent);
+    box-shadow: 0 16px 42px color-mix(in srgb, var(--mdrrmo-800, #075985) 7%, transparent);
 }
 
 .welcome-code {
     font-size: 0.78rem;
     padding: 0.15rem 0.4rem;
     border-radius: 6px;
-    background: var(--cdrrmo-50, #f0f9ff);
-    color: var(--cdrrmo-800, #075985);
+    background: var(--mdrrmo-50, #f0f9ff);
+    color: var(--mdrrmo-800, #075985);
 }
 
 .welcome-code--on-dark {
     background: rgba(255, 255, 255, 0.1);
-    color: color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 92%, white);
+    color: color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 92%, white);
     border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .welcome-mini {
     padding: 1rem 1rem 1.1rem;
     border-radius: 1rem;
-    background: var(--cdrrmo-50, #f0f9ff);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 22%, transparent);
+    background: var(--mdrrmo-50, #f0f9ff);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 22%, transparent);
     height: 100%;
 }
 
 .welcome-mini i {
     font-size: 1.35rem;
-    color: var(--cdrrmo-primary, #0284c7);
+    color: var(--mdrrmo-primary, #0284c7);
     margin-bottom: 0.35rem;
     display: block;
 }
@@ -1755,18 +1755,18 @@ function emptyCopy(tab) {
 .welcome-aside-card {
     background: linear-gradient(
         160deg,
-        color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 90%, white),
+        color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 90%, white),
         #fff
     );
     border-radius: 1.35rem;
     padding: 1.5rem 1.5rem 1.65rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent);
 }
 
 .welcome-aside-card__title {
     font-weight: 900;
     font-size: 1.05rem;
-    color: var(--cdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0c4a6e);
     margin-bottom: 0.5rem;
 }
 
@@ -1777,11 +1777,11 @@ function emptyCopy(tab) {
     border: none;
     background: linear-gradient(
         135deg,
-        var(--cdrrmo-600, #0284c7),
-        var(--cdrrmo-700, #0369a1)
+        var(--mdrrmo-600, #0284c7),
+        var(--mdrrmo-700, #0369a1)
     );
     color: #fff !important;
-    box-shadow: 0 10px 28px color-mix(in srgb, var(--cdrrmo-800, #075985) 45%, transparent);
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--mdrrmo-800, #075985) 45%, transparent);
     transition:
         transform 0.18s ease,
         box-shadow 0.18s ease;
@@ -1790,35 +1790,35 @@ function emptyCopy(tab) {
 .welcome-app-aside-jump:hover {
     color: #fff !important;
     transform: translateY(-2px);
-    box-shadow: 0 14px 34px color-mix(in srgb, var(--cdrrmo-900, #0c4a6e) 40%, transparent);
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--mdrrmo-900, #0c4a6e) 40%, transparent);
 }
 
 .welcome-app-aside-jump:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--cdrrmo-300, #7dd3fc) 70%, white);
+    outline: 3px solid color-mix(in srgb, var(--mdrrmo-300, #7dd3fc) 70%, white);
     outline-offset: 2px;
 }
 
 .welcome-aside-store {
     font-weight: 700;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-500, #0ea5e9) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-500, #0ea5e9) 45%, transparent);
     background: #fff;
-    color: var(--cdrrmo-800, #075985) !important;
+    color: var(--mdrrmo-800, #075985) !important;
 }
 
 .welcome-aside-store:hover {
-    background: var(--cdrrmo-50, #f0f9ff);
-    border-color: var(--cdrrmo-500, #0ea5e9);
-    color: var(--cdrrmo-900, #0c4a6e) !important;
+    background: var(--mdrrmo-50, #f0f9ff);
+    border-color: var(--mdrrmo-500, #0ea5e9);
+    color: var(--mdrrmo-900, #0c4a6e) !important;
 }
 
 .welcome-cta {
     padding: 5rem 1rem;
     background: radial-gradient(
             circle at 20% 30%,
-            color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 28%, transparent),
+            color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 28%, transparent),
             transparent 55%
         ),
-        linear-gradient(135deg, var(--cdrrmo-800, #075985) 0%, var(--cdrrmo-900, #0c4a6e) 100%);
+        linear-gradient(135deg, var(--mdrrmo-800, #075985) 0%, var(--mdrrmo-900, #0c4a6e) 100%);
     position: relative;
     overflow: hidden;
 }
@@ -1840,24 +1840,24 @@ function emptyCopy(tab) {
 }
 
 .welcome-footer {
-    background: var(--cdrrmo-950, #082f49);
-    color: var(--cdrrmo-200, #bae6fd);
-    border-top: 1px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 24%, transparent);
+    background: var(--mdrrmo-950, #082f49);
+    color: var(--mdrrmo-200, #bae6fd);
+    border-top: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 24%, transparent);
 }
 
 .welcome-footer__muted {
-    color: color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 88%, transparent);
+    color: color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 88%, transparent);
 }
 
 .welcome-footer__policy-link {
-    color: color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 70%, transparent);
+    color: color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 70%, transparent);
     text-decoration: none;
     white-space: nowrap;
     transition: color 0.2s ease;
 }
 
 .welcome-footer__policy-link:hover {
-    color: var(--cdrrmo-200, #bae6fd);
+    color: var(--mdrrmo-200, #bae6fd);
     text-decoration: underline;
     text-underline-offset: 3px;
 }
@@ -1875,8 +1875,8 @@ function emptyCopy(tab) {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--cdrrmo-600, #0284c7) 35%, transparent);
-    border: 2px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 55%, transparent);
+    background: color-mix(in srgb, var(--mdrrmo-600, #0284c7) 35%, transparent);
+    border: 2px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 55%, transparent);
     transition:
         transform 0.2s ease,
         background 0.2s ease;
@@ -1887,8 +1887,8 @@ function emptyCopy(tab) {
 }
 
 .welcome-dot--active {
-    background: var(--cdrrmo-primary, #0284c7);
-    border-color: var(--cdrrmo-700, #0369a1);
+    background: var(--mdrrmo-primary, #0284c7);
+    border-color: var(--mdrrmo-700, #0369a1);
 }
 
 /* Scroll reveal */

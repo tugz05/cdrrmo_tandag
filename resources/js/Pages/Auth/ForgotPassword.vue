@@ -22,7 +22,7 @@ const submit = () => {
 
         <h2 class="auth-title">Reset your password</h2>
         <p class="auth-lead mb-0">
-            Enter the email for your CDRRMO account. We will send you a link to choose a new password.
+            Enter the email for your MDRRMO account. We will send you a link to choose a new password.
         </p>
 
         <div v-if="status" class="alert alert-success auth-alert mt-3" role="status">

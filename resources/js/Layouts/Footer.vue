@@ -21,7 +21,7 @@
 
 <style scoped>
 .app-footer {
-    --app-footer-link: var(--cdrrmo-ink-muted, #64748b);
+    --app-footer-link: var(--mdrrmo-ink-muted, #64748b);
 }
 
 .app-footer__link {
@@ -32,7 +32,7 @@
 }
 
 .app-footer__link:hover {
-    color: var(--cdrrmo-primary, #0284c7);
+    color: var(--mdrrmo-primary, #0284c7);
 }
 
 .letter-spacing-tight {

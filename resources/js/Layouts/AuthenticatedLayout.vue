@@ -159,9 +159,9 @@ function notifyIncomingVoiceCall(displayName) {
     const body = displayName ? `${displayName} is calling` : 'Incoming emergency voice call';
     try {
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            incomingBrowserNotification = new Notification('CDRRMO — Voice call', {
+            incomingBrowserNotification = new Notification('MDRRMO — Voice call', {
                 body,
-                tag: 'cdrrmo-voice-incoming',
+                tag: 'mdrrmo-voice-incoming',
                 requireInteraction: true,
             });
             window.setTimeout(() => {
@@ -183,7 +183,7 @@ function notifyIncomingVoiceCall(displayName) {
 
 /**
  * Console diagnostics for POST /admin/staff/heartbeat (Twilio routing / caller availability).
- * On by dev build, on /admin/* in the browser, or force with: sessionStorage.setItem('cdrrmo_staff_debug','1')
+ * On by dev build, on /admin/* in the browser, or force with: sessionStorage.setItem('mdrrmo_staff_debug','1')
  */
 function staffPresenceDebugEnabled() {
     if (import.meta.env.DEV) {
@@ -193,7 +193,7 @@ function staffPresenceDebugEnabled() {
         return false;
     }
     try {
-        if (window.sessionStorage?.getItem('cdrrmo_staff_debug') === '1') {
+        if (window.sessionStorage?.getItem('mdrrmo_staff_debug') === '1') {
             return true;
         }
     } catch {
@@ -421,7 +421,7 @@ function startStaffPresenceHeartbeat() {
         'info',
         'Starting staff presence heartbeat (every 30s + immediate first ping). Endpoint:',
         url,
-        '(sessionStorage cdrrmo_staff_debug=1 forces logs on any path)',
+        '(sessionStorage mdrrmo_staff_debug=1 forces logs on any path)',
     );
     staffHeartbeat();
     if (heartbeatTimer) {

@@ -390,11 +390,11 @@ function handleEditTitle(e) {
 }
 
 .post-edit__card {
-    background: var(--cdrrmo-surface-raised, #fff);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 12%, transparent);
+    background: var(--mdrrmo-surface-raised, #fff);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 12%, transparent);
     border-radius: 1rem;
     padding: 1.5rem 1.5rem 1.75rem;
-    box-shadow: 0 12px 40px color-mix(in srgb, var(--cdrrmo-800, #075985) 8%, transparent);
+    box-shadow: 0 12px 40px color-mix(in srgb, var(--mdrrmo-800, #075985) 8%, transparent);
 }
 
 @media (min-width: 992px) {
@@ -419,9 +419,9 @@ function handleEditTitle(e) {
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--cdrrmo-800, #075985);
-    background: color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 90%, white);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 28%, transparent);
+    color: var(--mdrrmo-800, #075985);
+    background: color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 90%, white);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 28%, transparent);
 }
 
 .post-edit__title-block {
@@ -432,14 +432,14 @@ function handleEditTitle(e) {
     gap: 1rem;
     margin-bottom: 1rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent);
 }
 
 .post-edit__title {
     font-size: clamp(1.35rem, 2.5vw, 1.85rem);
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: var(--cdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0c4a6e);
     margin: 0;
     flex: 1 1 12rem;
     line-height: 1.25;
@@ -454,10 +454,10 @@ function handleEditTitle(e) {
     margin-bottom: 1.5rem;
     padding: 1.25rem 1.35rem;
     border-radius: 0.85rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent);
     background: linear-gradient(
         165deg,
-        color-mix(in srgb, var(--cdrrmo-50, #f0f9ff) 88%, #fff) 0%,
+        color-mix(in srgb, var(--mdrrmo-50, #f0f9ff) 88%, #fff) 0%,
         #fff 55%
     );
 }
@@ -487,9 +487,9 @@ function handleEditTitle(e) {
     height: 2.5rem;
     border-radius: 0.65rem;
     flex-shrink: 0;
-    color: var(--cdrrmo-700, #0369a1);
-    background: color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 95%, white);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 25%, transparent);
+    color: var(--mdrrmo-700, #0369a1);
+    background: color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 95%, white);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 25%, transparent);
     font-size: 1.25rem;
 }
 
@@ -497,14 +497,14 @@ function handleEditTitle(e) {
     font-size: 1rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    color: var(--cdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0c4a6e);
     margin: 0 0 0.25rem;
 }
 
 .post-edit__featured-lede {
     font-size: 0.8125rem;
     line-height: 1.45;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     margin: 0;
     max-width: 44rem;
 }
@@ -517,9 +517,9 @@ function handleEditTitle(e) {
     text-transform: uppercase;
     padding: 0.35rem 0.65rem;
     border-radius: 999px;
-    color: var(--cdrrmo-800, #075985);
-    background: color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 90%, white);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 30%, transparent);
+    color: var(--mdrrmo-800, #075985);
+    background: color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 90%, white);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 30%, transparent);
 }
 
 .post-edit__featured-dropzone {
@@ -531,31 +531,31 @@ function handleEditTitle(e) {
         border-color 0.15s ease,
         box-shadow 0.15s ease,
         background 0.15s ease;
-    border: 2px dashed color-mix(in srgb, var(--cdrrmo-500, #0ea5e9) 35%, transparent);
+    border: 2px dashed color-mix(in srgb, var(--mdrrmo-500, #0ea5e9) 35%, transparent);
     background: #fff;
 }
 
 .post-edit__featured-dropzone:hover,
 .post-edit__featured-dropzone:focus-visible {
-    border-color: color-mix(in srgb, var(--cdrrmo-600, #0284c7) 55%, transparent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 18%, transparent);
+    border-color: color-mix(in srgb, var(--mdrrmo-600, #0284c7) 55%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 18%, transparent);
 }
 
 .post-edit__featured-dropzone:focus-visible {
-    outline: 2px solid var(--cdrrmo-500, #0ea5e9);
+    outline: 2px solid var(--mdrrmo-500, #0ea5e9);
     outline-offset: 2px;
 }
 
 .post-edit__featured-dropzone--drag {
     border-style: solid;
-    border-color: var(--cdrrmo-500, #0ea5e9);
-    background: color-mix(in srgb, var(--cdrrmo-50, #f0f9ff) 96%, #fff);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 22%, transparent);
+    border-color: var(--mdrrmo-500, #0ea5e9);
+    background: color-mix(in srgb, var(--mdrrmo-50, #f0f9ff) 96%, #fff);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 22%, transparent);
 }
 
 .post-edit__featured-dropzone--filled {
     border-style: solid;
-    border-color: color-mix(in srgb, var(--cdrrmo-600, #0284c7) 22%, transparent);
+    border-color: color-mix(in srgb, var(--mdrrmo-600, #0284c7) 22%, transparent);
 }
 
 .post-edit__featured-aspect {
@@ -565,7 +565,7 @@ function handleEditTitle(e) {
     max-height: min(52vh, 360px);
     border-radius: calc(0.65rem - 2px);
     overflow: hidden;
-    background: color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 35%, #f8fafc);
+    background: color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 35%, #f8fafc);
 }
 
 .post-edit__featured-img {
@@ -617,20 +617,20 @@ function handleEditTitle(e) {
 
 .post-edit__featured-empty-icon {
     font-size: 2.25rem;
-    color: color-mix(in srgb, var(--cdrrmo-500, #0ea5e9) 65%, #94a3b8);
+    color: color-mix(in srgb, var(--mdrrmo-500, #0ea5e9) 65%, #94a3b8);
     margin-bottom: 0.75rem;
 }
 
 .post-edit__featured-empty-title {
     font-size: 0.9375rem;
     font-weight: 600;
-    color: var(--cdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0c4a6e);
     margin: 0 0 0.25rem;
 }
 
 .post-edit__featured-empty-sub {
     font-size: 0.8125rem;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     margin: 0;
 }
 
@@ -653,7 +653,7 @@ function handleEditTitle(e) {
     flex: 1 1 12rem;
     font-size: 0.75rem;
     line-height: 1.4;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     text-align: right;
 }
 
@@ -671,7 +671,7 @@ function handleEditTitle(e) {
 
 .post-edit__editor-wrap {
     border-radius: 0.65rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent);
     overflow: hidden;
     background: #fff;
 }
@@ -692,7 +692,7 @@ function handleEditTitle(e) {
 .post-edit__save-bar {
     margin-top: 1.5rem;
     padding-top: 1.25rem;
-    border-top: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent);
 }
 
 .post-edit__save-btn {
@@ -704,13 +704,13 @@ function handleEditTitle(e) {
 
 .post-edit__aside {
     border-radius: 0.85rem !important;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent) !important;
 }
 
 .post-edit__aside .letter-spacing {
     letter-spacing: 0.06em;
     font-size: 0.72rem;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
 }
 </style>
 

@@ -27,7 +27,7 @@ const submit = () => {
         <Head title="Set a new password" />
 
         <h2 class="auth-title">Set a new password</h2>
-        <p class="auth-lead mb-0">Choose a strong password for your CDRRMO account.</p>
+        <p class="auth-lead mb-0">Choose a strong password for your MDRRMO account.</p>
 
         <form class="mt-3" @submit.prevent="submit">
             <div class="row g-2">

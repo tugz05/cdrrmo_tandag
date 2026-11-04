@@ -12,7 +12,7 @@ import JOffCanvasHeader from '@/Components/JOffCanvasHeader.vue';
 import JModal from '@/Components/JModal.vue';
 import JModalButtonClose from '@/Components/JModalButtonClose.vue';
 import JFloatingInput from '@/Components/JFloatingInput.vue';
-import { useUser } from '@/Composables/cdrrmo'
+import { useUser } from '@/Composables/mdrrmo'
 import { timeAgo } from '@/Helpers/JTimeAgo';
 import { toggleModal } from '@/Helpers/JModal';
 defineOptions({ layout: AuthenticatedLayout });

@@ -168,9 +168,9 @@ function notifyBrowser(report) {
             return;
         }
         browserNotification?.close?.();
-        browserNotification = new Notification('CDRRMO — New message report', {
+        browserNotification = new Notification('MDRRMO — New message report', {
             body: [report.reporter?.name, report.details].filter(Boolean).join(': ') || 'A citizen sent an emergency report.',
-            tag: 'cdrrmo-message-report',
+            tag: 'mdrrmo-message-report',
             requireInteraction: true,
         });
         browserNotification.onclick = () => window.focus();
@@ -357,7 +357,7 @@ onUnmounted(() => {
 
 .report-alert__facts dt {
     font-weight: 500;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
 }
 
 .report-alert__facts dt i {
@@ -366,7 +366,7 @@ onUnmounted(() => {
 
 .report-alert__facts dd {
     margin: 0;
-    color: var(--cdrrmo-ink, #0c4a6e);
+    color: var(--mdrrmo-ink, #0c4a6e);
     word-break: break-word;
 }
 

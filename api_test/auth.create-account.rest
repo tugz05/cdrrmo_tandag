@@ -7,7 +7,7 @@ Accept: application/json
     "fname": "Test Gwapo",
     "lname": "User sd",
     "mname": "suffi",
-    "address": "Tandag city",
+    "address": "Tago",
     "email": "johndecastro@gmail.co",
     "phone": "09512558699",
     "password": "passwor",

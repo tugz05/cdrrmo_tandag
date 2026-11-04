@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { usePost } from '@/Composables/cdrrmo';
+import { usePost } from '@/Composables/mdrrmo';
 import { Head } from '@inertiajs/vue3';
 import { watch } from 'vue';
 import PostSection from './Partials/PostSection.vue'

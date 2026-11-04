@@ -100,7 +100,7 @@ function isNavItemActive(nav) {
         <div class="nav-brand d-flex align-items-center gap-3 px-4 py-4">
             <JLogo size="38px" />
             <div>
-                <div class="nav-brand__name">CDRRMO</div>
+                <div class="nav-brand__name">MDRRMO</div>
                 <div class="nav-brand__tagline">Operations</div>
             </div>
         </div>

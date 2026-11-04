@@ -48,7 +48,7 @@ class ReportController extends Controller
 
         $address = Cache::remember($cacheKey, now()->addDays(30), function () use ($lat, $lng) {
             $response = Http::withHeaders([
-                'User-Agent' => 'CDRRMO-Tandag/1.0 cdrrmo-tandag.com',
+                'User-Agent' => 'MDRRMO-Tago/1.0 '.config('app.url'),
                 'Accept-Language' => 'en',
             ])->timeout(8)->get('https://nominatim.openstreetmap.org/reverse', [
                 'format' => 'json',

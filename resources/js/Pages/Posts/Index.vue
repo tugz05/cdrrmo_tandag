@@ -345,11 +345,11 @@ const emptyMessage = computed(() => {
 
 .posts-index__panel {
     border-radius: 0.875rem;
-    background: var(--cdrrmo-surface-raised, #fff);
+    background: var(--mdrrmo-surface-raised, #fff);
     box-shadow:
         0 1px 0 rgba(255, 255, 255, 0.7) inset,
         0 4px 28px rgba(8, 47, 73, 0.08),
-        0 0 0 1px color-mix(in srgb, var(--cdrrmo-600, #0284c7) 8%, transparent);
+        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 8%, transparent);
 }
 
 .posts-index__panel-head {
@@ -366,7 +366,7 @@ const emptyMessage = computed(() => {
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.12em;
-    color: var(--cdrrmo-primary, #0284c7);
+    color: var(--mdrrmo-primary, #0284c7);
 }
 
 .posts-index__title {
@@ -385,14 +385,14 @@ const emptyMessage = computed(() => {
     background: linear-gradient(
         90deg,
         transparent,
-        color-mix(in srgb, var(--cdrrmo-600, #0284c7) 14%, transparent) 12%,
-        color-mix(in srgb, var(--cdrrmo-600, #0284c7) 14%, transparent) 88%,
+        color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent) 12%,
+        color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent) 88%,
         transparent
     );
 }
 
 .posts-index__panel-nav {
-    background: color-mix(in srgb, var(--cdrrmo-50, #f0f9ff) 55%, #fff);
+    background: color-mix(in srgb, var(--mdrrmo-50, #f0f9ff) 55%, #fff);
 }
 
 .posts-index__tabs {
@@ -406,23 +406,23 @@ const emptyMessage = computed(() => {
 .posts-index__tab {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     background: #fff;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent);
     padding-inline: 1rem;
     white-space: nowrap;
 }
 
 .posts-index__tab:hover {
-    color: var(--cdrrmo-ink, #0c4a6e);
-    background: var(--cdrrmo-50, #f0f9ff);
+    color: var(--mdrrmo-ink, #0c4a6e);
+    background: var(--mdrrmo-50, #f0f9ff);
 }
 
 .posts-index__tab--active {
     color: #fff !important;
-    background: var(--cdrrmo-primary, #0284c7) !important;
-    border-color: var(--cdrrmo-primary, #0284c7) !important;
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--cdrrmo-primary, #0284c7) 38%, transparent);
+    background: var(--mdrrmo-primary, #0284c7) !important;
+    border-color: var(--mdrrmo-primary, #0284c7) !important;
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 38%, transparent);
 }
 
 .posts-index__context {
@@ -461,8 +461,8 @@ const emptyMessage = computed(() => {
     justify-content: center;
     padding: 2rem 1rem 2.5rem;
     border-radius: 0.875rem;
-    background: linear-gradient(165deg, #fff 0%, color-mix(in srgb, var(--cdrrmo-100, #e0f2fe) 45%, #fff) 100%);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent);
+    background: linear-gradient(165deg, #fff 0%, color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 45%, #fff) 100%);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent);
     box-shadow: 0 4px 24px rgba(8, 47, 73, 0.06);
 }
 
@@ -480,9 +480,9 @@ const emptyMessage = computed(() => {
     align-items: center;
     justify-content: center;
     border-radius: 1rem;
-    background: linear-gradient(145deg, var(--cdrrmo-100, #e0f2fe), #fff);
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 12%, transparent);
-    color: var(--cdrrmo-primary, #0284c7);
+    background: linear-gradient(145deg, var(--mdrrmo-100, #e0f2fe), #fff);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 12%, transparent);
+    color: var(--mdrrmo-primary, #0284c7);
     font-size: 1.65rem;
     box-shadow: 0 2px 10px rgba(8, 47, 73, 0.06);
 }
@@ -498,10 +498,10 @@ const emptyMessage = computed(() => {
 
 .posts-index__card {
     border-radius: 0.75rem;
-    background: var(--cdrrmo-surface-raised, #fff);
+    background: var(--mdrrmo-surface-raised, #fff);
     box-shadow:
         0 2px 8px rgba(8, 47, 73, 0.06),
-        0 0 0 1px color-mix(in srgb, var(--cdrrmo-600, #0284c7) 6%, transparent);
+        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 6%, transparent);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
     display: flex;
     flex-direction: column;
@@ -511,7 +511,7 @@ const emptyMessage = computed(() => {
 .posts-index__card:hover {
     box-shadow:
         0 12px 32px rgba(8, 47, 73, 0.1),
-        0 0 0 1px color-mix(in srgb, var(--cdrrmo-600, #0284c7) 10%, transparent) !important;
+        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent) !important;
     transform: translateY(-3px);
 }
 
@@ -522,7 +522,7 @@ const emptyMessage = computed(() => {
     aspect-ratio: 4 / 3;
     overflow: hidden;
     isolation: isolate;
-    background: linear-gradient(135deg, var(--cdrrmo-100, #e0f2fe) 0%, var(--cdrrmo-200, #bae6fd) 100%);
+    background: linear-gradient(135deg, var(--mdrrmo-100, #e0f2fe) 0%, var(--mdrrmo-200, #bae6fd) 100%);
 }
 .posts-index__media-frame {
     position: absolute;
@@ -548,7 +548,7 @@ const emptyMessage = computed(() => {
     object-fit: contain;
     object-position: center center;
     padding: 0.45rem;
-    background: linear-gradient(180deg, var(--cdrrmo-50, #f0f9ff), var(--cdrrmo-100, #e0f2fe));
+    background: linear-gradient(180deg, var(--mdrrmo-50, #f0f9ff), var(--mdrrmo-100, #e0f2fe));
 }
 
 .posts-index__placeholder {
@@ -557,12 +557,12 @@ const emptyMessage = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(145deg, var(--cdrrmo-100, #e0f2fe), var(--cdrrmo-50, #f0f9ff));
+    background: linear-gradient(145deg, var(--mdrrmo-100, #e0f2fe), var(--mdrrmo-50, #f0f9ff));
 }
 
 .posts-index__placeholder-icon {
     font-size: 2.5rem;
-    color: var(--cdrrmo-300, #7dd3fc);
+    color: var(--mdrrmo-300, #7dd3fc);
     opacity: 0.65;
 }
 
@@ -602,7 +602,7 @@ const emptyMessage = computed(() => {
 
 .posts-index__type--news {
     background: rgba(255, 255, 255, 0.95);
-    color: var(--cdrrmo-800, #075985);
+    color: var(--mdrrmo-800, #075985);
     border-color: rgba(255, 255, 255, 0.5);
 }
 
@@ -637,6 +637,6 @@ const emptyMessage = computed(() => {
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.45;
-    color: var(--cdrrmo-ink, #0c4a6e);
+    color: var(--mdrrmo-ink, #0c4a6e);
 }
 </style>

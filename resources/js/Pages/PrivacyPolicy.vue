@@ -8,10 +8,10 @@ const effectiveDate = 'June 2, 2026';
 
 <template>
     <Head>
-        <title>Privacy Policy — CDRRMO Tandag</title>
+        <title>Privacy Policy — MDRRMO Tago</title>
         <meta
             name="description"
-            content="Privacy policy for the CDRRMO Tandag mobile app and website — how we collect, use, and protect your information."
+            content="Privacy policy for the MDRRMO Tago mobile app and website — how we collect, use, and protect your information."
         />
     </Head>
 
@@ -23,8 +23,8 @@ const effectiveDate = 'June 2, 2026';
                 <Link href="/" class="welcome-brand">
                     <JLogo size="42px" />
                     <span class="welcome-brand__text">
-                        <span class="welcome-brand__title">CDRRMO</span>
-                        <span class="welcome-brand__sub">City of Tandag</span>
+                        <span class="welcome-brand__title">MDRRMO</span>
+                        <span class="welcome-brand__sub">Municipality of Tago</span>
                     </span>
                 </Link>
                 <Link href="/" class="pp-back-link">
@@ -37,7 +37,7 @@ const effectiveDate = 'June 2, 2026';
         <!-- Hero -->
         <section class="pp-hero">
             <div class="container-xl pp-hero__inner">
-                <p class="welcome-eyebrow">CDRRMO · City of Tandag</p>
+                <p class="welcome-eyebrow">MDRRMO · Municipality of Tago</p>
                 <h1 class="pp-hero__title">Privacy Policy</h1>
                 <p class="pp-hero__meta">Effective {{ effectiveDate }}</p>
             </div>
@@ -51,7 +51,7 @@ const effectiveDate = 'June 2, 2026';
 
                     <section class="pp-section">
                         <h2 class="pp-h2">Introduction</h2>
-                        <p>The City Disaster Risk Reduction and Management Office (CDRRMO) of Tandag City ("we", "our", or "CDRRMO") operates this website and the CDRRMO Tandag mobile application (the "App"). This Privacy Policy explains how we collect, use, and protect information when you use the App or visit this website.</p>
+                        <p>The Municipal Disaster Risk Reduction and Management Office (MDRRMO) of Tago ("we", "our", or "MDRRMO") operates this website and the MDRRMO Tago mobile application (the "App"). This Privacy Policy explains how we collect, use, and protect information when you use the App or visit this website.</p>
                         <p>By using the App or this website, you agree to the collection and use of information as described in this policy.</p>
                     </section>
 
@@ -65,7 +65,7 @@ const effectiveDate = 'June 2, 2026';
                         <p>When you submit an incident report through the App, we request access to your device's location (GPS coordinates) to associate the report with a geographic area. Location access is requested only at the time of submitting a report and only with your explicit permission. We do not track your location in the background.</p>
 
                         <h3 class="pp-h3">Incident Reports and Media</h3>
-                        <p>Reports you submit may include text descriptions and photos or other media files you attach. This content becomes part of the official CDRRMO Tandag incident record and is used by CDRRMO staff to assess, respond to, and document emergencies and community concerns.</p>
+                        <p>Reports you submit may include text descriptions and photos or other media files you attach. This content becomes part of the official MDRRMO Tago incident record and is used by MDRRMO staff to assess, respond to, and document emergencies and community concerns.</p>
 
                         <h3 class="pp-h3">Device Identifiers</h3>
                         <p>To deliver push notifications (such as disaster alerts and advisories), the App collects your device's push notification token, device type, and operating system version. This information is used solely to route notifications to your device.</p>
@@ -77,7 +77,7 @@ const effectiveDate = 'June 2, 2026';
                             <li>To receive, process, and respond to incident reports you submit.</li>
                             <li>To send you official disaster alerts, advisories, and updates.</li>
                             <li>To contact you regarding the status of your submitted reports.</li>
-                            <li>To maintain official CDRRMO Tandag records as required by local government regulations.</li>
+                            <li>To maintain official MDRRMO Tago records as required by local government regulations.</li>
                             <li>To improve the reliability and features of the App and website.</li>
                         </ul>
                     </section>
@@ -86,7 +86,7 @@ const effectiveDate = 'June 2, 2026';
                         <h2 class="pp-h2">Information Sharing</h2>
                         <p>We do not sell, trade, or rent your personal information to third parties. Your information may be shared only in the following circumstances:</p>
                         <ul class="pp-list">
-                            <li><strong>CDRRMO staff:</strong> Authorized personnel of the City Government of Tandag who need access to process reports and coordinate emergency response.</li>
+                            <li><strong>MDRRMO staff:</strong> Authorized personnel of the Municipal Government of Tago who need access to process reports and coordinate emergency response.</li>
                             <li><strong>Service providers:</strong> Third-party services required to operate the platform (for example, push notification delivery services). These providers are permitted to use your data only to perform services on our behalf.</li>
                             <li><strong>Legal obligations:</strong> When required by law or by lawful order of a government authority.</li>
                         </ul>
@@ -94,7 +94,7 @@ const effectiveDate = 'June 2, 2026';
 
                     <section class="pp-section">
                         <h2 class="pp-h2">Data Retention</h2>
-                        <p>Incident reports and related records are retained as part of official CDRRMO Tandag documentation in accordance with applicable local government retention policies. Account information is retained for as long as your account is active. You may request deletion of your account at any time by contacting us (see below).</p>
+                        <p>Incident reports and related records are retained as part of official MDRRMO Tago documentation in accordance with applicable local government retention policies. Account information is retained for as long as your account is active. You may request deletion of your account at any time by contacting us (see below).</p>
                     </section>
 
                     <section class="pp-section">
@@ -122,9 +122,8 @@ const effectiveDate = 'June 2, 2026';
                         <h2 class="pp-h2">Contact</h2>
                         <p>If you have questions or requests regarding this Privacy Policy, please contact:</p>
                         <address class="pp-address">
-                            <strong>CDRRMO — City of Tandag</strong><br>
-                            City Government of Tandag, Surigao del Sur, Philippines<br>
-                            Email: <a href="mailto:cdrrmo@tandag.gov.ph" class="pp-link">cdrrmo@tandag.gov.ph</a>
+                            <strong>MDRRMO — Municipality of Tago</strong><br>
+                            Municipal Government of Tago, Surigao del Sur, Philippines
                         </address>
                     </section>
 
@@ -137,7 +136,7 @@ const effectiveDate = 'June 2, 2026';
             <div class="container-xl d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 py-4">
                 <div class="d-flex align-items-center gap-2 small welcome-footer__muted">
                     <JLogo size="28px" />
-                    <span>&copy; {{ year }} CDRRMO · City Government of Tandag</span>
+                    <span>&copy; {{ year }} MDRRMO · Municipal Government of Tago</span>
                 </div>
                 <div class="small welcome-footer__muted text-md-end">
                     Life-threatening emergency? Follow official hotlines and instructions from authorities—not this website alone.
@@ -151,8 +150,8 @@ const effectiveDate = 'June 2, 2026';
 <style scoped>
 .pp-root {
     min-height: 100vh;
-    background: var(--cdrrmo-surface, #f0f9ff);
-    color: var(--cdrrmo-ink, #0c4a6e);
+    background: var(--mdrrmo-surface, #f0f9ff);
+    color: var(--mdrrmo-ink, #0c4a6e);
 }
 
 .pp-back-link {
@@ -161,17 +160,17 @@ const effectiveDate = 'June 2, 2026';
     font-size: 0.88rem;
     font-weight: 700;
     text-decoration: none;
-    color: var(--cdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #0369a1);
     padding: 0.4rem 0.85rem;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-700, #0369a1) 22%, transparent);
-    background: var(--cdrrmo-surface-raised, #fff);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-700, #0369a1) 22%, transparent);
+    background: var(--mdrrmo-surface-raised, #fff);
     transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .pp-back-link:hover {
-    border-color: var(--cdrrmo-primary, #0284c7);
-    color: var(--cdrrmo-700, #0369a1);
+    border-color: var(--mdrrmo-primary, #0284c7);
+    color: var(--mdrrmo-700, #0369a1);
 }
 
 .pp-hero {
@@ -179,9 +178,9 @@ const effectiveDate = 'June 2, 2026';
     padding-bottom: 0;
     background: linear-gradient(
         155deg,
-        var(--cdrrmo-900, #0c4a6e) 0%,
-        var(--cdrrmo-700, #0369a1) 38%,
-        var(--cdrrmo-500, #0ea5e9) 100%
+        var(--mdrrmo-900, #0c4a6e) 0%,
+        var(--mdrrmo-700, #0369a1) 38%,
+        var(--mdrrmo-500, #0ea5e9) 100%
     );
     color: #fff;
 }
@@ -206,7 +205,7 @@ const effectiveDate = 'June 2, 2026';
 
 .pp-hero__slant {
     height: 60px;
-    background: var(--cdrrmo-surface, #f0f9ff);
+    background: var(--mdrrmo-surface, #f0f9ff);
     clip-path: polygon(0 48%, 100% 0, 100% 100%, 0 100%);
     margin-top: -1px;
 }
@@ -221,8 +220,8 @@ const effectiveDate = 'June 2, 2026';
     background: #fff;
     border-radius: 1.35rem;
     padding: 2.5rem 2.5rem 3rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 12%, transparent);
-    box-shadow: 0 16px 42px color-mix(in srgb, var(--cdrrmo-800, #075985) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 12%, transparent);
+    box-shadow: 0 16px 42px color-mix(in srgb, var(--mdrrmo-800, #075985) 7%, transparent);
 }
 
 .pp-section {
@@ -236,16 +235,16 @@ const effectiveDate = 'June 2, 2026';
 .pp-h2 {
     font-size: 1.2rem;
     font-weight: 900;
-    color: var(--cdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0c4a6e);
     margin-bottom: 0.65rem;
     padding-bottom: 0.4rem;
-    border-bottom: 2px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 35%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 35%, transparent);
 }
 
 .pp-h3 {
     font-size: 1rem;
     font-weight: 800;
-    color: var(--cdrrmo-800, #075985);
+    color: var(--mdrrmo-800, #075985);
     margin-top: 1.15rem;
     margin-bottom: 0.4rem;
 }
@@ -276,19 +275,19 @@ const effectiveDate = 'June 2, 2026';
 
 .pp-address {
     font-style: normal;
-    background: var(--cdrrmo-50, #f0f9ff);
+    background: var(--mdrrmo-50, #f0f9ff);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
-    border: 1px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 25%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 25%, transparent);
 }
 
 .pp-link {
-    color: var(--cdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #0369a1);
     font-weight: 600;
 }
 
 .pp-link:hover {
-    color: var(--cdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0c4a6e);
 }
 
 @media (max-width: 575.98px) {
@@ -306,8 +305,8 @@ const effectiveDate = 'June 2, 2026';
     top: 0;
     z-index: 100;
     backdrop-filter: blur(16px);
-    background: color-mix(in srgb, var(--cdrrmo-surface, #f0f9ff) 88%, white);
-    border-bottom: 1px solid color-mix(in srgb, var(--cdrrmo-600, #0284c7) 16%, transparent);
+    background: color-mix(in srgb, var(--mdrrmo-surface, #f0f9ff) 88%, white);
+    border-bottom: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 16%, transparent);
 }
 
 .pp-root .welcome-nav__inner {
@@ -335,20 +334,20 @@ const effectiveDate = 'June 2, 2026';
 
 .pp-root .welcome-brand__sub {
     font-size: 0.72rem;
-    color: var(--cdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #64748b);
     display: block;
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
 .pp-root .welcome-footer {
-    background: var(--cdrrmo-950, #082f49);
-    color: var(--cdrrmo-200, #bae6fd);
-    border-top: 1px solid color-mix(in srgb, var(--cdrrmo-400, #38bdf8) 24%, transparent);
+    background: var(--mdrrmo-950, #082f49);
+    color: var(--mdrrmo-200, #bae6fd);
+    border-top: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 24%, transparent);
 }
 
 .pp-root .welcome-footer__muted {
-    color: color-mix(in srgb, var(--cdrrmo-200, #bae6fd) 88%, transparent);
+    color: color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 88%, transparent);
 }
 
 .pp-root .welcome-eyebrow {
