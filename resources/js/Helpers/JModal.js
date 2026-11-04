@@ -5,6 +5,10 @@ const defaultConfirmModalId = () => 'confirm-modal';
  * while a modal was open (e.g. Save on Posts index → Edit page: #default-modal no longer exists).
  */
 function cleanupStrayBootstrapModalArtifacts() {
+    // Another modal is still open (e.g. a message alert behind a call), so its backdrop is not stray.
+    if (document.querySelector('.modal.show')) {
+        return
+    }
     document.body.classList.remove('modal-open')
     document.body.style.removeProperty('overflow')
     document.body.style.removeProperty('padding-right')

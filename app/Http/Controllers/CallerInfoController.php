@@ -17,9 +17,15 @@ class CallerInfoController extends Controller
 
     public function index($callerId)
     {
-        return response()->json(
-            User::with('latest_call')->findOrFail($callerId)
-        );
+        $caller = User::with('latest_call')->findOrFail($callerId);
+
+        // Only what the incoming call alert shows, not the whole user record.
+        return response()->json([
+            ...$caller->only(['id', 'name', 'fname', 'lname', 'phone']),
+            'latest_call' => $caller->latest_call
+                ->map->only(['id', 'address', 'latitude', 'longitude', 'created_at'])
+                ->values(),
+        ]);
     }
 
     public function setLocation(Request $request) // Changed from Client\Request to Http\Request

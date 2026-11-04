@@ -87,18 +87,24 @@ Route::prefix('admin')->middleware(['auth', 'role:super_admin'])->group(function
     Route::resource('administrators', AdministratorController::class)->only(['index', 'store', 'update', 'destroy']);
 });
 
-Route::get('/caller-details/{callerId}', [CallerInfoController::class, 'index'])
-    ->name('caller-info.index');
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/caller-details/{callerId}', [CallerInfoController::class, 'index'])
+        ->whereNumber('callerId')
+        ->name('caller-info.index');
 
-Route::get('/caller', function () {
-    return view('caller');
+    // Voice test pages
+    Route::get('/caller', function () {
+        return view('caller');
+    });
+
+    Route::get('/receiver', function () {
+        return view('receiver');
+    });
 });
 
-Route::get('/receiver', function () {
-    return view('receiver');
-});
-
-Route::get('/twilio/token', [TwilioVoiceController::class, 'generateToken']);
+// Web session or mobile Bearer token: released app builds still reference this route.
+Route::get('/twilio/token', [TwilioVoiceController::class, 'generateToken'])
+    ->middleware(['auth:web,sanctum', 'throttle:60,1']);
 Route::get('/twilio/health', [TwilioVoiceController::class, 'health']);
 Route::match(['get', 'post'], '/twilio/voice', [TwilioVoiceController::class, 'handleVoice'])
     ->withoutMiddleware([VerifyCsrfToken::class]);

@@ -3,8 +3,11 @@
  * @see https://www.twilio.com/docs/voice/sdks/javascript
  */
 
+import { ALARM_SOUND_URL } from './alarmSound';
+
 /** Documented limit for custom parameters on outbound connect (leave margin for keys/encoding). */
 export const TWILIO_CONNECT_PARAMS_MAX_BYTES = 760;
+
 
 /**
  * Align with App\Support\TwilioClientIdentity: never send `client:foo` as `To`.
@@ -70,6 +73,8 @@ export function createTwilioDeviceOptions(overrides = {}) {
          * @see https://www.twilio.com/docs/voice/sdks/javascript/twiliodevice
          */
         disableAudioContextSounds: overrides.disableAudioContextSounds !== false,
+        // The SDK loops the incoming sound until the call is answered, rejected, or ends.
+        sounds: { incoming: ALARM_SOUND_URL },
     };
     if (typeof closeProtection === 'boolean') {
         out.closeProtection = closeProtection;
@@ -83,7 +88,7 @@ export function createTwilioDeviceOptions(overrides = {}) {
 
 /**
  * @param {import('@twilio/voice-sdk').Device} device
- * @param {string} identity passed to /twilio/token?identity=
+ * @param {string} identity
  */
 export function attachTokenWillExpireHandler(device, identity) {
     if (!device || !identity) {
@@ -92,7 +97,7 @@ export function attachTokenWillExpireHandler(device, identity) {
     const id = String(identity);
     device.on('tokenWillExpire', async () => {
         try {
-            const res = await fetch(`/twilio/token?identity=${encodeURIComponent(id)}`);
+            const res = await fetch('/twilio/token', { headers: { Accept: 'application/json' } });
             const data = await res.json();
             if (data && typeof data.token === 'string' && data.token.length) {
                 await device.updateToken(data.token);

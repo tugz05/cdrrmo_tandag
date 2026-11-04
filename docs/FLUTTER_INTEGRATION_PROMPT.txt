@@ -227,9 +227,9 @@ Flutter (authenticated resident):
     the operations center (same value as server env ADMIN_IDENTITY).
   • If the dispatch UI is not registered with that exact Client identity, Twilio returns 31603 / SIP 603 decline.
 
-Admin / test pages (no Sanctum):
-  GET  {BASE}/twilio/token?identity=<string>
-  (Restrict or remove on production if exposed.)
+Admin web dashboard (requires a web session or Sanctum Bearer token):
+  GET  {BASE}/twilio/token
+  The identity is always the logged-in user; any identity query parameter is ignored.
 
 TwiML webhook (Twilio calls your server):
   POST {BASE}/twilio/voice

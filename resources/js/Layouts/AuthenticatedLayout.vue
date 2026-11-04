@@ -4,14 +4,14 @@ import SideBar from './SideBar.vue';
 import Footer from './Footer.vue';
 import JConfirmDialog from '@/Components/JConfirmDialog.vue';
 import JToast from '@/Components/JToast.vue';
-import JModal from '@/Components/JModal.vue';
 import { toggleModal, hideModal } from '@/Helpers/JModal';
-import JButton from '@/Components/JButton.vue';
 import MessageReportAlert from '@/Components/MessageReportAlert.vue';
+import IncomingCallAlert from '@/Components/IncomingCallAlert.vue';
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 /** @twilio/voice-sdk version is pinned in package.json â€” keep in sync with caller-page.js / receiver-page.js */
 import { Device } from '@twilio/voice-sdk';
+import { muteAlarm } from '@/utils/alarmSound';
 import { applyTwilioOutputDevices, primeMicrophoneForTwilio } from '@/utils/twilioVoiceAudio.js';
 import { attachTokenWillExpireHandler, createTwilioDeviceOptions, logTwilioErrorDetails } from '@/utils/twilioVoiceSdk.js';
 
@@ -128,6 +128,7 @@ function dismissIncomingCallUi() {
     stopIncomingTitleFlash();
     dismissIncomingBrowserNotification();
     hideModal('', 'modal-call');
+    muteAlarm(false);
     isAnswering.value = false;
     showAnswerButton.value = true;
 }
@@ -306,7 +307,7 @@ async function bootstrapTwilioVoice({ source } = {}) {
     twilioVoiceBootstrapped = true;
 
     try {
-        const res = await fetch('/twilio/token?identity=' + encodeURIComponent(identity));
+        const res = await fetch('/twilio/token', { headers: { Accept: 'application/json' } });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
             throw new Error(data?.message || `Token request failed (HTTP ${res.status})`);
@@ -534,6 +535,9 @@ async function setupTwilio(token) {
     device.on('incoming', async call => {
         callEndNotifyDone = false;
         activeCall = call;
+        callerName.value = '';
+        currentCaller.value = {};
+        muteAlarm(true);
 
         call.on('disconnect', () => {
             finalizeVoiceCallEnd(call);
@@ -565,7 +569,16 @@ async function setupTwilio(token) {
             const clientId = clientString.split(":")[1];
             const callerResponse = await fetchCaller(clientId)
             console.log('caller response: ', callerResponse)
-            callerName.value = callerResponse.fname + ' ' + callerResponse.lname
+            callerName.value = [callerResponse.fname, callerResponse.lname].filter(Boolean).join(' ') || callerResponse.name || '';
+            const latestReport = callerResponse.latest_call?.[0];
+            currentCaller.value = {
+                name: callerName.value,
+                phone: callerResponse.phone,
+                address: latestReport?.address,
+                latitude: latestReport?.latitude,
+                longitude: latestReport?.longitude,
+                reportedAt: latestReport?.created_at,
+            };
             callReportId.value = callerResponse.latest_call[0].id
 
         } catch (e) {
@@ -789,25 +802,14 @@ async function handleCallEnded(reportId) {
             </div>
         </div>
 
-        <JModal id="modal-call">
-            <div class="text-center mb-10">
-                <h5 class="m-0 fw-bold">
-                    {{ isAnswering ? 'Active Call' : 'Incoming Call' }}
-                </h5>
-
-                <div v-if="callerName" class="caller-info mt-3">
-                    <p>{{ callerName }}</p>
-                </div>
-
-                <div class="d-flex justify-content-center gap-3 mt-5">
-                    <template v-if="!isAnswering">
-                        <JButton danger text="Reject" @click="rejectCall" />
-                        <JButton success text="Answer" @click="answerCall" />
-                    </template>
-                    <JButton v-if="isAnswering" danger text="End Call" @click="endCall" />
-                </div>
-            </div>
-        </JModal>
+        <IncomingCallAlert
+            :caller="currentCaller"
+            :status="callStatus"
+            :active="isAnswering"
+            @answer="answerCall"
+            @reject="rejectCall"
+            @end="endCall"
+        />
 
         <MessageReportAlert v-if="canAccessAdmin" />
 

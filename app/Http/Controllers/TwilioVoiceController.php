@@ -72,12 +72,9 @@ class TwilioVoiceController extends Controller
      */
     public function generateToken(Request $request): JsonResponse
     {
+        // Identity always comes from the login, never the URL, so nobody can register as another operator.
         $user = $request->user();
-        if ($user && $user->hasRole(['admin', 'super_admin'])) {
-            $identity = TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
-        } else {
-            $identity = TwilioClientIdentity::sanitize((string) $request->query('identity', 'guest'));
-        }
+        $identity = TwilioClientIdentity::sanitize((string) $user->getAuthIdentifier());
 
         if ($configMessage = $this->twilioVoiceConfigurationMessage()) {
             return response()->json([
@@ -88,7 +85,7 @@ class TwilioVoiceController extends Controller
 
         return response()->json([
             'identity' => $identity,
-            'token' => $this->makeVoiceAccessToken($identity),
+            'token' => $this->makeVoiceAccessToken($identity, $user->isVoiceDispatchOperator()),
         ]);
     }
 
