@@ -30,11 +30,12 @@ abstract class JHelper {
     public static function storeValidIds(Request $request, User $user)
     {
         $validIds = [];
-        
+
+        // Private disk: these are government IDs and must not be reachable under /storage.
         if ($request->hasFile('img_valid_id')) 
-            $validIds[] = $request->file('img_valid_id')->store('img_valid_ids', 'public');
+            $validIds[] = $request->file('img_valid_id')->store('img_valid_ids', 'local');
         if ($request->hasFile('img_selfie')) 
-            $validIds[] = $request->file('img_selfie')->store('img_valid_ids', 'public');
+            $validIds[] = $request->file('img_selfie')->store('img_valid_ids', 'local');
 
         foreach($validIds as $id) {
             UserValidId::create([
@@ -48,7 +49,7 @@ abstract class JHelper {
     {
         $images = [];
         foreach (UserValidId::whereUserId($userId)->get() as $image)
-            $images[] = Storage::disk('public')->url($image->filename);
+            $images[] = route('valid-ids.show', basename($image->filename));
 
         return $images;    
     }

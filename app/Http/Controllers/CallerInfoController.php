@@ -30,6 +30,15 @@ class CallerInfoController extends Controller
 
     public function setLocation(Request $request) // Changed from Client\Request to Http\Request
     {
+        $authenticated = $request->user('sanctum');
+        if ($authenticated === null && config('call.set_location_require_auth', true)) {
+            return response()->json([
+                'success' => false,
+                'code' => 'UNAUTHENTICATED',
+                'message' => 'Sign in to place an emergency call.',
+            ], 401);
+        }
+
         try {
             $allowed = $this->staffPresence->isCallRoutingAllowed(true);
         } catch (Throwable $e) {
@@ -56,7 +65,6 @@ class CallerInfoController extends Controller
             'accuracy' => 'nullable|numeric|min:0',
         ]);
 
-        $authenticated = $request->user('sanctum');
         if ($authenticated !== null
             && (int) $validated['user_id'] !== (int) $authenticated->id) {
             return response()->json([
@@ -88,6 +96,7 @@ class CallerInfoController extends Controller
         ]);
 
         $report = Report::find($request->report_id);
+        $this->authorizeCallUpdate($request, $report);
         $report->markCallStarted();
 
         return response()->json([
@@ -105,6 +114,7 @@ class CallerInfoController extends Controller
         ]);
 
         $report = Report::find($request->report_id);
+        $this->authorizeCallUpdate($request, $report);
         $report->markCallEnded();
 
         // if ($request->has('status')) {
@@ -116,5 +126,12 @@ class CallerInfoController extends Controller
             'message' => 'Call end time recorded',
             'data' => $report,
         ]);
+    }
+
+    private function authorizeCallUpdate(Request $request, Report $report): void
+    {
+        $user = $request->user();
+
+        abort_unless((int) $report->user_id === (int) $user->id || $user->isVoiceDispatchOperator(), 403);
     }
 }

@@ -59,8 +59,12 @@ Step E — After the operator answers / call lifecycle (if your app participates
     POST /api/v1/call/started   { "report_id": <id> }
     POST /api/v1/call/ended     { "report_id": <id> }
 
-Note: /call/started and /call/ended are used by the admin web client today;
-confirm with backend whether the mobile app must call these or only the web UI.
+Note: /call/started and /call/ended require Authorization: Bearer <sanctum_token>.
+The token's user must own the report or be dispatch staff.
+
+Valid ID uploads: send Authorization: Bearer <sanctum_token> on
+POST /api/v1/valid-images/{user} whenever a token exists. Without one, the server
+only accepts the first upload for an unconfirmed citizen account.
 
 CALL SCREEN UI — REALTIME IN-APP SESSION:
     Implement a dedicated call screen (full-screen route or modal) that stays
@@ -164,9 +168,9 @@ webhooks can return connect TwiML instead of busy.
 --------------------------------------------------------------------------------
 
 POST  /api/v1/caller-details/set-location
-Headers: Content-Type: application/json, Accept: application/json
-Optional: Authorization: Bearer <sanctum_token> — when present, user_id must
-match the authenticated user (recommended for Flutter).
+Headers: Content-Type: application/json, Accept: application/json,
+Authorization: Bearer <sanctum_token> (required; user_id must match the
+authenticated user, and requests without a token receive 401).
 
 Body:
   {

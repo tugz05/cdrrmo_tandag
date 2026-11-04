@@ -14,6 +14,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StaffPresenceController;
 use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ValidIdFileController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,13 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(fu
         return response()->json(JHelper::getReportImages($reportId));
     })->name('report.images');
 
+    Route::post('calls/started', [CallerInfoController::class, 'callStarted'])->name('admin.calls.started');
+    Route::post('calls/ended', [CallerInfoController::class, 'callEnded'])->name('admin.calls.ended');
+
+    Route::get('valid-ids/{filename}', [ValidIdFileController::class, 'show'])
+        ->where('filename', '[A-Za-z0-9._-]+')
+        ->name('valid-ids.show');
+
     Route::post('staff/heartbeat', [StaffPresenceController::class, 'heartbeat'])->name('admin.staff.heartbeat');
     Route::post('staff/call-answered', [StaffPresenceController::class, 'callAnswered'])->name('admin.staff.call-answered');
     Route::post('staff/call-finished', [StaffPresenceController::class, 'callFinished'])->name('admin.staff.call-finished');
@@ -92,7 +100,10 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
         ->whereNumber('callerId')
         ->name('caller-info.index');
 
+    Route::get('/twilio/health', [TwilioVoiceController::class, 'health']);
+
     // Voice test pages
+    Route::post('/caller-details/set-location', [CallerInfoController::class, 'setLocation']);
     Route::get('/caller', function () {
         return view('caller');
     });
@@ -105,7 +116,6 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 // Web session or mobile Bearer token: released app builds still reference this route.
 Route::get('/twilio/token', [TwilioVoiceController::class, 'generateToken'])
     ->middleware(['auth:web,sanctum', 'throttle:60,1']);
-Route::get('/twilio/health', [TwilioVoiceController::class, 'health']);
 Route::match(['get', 'post'], '/twilio/voice', [TwilioVoiceController::class, 'handleVoice'])
     ->withoutMiddleware([VerifyCsrfToken::class]);
 Route::match(['get', 'post'], '/twilio/voice/dial-status', [TwilioVoiceController::class, 'dialStatus'])

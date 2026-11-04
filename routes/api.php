@@ -14,17 +14,16 @@ use App\Http\Controllers\API\V1\DeviceFcmTokenController;
 use App\Http\Controllers\API\V1\ReportController;
 use App\Http\Controllers\API\V1\RescueController;
 use App\Http\Controllers\API\V1\SituationalIncidentReportController;
-use App\Http\Controllers\API\V1\UserUploadController;
 use App\Http\Controllers\API\V1\ValidImageController;
 use App\Http\Controllers\CallerInfoController;
 use App\Http\Controllers\StaffPresenceController;
 use App\Http\Controllers\TwilioVoiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ValidIdFileController;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -46,9 +45,9 @@ Route::prefix('v1')->group(function () {
         // Route::middleware('auth:sanctum')->get('/twilio/token', [TwilioController::class, 'generateToken']);
     });
 
-    Route::post('valid-images/{user}', [ValidImageController::class, 'store'])->name('api.valid-images');
-
-    Route::post('/upload', [UserUploadController::class, 'upload']);
+    Route::post('valid-images/{user}', [ValidImageController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('api.valid-images');
 
     $publishedPostsWithImage = fn (string $type) => Post::query()
         ->whereType($type)
@@ -63,20 +62,19 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/emergency-preparedness', fn () => PostResource::collection($publishedPostsWithImage(PostTypeEnum::EMERGENCY_PREPAREDNESS)->get()));
 
-    Route::get('/valid_ids/{path}', function ($path) {
-        return Storage::disk('public')->response('img_valid_ids/'.$path);
-    });
-
     Route::post('/caller-details/set-location', [CallerInfoController::class, 'setLocation'])
         ->name('set-caller-location.store');
 
     Route::get('/call/availability', [CallAvailabilityController::class, 'show'])
         ->middleware('throttle:120,1');
 
-    Route::post('/call/started', [CallerInfoController::class, 'callStarted']);
-    Route::post('/call/ended', [CallerInfoController::class, 'callEnded']);
-
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/valid_ids/{filename}', [ValidIdFileController::class, 'show'])
+            ->where('filename', '[A-Za-z0-9._-]+');
+
+        Route::post('/call/started', [CallerInfoController::class, 'callStarted']);
+        Route::post('/call/ended', [CallerInfoController::class, 'callEnded']);
+
         Route::put('/profile', [UserController::class, 'updateProfile']);
         Route::put('/password', [UserController::class, 'updatePassword']);
         Route::get('report-history/all', [ReportController::class, 'historyAll']);

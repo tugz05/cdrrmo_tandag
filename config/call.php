@@ -21,6 +21,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Login required to store a caller's location
+    |--------------------------------------------------------------------------
+    |
+    | Stops anyone creating fake emergency reports for other users. Only set
+    | CALL_SET_LOCATION_REQUIRE_AUTH=false as a temporary measure if a released app
+    | build does not send its Bearer token and citizens cannot place calls.
+    |
+    */
+    'set_location_require_auth' => filter_var(
+        env('CALL_SET_LOCATION_REQUIRE_AUTH', true),
+        FILTER_VALIDATE_BOOL
+    ),
+
+    /*
+    |--------------------------------------------------------------------------
     | Staff online window
     |--------------------------------------------------------------------------
     |

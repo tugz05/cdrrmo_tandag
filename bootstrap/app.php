@@ -20,7 +20,6 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
         $middleware->validateCsrfTokens(except: [
-            'caller-details/set-location',
             // Twilio Voice webhooks (POST from Twilio; no session CSRF token)
             'twilio/*',
         ]);

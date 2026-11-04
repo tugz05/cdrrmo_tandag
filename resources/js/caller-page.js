@@ -321,11 +321,12 @@ async function checkOperatorAvailability() {
 }
 
 async function storeLocation(callerData) {
-    const res = await fetch('/api/v1/caller-details/set-location', {
+    const res = await fetch('/caller-details/set-location', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
         },
         body: JSON.stringify({
             user_id: parseInt(callerData.userId, 10),

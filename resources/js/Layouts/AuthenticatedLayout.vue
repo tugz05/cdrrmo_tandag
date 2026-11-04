@@ -729,19 +729,7 @@ const fetchCaller = async (callerId) => {
 async function handleCallAnswered(reportId) {
     try {
         await axios.post(route('admin.staff.call-answered'));
-        const response = await fetch('/api/v1/call/started', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                report_id: reportId
-            })
-        });
-
-        const data = await response.json();
-        console.log('Call started:', data);
+        await axios.post(route('admin.calls.started'), { report_id: reportId });
     } catch (error) {
         console.error('Error recording call start:', error);
     }
@@ -749,19 +737,7 @@ async function handleCallAnswered(reportId) {
 
 async function handleCallEnded(reportId) {
     try {
-        const response = await fetch('/api/v1/call/ended', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                report_id: reportId,
-            })
-        });
-
-        const data = await response.json();
-        console.log('Call ended:', data);
+        await axios.post(route('admin.calls.ended'), { report_id: reportId });
     } catch (error) {
         console.error('Error recording call end:', error);
     } finally {
