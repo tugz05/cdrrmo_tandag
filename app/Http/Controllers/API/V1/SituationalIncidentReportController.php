@@ -8,6 +8,8 @@ use App\Models\SituationalIncidentReport;
 use App\Traits\JResponseApiTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class SituationalIncidentReportController extends Controller
@@ -59,7 +61,9 @@ class SituationalIncidentReportController extends Controller
         $data = $this->normalizePayload($request->validated());
         $data['user_id'] = $request->user()->id;
 
+        $diagram = $this->pullInjuryDiagram($data);
         $report = SituationalIncidentReport::query()->create($data);
+        $this->applyInjuryDiagram($report, $diagram, $data);
 
         return $this->responseOK($report->fresh(), 'Situational incident report created.', Response::HTTP_CREATED);
     }
@@ -75,7 +79,10 @@ class SituationalIncidentReportController extends Controller
     {
         $this->authorize('update', $situationalIncidentReport);
 
-        $situationalIncidentReport->update($this->normalizePayload($request->validated()));
+        $data = $this->normalizePayload($request->validated());
+        $diagram = $this->pullInjuryDiagram($data);
+        $situationalIncidentReport->update($data);
+        $this->applyInjuryDiagram($situationalIncidentReport, $diagram, $data);
 
         return $this->responseOK($situationalIncidentReport->fresh(), 'Situational incident report updated.');
     }
@@ -87,6 +94,61 @@ class SituationalIncidentReportController extends Controller
         $situationalIncidentReport->delete();
 
         return $this->responseOK([], 'Situational incident report deleted.');
+    }
+
+    /**
+     * Removes the raw base64 diagram from the attributes and decodes it.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function pullInjuryDiagram(array &$data): ?string
+    {
+        $raw = $data['injury_diagram'] ?? null;
+        unset($data['injury_diagram']);
+
+        if (! is_string($raw) || $raw === '') {
+            return null;
+        }
+
+        $raw = preg_replace('#^data:image/png;base64,#', '', $raw);
+        $binary = base64_decode($raw, true);
+
+        // Only accept real PNG payloads.
+        if ($binary === false || ! str_starts_with($binary, "\x89PNG\r\n\x1a\n")) {
+            return null;
+        }
+
+        return $binary;
+    }
+
+    /**
+     * Stores a new diagram (replacing the old file), or clears it when the
+     * client sent an empty marker list.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function applyInjuryDiagram(SituationalIncidentReport $report, ?string $diagram, array $data): void
+    {
+        $markersSent = array_key_exists('injury_markers', $data);
+        $cleared = $markersSent && empty($data['injury_markers']);
+
+        if ($diagram === null && ! $cleared) {
+            return;
+        }
+
+        $old = $report->injury_diagram_path;
+        $path = null;
+
+        if ($diagram !== null && ! $cleared) {
+            $path = 'injury_diagrams/report_'.$report->id.'_'.Str::random(12).'.png';
+            Storage::disk('public')->put($path, $diagram);
+        }
+
+        $report->forceFill(['injury_diagram_path' => $path])->save();
+
+        if ($old && $old !== $path) {
+            Storage::disk('public')->delete($old);
+        }
     }
 
     /**

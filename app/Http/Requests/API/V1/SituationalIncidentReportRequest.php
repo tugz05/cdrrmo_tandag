@@ -46,6 +46,13 @@ class SituationalIncidentReportRequest extends FormRequest
             'has_laceration' => ['sometimes', 'boolean'],
             'has_swelling' => ['sometimes', 'boolean'],
             'examination_notes' => ['nullable', 'string', 'max:65535'],
+            // Base64 PNG (optionally a data URI) of the body diagram with injury markers.
+            'injury_diagram' => ['nullable', 'string', 'max:8000000'],
+            // Sending an empty array clears the markers and the stored diagram.
+            'injury_markers' => ['sometimes', 'nullable', 'array', 'max:50'],
+            'injury_markers.*.x' => ['required', 'numeric', 'between:0,1'],
+            'injury_markers.*.y' => ['required', 'numeric', 'between:0,1'],
+            'injury_markers.*.label' => ['nullable', 'string', 'max:255'],
             'action_taken' => ['nullable', 'string', 'max:65535'],
             'refer_to_hospital' => ['nullable', 'string', Rule::in(['yes', 'no'])],
             'time_transported' => ['nullable', 'string', 'max:255'],

@@ -7,6 +7,7 @@ import JToast from '@/Components/JToast.vue';
 import JModal from '@/Components/JModal.vue';
 import { toggleModal, hideModal } from '@/Helpers/JModal';
 import JButton from '@/Components/JButton.vue';
+import MessageReportAlert from '@/Components/MessageReportAlert.vue';
 import { usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 /** @twilio/voice-sdk version is pinned in package.json â€” keep in sync with caller-page.js / receiver-page.js */
@@ -794,6 +795,8 @@ async function handleCallEnded(reportId) {
                 </div>
             </div>
         </JModal>
+
+        <MessageReportAlert v-if="canAccessAdmin" />
 
         <JConfirmDialog />
         <JToast />

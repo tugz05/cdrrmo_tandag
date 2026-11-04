@@ -35,6 +35,8 @@ class SituationalIncidentReport extends Model
         'has_laceration',
         'has_swelling',
         'examination_notes',
+        'injury_diagram_path',
+        'injury_markers',
         'action_taken',
         'refer_to_hospital',
         'time_transported',
@@ -43,9 +45,15 @@ class SituationalIncidentReport extends Model
         'name_of_response_vehicle',
     ];
 
+    /**
+     * @var list<string>
+     */
+    protected $appends = ['injury_diagram_url'];
+
     protected function casts(): array
     {
         return [
+            'injury_markers' => 'array',
             'date_time_received' => 'datetime',
             'is_alert_response' => 'boolean',
             'is_verbal_response' => 'boolean',
@@ -59,6 +67,16 @@ class SituationalIncidentReport extends Model
             'has_laceration' => 'boolean',
             'has_swelling' => 'boolean',
         ];
+    }
+
+    /**
+     * Public URL of the marked body diagram PNG uploaded from the mobile app.
+     */
+    public function getInjuryDiagramUrlAttribute(): ?string
+    {
+        return $this->injury_diagram_path
+            ? asset('storage/'.$this->injury_diagram_path)
+            : null;
     }
 
     public function user(): BelongsTo

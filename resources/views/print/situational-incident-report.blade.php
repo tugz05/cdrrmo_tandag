@@ -533,7 +533,7 @@
         </div>
 
         <div class="human-wrap">
-            <img class="human-img" src="{{ asset('assets/images/human.jpg') }}" alt="">
+            <img class="human-img" src="{{ $report->injury_diagram_url ?? asset('assets/images/human.jpg') }}" alt="">
         </div>
 
         <div class="exam-notes">

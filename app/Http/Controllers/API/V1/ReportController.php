@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Enums\AppMobileRole;
+use App\Enums\ReportTypeEnum;
+use App\Events\MessageReportReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReportStoreRequest;
 use App\Models\Report;
@@ -10,6 +12,7 @@ use App\Models\ReportImage;
 use App\Traits\JResponseApiTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends Controller
@@ -96,9 +99,28 @@ class ReportController extends Controller
 
             $this->storeImages($report, $request);
 
+            if ($report->wasRecentlyCreated && strcasecmp((string) $report->type, ReportTypeEnum::MESSAGE) === 0) {
+                $this->broadcastMessageReport($report);
+            }
+
             return $this->responseOK([], 'Report has been saved.');
         } catch (\Exception $exception) {
             return $this->responseError('An error has occured.');
+        }
+    }
+
+    /**
+     * The report is already saved; a WebSocket outage must not fail the citizen's submission.
+     */
+    private function broadcastMessageReport(Report $report): void
+    {
+        try {
+            MessageReportReceived::dispatch($report);
+        } catch (\Throwable $exception) {
+            Log::warning('Message report broadcast failed', [
+                'report_id' => $report->id,
+                'error' => $exception->getMessage(),
+            ]);
         }
     }
 

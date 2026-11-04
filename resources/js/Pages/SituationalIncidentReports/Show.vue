@@ -78,8 +78,16 @@ function printUrl() {
                 <div class="border rounded p-2 mt-1 bg-light text-break whitespace-pre-line min-h-120">{{ report.examination_notes || '—' }}</div>
             </div>
             <div class="col-12 text-center mt-2">
-                <div class="small text-muted mb-1">Anatomical reference</div>
-                <img :src="'/assets/images/human.jpg'" alt="Body diagram" class="img-fluid border" style="max-height: 420px" />
+                <div class="small text-muted mb-1">
+                    {{ report.injury_diagram_url ? 'Injury locations (marked by responder)' : 'Anatomical reference' }}
+                </div>
+                <a v-if="report.injury_diagram_url" :href="report.injury_diagram_url" target="_blank" rel="noopener">
+                    <img :src="report.injury_diagram_url" alt="Body diagram with injury markers" class="img-fluid border" style="max-height: 420px" />
+                </a>
+                <img v-else :src="'/assets/images/human.jpg'" alt="Body diagram" class="img-fluid border" style="max-height: 420px" />
+                <ol v-if="report.injury_markers?.length" class="text-start d-inline-block mt-2 mb-0">
+                    <li v-for="(m, i) in report.injury_markers" :key="i">{{ m.label || 'Unspecified region' }}</li>
+                </ol>
             </div>
         </div>
     </div>
