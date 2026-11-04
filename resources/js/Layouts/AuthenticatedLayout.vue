@@ -57,6 +57,7 @@ const currentCaller = ref({})
 const callerName = ref('')
 const callReportId = ref(Number);
 const voicePipelineReady = ref(false);
+const voiceConnectFailed = ref(false);
 
 let device = null;
 let activeCall = null;
@@ -64,7 +65,6 @@ let heartbeatTimer = null;
 
 let sharedAudioContext = null;
 
-/** Twilio Voice SDK should initialize after a user gesture or Chrome spams AudioContext warnings (autoplay policy). */
 let twilioVoiceBootstrapped = false;
 let twilioSetupInFlight = false;
 let keepTwilioOnline = false;
@@ -73,6 +73,9 @@ let staffHeartbeatSeq = 0;
 
 /** Dedupe pointer/key listeners when re-attaching after Device unregistered. */
 let twilioGestureBootstrapHandler = null;
+
+let twilioReconnectTimer = null;
+let twilioReconnectAttempts = 0;
 
 let incomingTitleFlashTimer = null;
 let savedDocumentTitleBeforeFlash = '';
@@ -244,38 +247,42 @@ function createSharedAudioContextAfterUserGesture() {
     }
 }
 
-/** One combined gesture: unlock AudioContext + fetch token + register Voice SDK Device (microphone requested on answer). */
-function attachTwilioVoiceAfterUserGesture() {
+/** Voice connects without a gesture; the first gesture only unlocks audio and asks for notification permission. */
+function attachAudioUnlockOnFirstGesture() {
     if (twilioGestureBootstrapHandler) {
         window.removeEventListener('pointerdown', twilioGestureBootstrapHandler, true);
         window.removeEventListener('keydown', twilioGestureBootstrapHandler, true);
         twilioGestureBootstrapHandler = null;
     }
 
-    const once = async () => {
+    const once = () => {
         window.removeEventListener('pointerdown', once, true);
         window.removeEventListener('keydown', once, true);
         twilioGestureBootstrapHandler = null;
 
-        const identity = twilioOperatorIdentity.value;
-        if (!identity) {
-            console.error('[Twilio] operator_client_identity is empty — set ADMIN_IDENTITY in .env for fallback or ensure you are logged in as admin.');
-            return;
-        }
-
         createSharedAudioContextAfterUserGesture();
         if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
-        }
-        // If we are not registered yet, use this user gesture to bootstrap voice.
-        if (!voicePipelineReady.value && !twilioSetupInFlight) {
-            await bootstrapTwilioVoice({ source: 'user_gesture' });
         }
     };
 
     twilioGestureBootstrapHandler = once;
     window.addEventListener('pointerdown', once, true);
     window.addEventListener('keydown', once, true);
+}
+
+/** Retry with backoff (2s, 4s, ... up to 30s) so voice recovers without anyone touching the page. */
+function scheduleTwilioReconnect() {
+    voiceConnectFailed.value = true;
+    if (!keepTwilioOnline || twilioReconnectTimer !== null) {
+        return;
+    }
+    const delay = Math.min(30000, 2000 * 2 ** twilioReconnectAttempts);
+    twilioReconnectAttempts += 1;
+    twilioReconnectTimer = window.setTimeout(() => {
+        twilioReconnectTimer = null;
+        void bootstrapTwilioVoice({ source: 'auto_reconnect' });
+    }, delay);
 }
 
 async function bootstrapTwilioVoice({ source } = {}) {
@@ -307,10 +314,15 @@ async function bootstrapTwilioVoice({ source } = {}) {
         if (!data?.token) {
             throw new Error(data?.message || 'Token response missing "token"');
         }
+        /** The layout may have unmounted during the fetch; do not register a Device nothing can clean up. */
+        if (!keepTwilioOnline) {
+            return;
+        }
         await setupTwilio(data.token);
     } catch (err) {
         console.error('[Twilio] bootstrap failed', { source }, err);
         twilioVoiceBootstrapped = false;
+        scheduleTwilioReconnect();
     } finally {
         twilioSetupInFlight = false;
     }
@@ -503,6 +515,8 @@ async function setupTwilio(token) {
         console.info('[Twilio] Admin Device registered for incoming VoIP Client:', twilioOperatorIdentity.value);
         await applyTwilioOutputDevices(device);
         voicePipelineReady.value = true;
+        voiceConnectFailed.value = false;
+        twilioReconnectAttempts = 0;
         startStaffPresenceHeartbeat();
     });
 
@@ -513,14 +527,8 @@ async function setupTwilio(token) {
             clearInterval(heartbeatTimer);
             heartbeatTimer = null;
         }
-        console.warn(
-            '[Twilio] Device unregistered - emergency voice will not ring until you click the page and Twilio registers again.',
-        );
-        if (keepTwilioOnline) {
-            window.setTimeout(() => {
-                attachTwilioVoiceAfterUserGesture();
-            }, 500);
-        }
+        console.warn('[Twilio] Device unregistered - reconnecting automatically.');
+        scheduleTwilioReconnect();
     });
 
     device.on('incoming', async call => {
@@ -579,6 +587,7 @@ async function setupTwilio(token) {
         handleTwilioDeviceError(err);
         destroyTwilioDevice();
         twilioVoiceBootstrapped = false;
+        scheduleTwilioReconnect();
     }
 }
 
@@ -636,8 +645,9 @@ onMounted(() => {
     }
     /** Do not start staff heartbeat until Twilio Device is registered (see startStaffPresenceHeartbeat in device.on("registered")). */
     keepTwilioOnline = true;
-    /** Do not register Twilio.Device on mount — Chrome blocks AudioContext without a user gesture (autoplay policy). */
-    attachTwilioVoiceAfterUserGesture();
+    void bootstrapTwilioVoice({ source: 'mount' });
+    /** Registering needs no gesture and a blocked ringtone still emits "incoming", but browsers keep sound off until the first interaction. */
+    attachAudioUnlockOnFirstGesture();
     nextTick(() => {
         const modalEl = document.getElementById('modal-call');
         if (modalEl && !modalCallHiddenHandlerBound) {
@@ -655,6 +665,10 @@ onMounted(() => {
 
 onUnmounted(() => {
     keepTwilioOnline = false;
+    if (twilioReconnectTimer !== null) {
+        clearTimeout(twilioReconnectTimer);
+        twilioReconnectTimer = null;
+    }
     if (twilioGestureBootstrapHandler) {
         window.removeEventListener('pointerdown', twilioGestureBootstrapHandler, true);
         window.removeEventListener('keydown', twilioGestureBootstrapHandler, true);
@@ -752,12 +766,11 @@ async function handleCallEnded(reportId) {
     <div class="layout-root">
         <div class="app-shell">
             <div
-                v-if="canAccessAdmin && !voicePipelineReady"
-                class="alert alert-info border-0 rounded-0 py-2 px-3 mb-0 small text-center"
+                v-if="canAccessAdmin && voiceConnectFailed"
+                class="alert alert-warning border-0 rounded-0 py-2 px-3 mb-0 small text-center"
                 role="status"
             >
-                Click or tap anywhere once (or press a key) to connect Twilio voice for incoming emergency calls.
-                The browser requires this before audio can start; the microphone is only requested when you answer.
+                Emergency voice calls are offline. Reconnecting automatically…
             </div>
             <div class="content app-shell__content">
                 <SideBar />
