@@ -29,3 +29,8 @@ Broadcast::channel('report.{reportId}.tracking', function ($user, $reportId) {
 Broadcast::channel('staff.locations', function ($user) {
     return $user->hasRole(['admin', 'super_admin']);
 });
+
+/** Every incident and rescuer position, for the admin Live Map. */
+Broadcast::channel('admin.live-map', function ($user) {
+    return $user->hasRole(['admin', 'super_admin']);
+});

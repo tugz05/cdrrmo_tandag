@@ -1,9 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { ageMs, isStale, predictPosition } from '@/utils/livePrediction';
+import { isStale, predictPosition, updatedAgoLabel } from '@/utils/livePrediction';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import '../../../css/live-marker.css';
 
 const props = defineProps({
     report: Object,
@@ -61,12 +62,7 @@ function serverNow() {
 }
 
 function ageLabel(position) {
-    const seconds = Math.floor(ageMs(position, serverNow()) / 1000);
-    if (seconds < 60) {
-        return `Updated ${seconds}s ago`;
-    }
-    const minutes = Math.floor(seconds / 60);
-    return minutes < 60 ? `Updated ${minutes}m ago` : `Updated ${Math.floor(minutes / 60)}h ago`;
+    return updatedAgoLabel(position, serverNow());
 }
 
 function stale(position) {
@@ -363,21 +359,5 @@ onUnmounted(() => {
 
 .live-people .live-marker {
     flex-shrink: 0;
-}
-</style>
-
-<style>
-/* Global: Leaflet renders marker HTML outside this component's scope. */
-.live-marker {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
-    color: #fff;
-    font-size: 1rem;
 }
 </style>

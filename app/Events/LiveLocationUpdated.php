@@ -28,9 +28,10 @@ class LiveLocationUpdated implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel(
-            $this->reportId === null ? 'staff.locations' : "report.{$this->reportId}.tracking"
-        )];
+        return [
+            new PrivateChannel($this->reportId === null ? 'staff.locations' : "report.{$this->reportId}.tracking"),
+            new PrivateChannel('admin.live-map'),
+        ];
     }
 
     public function broadcastAs(): string
@@ -41,6 +42,7 @@ class LiveLocationUpdated implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
+            'report_id' => $this->reportId,
             'user_id' => $this->userId,
             'role' => $this->role,
             'lat' => $this->position['lat'],

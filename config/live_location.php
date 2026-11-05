@@ -35,6 +35,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin Live Map
+    |--------------------------------------------------------------------------
+    |
+    | Open reports older than this leave the map unless a rescue is under way,
+    | so years of never-closed reports don't bury today's incidents.
+    |
+    */
+    'overview_recent_days' => 7,
+    'overview_report_limit' => 200,
+
+    /*
+    |--------------------------------------------------------------------------
     | Traffic limits
     |--------------------------------------------------------------------------
     */

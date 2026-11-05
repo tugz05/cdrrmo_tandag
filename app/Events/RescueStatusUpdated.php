@@ -19,7 +19,10 @@ class RescueStatusUpdated implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel("report.{$this->reportId}.tracking")];
+        return [
+            new PrivateChannel("report.{$this->reportId}.tracking"),
+            new PrivateChannel('admin.live-map'),
+        ];
     }
 
     public function broadcastAs(): string

@@ -8,6 +8,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\LiveMapController;
 use App\Http\Controllers\ReportLiveMapController;
 use App\Http\Controllers\SituationalIncidentReportManageController;
 use App\Http\Controllers\SafetyTipsController;
@@ -50,6 +51,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(fu
     Route::post('reports/{report}/resolve-address', [ReportController::class, 'resolveAddress'])->name('reports.resolve-address');
     Route::get('/reports/{type}/{status?}', [ReportController::class, 'index'])->name('reports.index');
     Route::resource('reports', ReportController::class)->only(['store', 'destroy']);
+
+    Route::get('live-map', [LiveMapController::class, 'index'])->name('live-map.index');
+    Route::get('live-map/state', [LiveMapController::class, 'state'])->name('live-map.state');
 
     // Posts — literal routes registered before the wildcard GET to prevent {type?} swallowing them.
     // All methods are explicit; no Route::resource to avoid name/method conflicts.

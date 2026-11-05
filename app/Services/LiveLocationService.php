@@ -7,6 +7,7 @@ use App\Models\Report;
 use App\Models\ReportLocationPoint;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -19,7 +20,7 @@ use Throwable;
 class LiveLocationService
 {
     /** Lowercase, because existing data mixes "Rescued" and "completed". */
-    private const CLOSED_STATUSES = ['completed', 'resolved', 'rescued'];
+    public const CLOSED_STATUSES = ['completed', 'resolved', 'rescued'];
 
     private const EARTH_RADIUS_METERS = 6371000;
 
@@ -65,6 +66,59 @@ class LiveLocationService
     public function latestPosition(int $userId): ?array
     {
         return Cache::get("live_location:user:{$userId}");
+    }
+
+    /**
+     * @param  array<int, int>  $userIds
+     * @return array<int, array<string, mixed>> Keyed by user id; users with no position are left out
+     */
+    public function latestPositions(array $userIds): array
+    {
+        $positions = [];
+
+        foreach ($userIds as $userId) {
+            if ($position = $this->latestPosition((int) $userId)) {
+                $positions[(int) $userId] = $position;
+            }
+        }
+
+        return $positions;
+    }
+
+    /**
+     * Each person's last stored point on these reports.
+     *
+     * @param  array<int, int>  $reportIds
+     * @return Collection<string, array<string, mixed>> Keyed by "reportId:userId"
+     */
+    public function lastStoredPositions(array $reportIds): Collection
+    {
+        if ($reportIds === []) {
+            return collect();
+        }
+
+        $latest = ReportLocationPoint::query()
+            ->selectRaw('report_id, user_id, MAX(recorded_at) AS latest_recorded_at')
+            ->whereIn('report_id', $reportIds)
+            ->groupBy('report_id', 'user_id');
+
+        return ReportLocationPoint::query()
+            ->joinSub($latest, 'latest', function ($join) {
+                $join->on('report_location_points.report_id', '=', 'latest.report_id')
+                    ->on('report_location_points.user_id', '=', 'latest.user_id')
+                    ->on('report_location_points.recorded_at', '=', 'latest.latest_recorded_at');
+            })
+            ->get(['report_location_points.*'])
+            ->mapWithKeys(fn (ReportLocationPoint $point) => [
+                "{$point->report_id}:{$point->user_id}" => [
+                    'lat' => $point->lat,
+                    'lng' => $point->lng,
+                    'accuracy' => $point->accuracy,
+                    'speed' => $point->speed,
+                    'heading' => $point->heading,
+                    'recorded_at' => $point->recorded_at->toIso8601String(),
+                ],
+            ]);
     }
 
     public static function ageSeconds(array $position): int

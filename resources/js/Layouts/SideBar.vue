@@ -37,6 +37,15 @@ const baseNavLinks = [
         superAdminOnly: false,
     },
     {
+        icon: 'geo-alt',
+        title: 'Live Map',
+        route: 'live-map.index',
+        param: '',
+        active: 'live-map',
+        items: [],
+        superAdminOnly: false,
+    },
+    {
         icon: 'people',
         title: 'User Accounts',
         route: 'users.index',
@@ -82,6 +91,8 @@ function isNavItemActive(nav) {
             return path.includes('/admin/situational-incident-reports');
         case 'reports':
             return /\/admin\/reports(\/|$)/.test(path) && !path.includes('situational-incident');
+        case 'live-map':
+            return /\/admin\/live-map(\/|$)/.test(path);
         case 'users':
             return /\/admin\/users(\/|$)/.test(path);
         case 'posts':

@@ -16,6 +16,15 @@ export function isStale(position, nowMs) {
     return ageMs(position, nowMs) >= STALE_AFTER_MS;
 }
 
+export function updatedAgoLabel(position, nowMs) {
+    const seconds = Math.floor(ageMs(position, nowMs) / 1000);
+    if (seconds < 60) {
+        return `Updated ${seconds}s ago`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    return minutes < 60 ? `Updated ${minutes}m ago` : `Updated ${Math.floor(minutes / 60)}h ago`;
+}
+
 /** Where to draw the marker: moved along heading at speed while the rules allow it. */
 export function predictPosition(position, nowMs) {
     const age = ageMs(position, nowMs);

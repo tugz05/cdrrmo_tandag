@@ -507,7 +507,7 @@ class LiveLocationTest extends TestCase
             $this->assertSame('live-location.updated', $event->broadcastAs());
             $this->assertSame("private-report.{$report->id}.tracking", $event->broadcastOn()[0]->name);
             $this->assertEqualsCanonicalizing(
-                ['user_id', 'role', 'lat', 'lng', 'accuracy', 'speed', 'heading', 'recorded_at'],
+                ['report_id', 'user_id', 'role', 'lat', 'lng', 'accuracy', 'speed', 'heading', 'recorded_at'],
                 array_keys($event->broadcastWith())
             );
             $this->assertSame($resident->id, $event->broadcastWith()['user_id']);
