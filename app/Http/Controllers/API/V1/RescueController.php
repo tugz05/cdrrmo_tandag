@@ -10,7 +10,9 @@ use App\Notifications\RescueStartedNotification;
 use App\Services\LiveLocationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class RescueController extends Controller
@@ -25,15 +27,14 @@ class RescueController extends Controller
             'rescue_started_at' => now(),
         ]);
 
-        if ($report->user) {
-            $report->user->notify(new RescueStartedNotification($report));
-        }
+        $residentNotified = $this->notifyResident($report, new RescueStartedNotification($report));
 
         $this->broadcastStatus($report);
 
         return response()->json([
-            'message'       => 'Rescue started.',
-            'rescue_status' => $report->rescue_status,
+            'message'           => 'Rescue started.',
+            'rescue_status'     => $report->rescue_status,
+            'resident_notified' => $residentNotified,
         ]);
     }
 
@@ -46,15 +47,14 @@ class RescueController extends Controller
             'rescue_arrived_at' => now(),
         ]);
 
-        if ($report->user) {
-            $report->user->notify(new RescueArrivedNotification($report));
-        }
+        $residentNotified = $this->notifyResident($report, new RescueArrivedNotification($report));
 
         $this->broadcastStatus($report);
 
         return response()->json([
-            'message'       => 'Arrival recorded.',
-            'rescue_status' => $report->rescue_status,
+            'message'           => 'Arrival recorded.',
+            'rescue_status'     => $report->rescue_status,
+            'resident_notified' => $residentNotified,
         ]);
     }
 
@@ -83,6 +83,33 @@ class RescueController extends Controller
             'rescue_started_at' => $report->rescue_started_at,
             'rescue_arrived_at' => $report->rescue_arrived_at,
         ]);
+    }
+
+    /**
+     * The rescue change is already saved; a push failure must not tell the rescuer it failed.
+     * The resident can still see the status through the app's rescue status check.
+     */
+    private function notifyResident(Report $report, Notification $notification): bool
+    {
+        $resident = $report->user;
+
+        if (! $resident || ! $resident->device_fcm_tokens()->exists()) {
+            return false;
+        }
+
+        try {
+            $resident->notify($notification);
+
+            return true;
+        } catch (Throwable $exception) {
+            Log::warning('Rescue notification failed', [
+                'report_id' => $report->id,
+                'exception' => $exception::class,
+                'reason' => Str::limit($exception->getMessage(), 200),
+            ]);
+
+            return false;
+        }
     }
 
     /**

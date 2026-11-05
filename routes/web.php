@@ -26,7 +26,12 @@ Route::get('/privacy-policy', PrivacyPolicyController::class)->name('privacy-pol
 Route::get('/download/app', function () {
     $path = public_path('downloads/app-release.apk');
     abort_unless(file_exists($path), 404);
-    return response()->download($path, 'mdrrmo-app.apk');
+
+    // An APK is a zip inside, so type detection says application/zip and browsers save it as .zip.
+    return response()->download($path, 'mdrrmo-app.apk', [
+        'Content-Type' => 'application/vnd.android.package-archive',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
 })->name('app.download');
 
 require __DIR__.'/web_routes/web_guest.php';
