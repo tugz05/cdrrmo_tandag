@@ -47,12 +47,12 @@ class Report extends Model
         return $this;
     }
 
-    // Mark call as ended
+    // Mark call as ended. Ending a call doesn't resolve the emergency, so the
+    // report keeps its status: a rescue can still start and track this report.
     public function markCallEnded()
     {
         $this->update([
             'call_ended_at' => now(),
-            'status' => 'completed' // or 'canceled' depending on your logic
         ]);
         return $this;
     }

@@ -3,11 +3,21 @@
 namespace App\Observers;
 
 use App\Models\Report;
+use App\Services\LiveLocationService;
 use App\Traits\JSharedTrait;
 
 class ReportObserver
 {
     use JSharedTrait;
+
+    /**
+     * Live sharing caches owner, rescuer and closed state: apply changes straight away.
+     */
+    public function saved(Report $report): void
+    {
+        LiveLocationService::forgetReport($report->id);
+    }
+
     /**
      * Handle the Report "created" event.
      */
@@ -29,6 +39,7 @@ class ReportObserver
      */
     public function deleted(Report $report): void
     {
+        LiveLocationService::forgetReport($report->id);
         $this->toastSuccess('Report has been successfully deleted.');
     }
 

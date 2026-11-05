@@ -8,6 +8,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportLiveMapController;
 use App\Http\Controllers\SituationalIncidentReportManageController;
 use App\Http\Controllers\SafetyTipsController;
 use App\Http\Controllers\SettingsController;
@@ -93,6 +94,12 @@ Route::prefix('admin')->middleware(['auth', 'role:admin|super_admin'])->group(fu
 Route::prefix('admin')->middleware(['auth', 'role:super_admin'])->group(function () {
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::resource('administrators', AdministratorController::class)->only(['index', 'store', 'update', 'destroy']);
+});
+
+// Dispatch staff use this too, and they can't reach the /admin group.
+Route::middleware(['auth', 'role:staff|admin|super_admin'])->group(function () {
+    Route::get('/reports/{report}/live', [ReportLiveMapController::class, 'show'])->name('reports.live');
+    Route::get('/reports/{report}/live/state', [ReportLiveMapController::class, 'state'])->name('reports.live.state');
 });
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {

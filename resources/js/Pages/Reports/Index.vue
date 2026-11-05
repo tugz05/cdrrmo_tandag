@@ -314,6 +314,8 @@ const formatDateTime = (datetime) => {
                                                 <i class="bi bi-circle-fill text-success" :class="report.status === 'Rescued' ? 'bi-circle' : 'bi-circle-fill'"></i> Rescued
                                             </JDropdownItem>
                                             <JDropdownDivider/>
+                                            <JDropdownItem :href="route('reports.live', report.id)" icon="geo-alt" text="Live map"/>
+                                            <JDropdownDivider/>
                                             <JDropdownItem @click="destroy(report.id)" icon="trash3" :is-danger="true" text="Delete"/>
                                         </JDropdownMenu>
                                     </div>

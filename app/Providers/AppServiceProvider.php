@@ -9,7 +9,10 @@ use App\Models\User;
 use App\Observers\AdministratorObserver;
 use App\Observers\PostObserver;
 use App\Observers\ReportObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\ChannelManager;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Contract\Messaging;
 
@@ -32,6 +35,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->make(ChannelManager::class)->extend('firebase', function ($app) {
             return $app->make(FirebaseChannel::class);
+        });
+
+        RateLimiter::for('live-location', function (Request $request) {
+            return Limit::perMinute((int) config('live_location.rate_limit_per_minute'))
+                ->by('live-location:'.$request->user()?->id);
         });
 
         Report::observe(ReportObserver::class);

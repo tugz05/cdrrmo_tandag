@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\ReportLocationPoint;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
 
 Artisan::command('inspire', function () {
@@ -31,3 +33,24 @@ Artisan::command('valid-ids:secure', function () {
 
     $this->info("Moved {$moved} valid ID image(s) to private storage.");
 })->purpose('Move government ID images out of publicly reachable storage');
+
+Artisan::command('live-location:prune', function () {
+    // At least one day, so a mistaken 0 can't delete everything.
+    $cutoff = now()->subDays(max(1, (int) config('live_location.retention_days')));
+    $chunkSize = 1000;
+    $deleted = 0;
+
+    do {
+        $ids = ReportLocationPoint::query()
+            ->where('recorded_at', '<', $cutoff)
+            ->orderBy('id')
+            ->limit($chunkSize)
+            ->pluck('id');
+
+        $deleted += ReportLocationPoint::query()->whereKey($ids)->delete();
+    } while ($ids->count() === $chunkSize);
+
+    $this->info("Deleted {$deleted} expired location point(s).");
+})->purpose('Delete stored live location paths past the retention period');
+
+Schedule::command('live-location:prune')->daily()->withoutOverlapping();

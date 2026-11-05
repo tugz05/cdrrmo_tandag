@@ -11,6 +11,7 @@ use App\Http\Controllers\API\V1\Auth\VerificationCodeController;
 use App\Http\Controllers\API\V1\Auth\VerificationController;
 use App\Http\Controllers\API\V1\CallAvailabilityController;
 use App\Http\Controllers\API\V1\DeviceFcmTokenController;
+use App\Http\Controllers\API\V1\LiveLocationController;
 use App\Http\Controllers\API\V1\ReportController;
 use App\Http\Controllers\API\V1\RescueController;
 use App\Http\Controllers\API\V1\SituationalIncidentReportController;
@@ -99,6 +100,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/device/fcm-token', [DeviceFcmTokenController::class, 'store'])
             ->middleware('throttle:30,1');
+
+        Route::post('/live-location', [LiveLocationController::class, 'store'])
+            ->middleware('throttle:live-location');
 
         Route::prefix('reports/{report}')->group(function () {
             Route::post('start-rescue',    [RescueController::class, 'startRescue']);

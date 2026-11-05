@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Events\RescueStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Notifications\RescueArrivedNotification;
 use App\Notifications\RescueStartedNotification;
+use App\Services\LiveLocationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class RescueController extends Controller
 {
@@ -24,6 +28,8 @@ class RescueController extends Controller
         if ($report->user) {
             $report->user->notify(new RescueStartedNotification($report));
         }
+
+        $this->broadcastStatus($report);
 
         return response()->json([
             'message'       => 'Rescue started.',
@@ -44,6 +50,8 @@ class RescueController extends Controller
             $report->user->notify(new RescueArrivedNotification($report));
         }
 
+        $this->broadcastStatus($report);
+
         return response()->json([
             'message'       => 'Arrival recorded.',
             'rescue_status' => $report->rescue_status,
@@ -59,11 +67,15 @@ class RescueController extends Controller
             'status'        => 'completed',
         ]);
 
+        $this->broadcastStatus($report);
+
         return response()->json(['message' => 'Rescue completed.']);
     }
 
     public function rescueStatus(Request $request, Report $report): JsonResponse
     {
+        $this->authorize('view', $report);
+
         return response()->json([
             'report_id'         => $report->id,
             'rescue_status'     => $report->rescue_status,
@@ -71,5 +83,24 @@ class RescueController extends Controller
             'rescue_started_at' => $report->rescue_started_at,
             'rescue_arrived_at' => $report->rescue_arrived_at,
         ]);
+    }
+
+    /**
+     * The rescue change is already saved; a WebSocket outage must not fail the request.
+     */
+    private function broadcastStatus(Report $report): void
+    {
+        try {
+            RescueStatusUpdated::dispatch(
+                $report->id,
+                $report->rescue_status,
+                ! LiveLocationService::isClosed($report->rescue_status, $report->status)
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Rescue status broadcast failed', [
+                'report_id' => $report->id,
+                'exception' => $exception::class,
+            ]);
+        }
     }
 }
