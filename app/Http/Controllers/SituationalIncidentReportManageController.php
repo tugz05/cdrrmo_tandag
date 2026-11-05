@@ -31,12 +31,13 @@ class SituationalIncidentReportManageController extends Controller
         ]);
     }
 
-    public function print(SituationalIncidentReport $situationalIncidentReport)
+    public function print(Request $request, SituationalIncidentReport $situationalIncidentReport)
     {
         $situationalIncidentReport->load('user:id,name,email,phone');
 
-        return view('print.situational-incident-report', [
+        return view($situationalIncidentReport->isRunSheet() ? 'print.run-sheet' : 'print.situational-incident-report', [
             'report' => $situationalIncidentReport,
+            'embedded' => $request->boolean('embed'),
         ]);
     }
 }

@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 defineOptions({ layout: AuthenticatedLayout });
 
@@ -14,6 +15,27 @@ const props = defineProps({
 function yn(v) {
     return v ? 'Yes' : 'No';
 }
+
+const isRunSheet = computed(() => props.report.form_version === 2);
+
+/** The sheet is a fixed A4 page, so it scales to fit instead of reflowing. */
+const SHEET_WIDTH_PX = 794;
+const SHEET_HEIGHT_PX = 1123;
+const sheetFrame = ref(null);
+const sheetScale = ref(1);
+let resizeObserver = null;
+
+onMounted(() => {
+    if (!sheetFrame.value) {
+        return;
+    }
+    resizeObserver = new ResizeObserver(([entry]) => {
+        sheetScale.value = Math.min(1.25, entry.contentRect.width / SHEET_WIDTH_PX);
+    });
+    resizeObserver.observe(sheetFrame.value);
+});
+
+onUnmounted(() => resizeObserver?.disconnect());
 
 function printUrl() {
     return route('situational-incident-reports.print', { situational_incident_report: props.report.id });
@@ -38,6 +60,22 @@ function printUrl() {
         <a :href="printUrl()" class="btn btn-primary btn-sm" target="_blank" rel="noopener">Print</a>
     </div>
 
+    <div
+        v-if="isRunSheet"
+        ref="sheetFrame"
+        class="run-sheet-frame mb-4"
+        :style="{ height: `${SHEET_HEIGHT_PX * sheetScale}px` }"
+    >
+        <iframe
+            :src="`${printUrl()}?embed=1`"
+            :title="`Run sheet for report ${report.id}`"
+            :width="SHEET_WIDTH_PX"
+            :height="SHEET_HEIGHT_PX"
+            :style="{ transform: `scale(${sheetScale})` }"
+        ></iframe>
+    </div>
+
+    <template v-else>
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-header fw-bold">Incident information</div>
         <div class="card-body row g-3 small">
@@ -103,8 +141,21 @@ function printUrl() {
             <div class="col-12"><strong>Name of response vehicle</strong><div>{{ report.name_of_response_vehicle || '—' }}</div></div>
         </div>
     </div>
+    </template>
 </template>
 
 <style scoped>
 .min-h-120 { min-height: 120px; }
+
+.run-sheet-frame {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--mdrrmo-line);
+}
+
+.run-sheet-frame iframe {
+    display: block;
+    border: 0;
+    transform-origin: top left;
+}
 </style>

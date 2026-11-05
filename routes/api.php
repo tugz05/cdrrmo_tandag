@@ -86,6 +86,7 @@ Route::prefix('v1')->group(function () {
         Route::get('situational-incident-reports/history/all', [SituationalIncidentReportController::class, 'historyAll']);
         Route::get('situational-incident-reports/history/{userId}', [SituationalIncidentReportController::class, 'history'])
             ->whereNumber('userId');
+        Route::get('situational-incident-reports/run-sheet-options', [SituationalIncidentReportController::class, 'runSheetOptions']);
         Route::post('situational-incident-reports', [SituationalIncidentReportController::class, 'store']);
         Route::get('situational-incident-reports/{situational_incident_report}', [SituationalIncidentReportController::class, 'show']);
         Route::put('situational-incident-reports/{situational_incident_report}', [SituationalIncidentReportController::class, 'update']);

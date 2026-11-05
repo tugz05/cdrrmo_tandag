@@ -56,6 +56,14 @@ class SituationalIncidentReportController extends Controller
         return $this->responseOK($reports);
     }
 
+    /**
+     * Choices and team rosters for the run sheet, so the app doesn't hard-code them.
+     */
+    public function runSheetOptions(): JsonResponse
+    {
+        return $this->responseOK(config('run_sheet'));
+    }
+
     public function store(SituationalIncidentReportRequest $request): JsonResponse
     {
         $data = $this->normalizePayload($request->validated());
@@ -169,6 +177,13 @@ class SituationalIncidentReportController extends Controller
             'has_tenderness',
             'has_laceration',
             'has_swelling',
+            'pupil_left',
+            'pupil_right',
+            'is_work_related',
+            'suspected_alcohol_use',
+            'suspected_drug_use',
+            'patient_refused_care',
+            'patient_refused_transport',
         ];
 
         foreach ($booleans as $key) {

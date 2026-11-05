@@ -17,6 +17,22 @@ const rows = computed(() => props.reports?.data ?? []);
 
 const filterText = ref('');
 
+const RUN_SHEET_TYPES = {
+    vehicular: 'Vehicular accident',
+    fire: 'Fire accident',
+    maritime: 'Maritime accident',
+    immediate_transport: 'Immediate transport',
+};
+
+function typeLabel(r) {
+    if (r.form_version !== 2) {
+        return r.incident_type ?? '';
+    }
+    return [...(r.incident_types ?? []).map((type) => RUN_SHEET_TYPES[type]), r.incident_type_others]
+        .filter(Boolean)
+        .join(', ');
+}
+
 const filteredRows = computed(() => {
     const q = filterText.value.trim().toLowerCase();
     if (!q) {
@@ -25,13 +41,17 @@ const filteredRows = computed(() => {
 
     return rows.value.filter((r) => {
         const id = String(r.id ?? '');
-        const type = String(r.incident_type ?? '').toLowerCase();
+        const type = typeLabel(r).toLowerCase();
+        const victim = String(r.victim_name ?? '').toLowerCase();
+        const incidentNo = String(r.incident_no ?? '').toLowerCase();
         const user = String(r.user?.name ?? '').toLowerCase();
         const received = String(r.date_time_received ?? '').toLowerCase();
 
         return (
             id.includes(q) ||
             type.includes(q) ||
+            victim.includes(q) ||
+            incidentNo.includes(q) ||
             user.includes(q) ||
             received.includes(q)
         );
@@ -61,7 +81,7 @@ function printUrl(id) {
                 v-model="filterText"
                 type="search"
                 class="form-control form-control-sm"
-                placeholder="Filter by type, user, date, ID…"
+                placeholder="Filter by incident no., type, victim, ID…"
                 autocomplete="off"
             />
         </div>
@@ -74,27 +94,31 @@ function printUrl(id) {
                     <thead class="table-light">
                         <tr>
                             <th>ID</th>
+                            <th>Incident no.</th>
                             <th>Incident type</th>
-                            <th>User</th>
-                            <th>Date received</th>
+                            <th>Victim</th>
+                            <th>Submitted by</th>
+                            <th>Date</th>
                             <th class="text-end no-print">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="filteredRows.length === 0">
-                            <td colspan="5" class="text-muted py-4">
+                            <td colspan="7" class="text-muted py-4">
                                 {{ filterText ? 'No reports match this filter. Clear the filter to see all reports.' : 'No situational incident reports yet.' }}
                             </td>
                         </tr>
                         <tr v-for="r in filteredRows" :key="r.id">
                             <td>{{ r.id }}</td>
-                            <td>{{ r.incident_type || '—' }}</td>
+                            <td>{{ r.incident_no || '—' }}</td>
+                            <td>{{ typeLabel(r) || '—' }}</td>
+                            <td>{{ r.victim_name || '—' }}</td>
                             <td>
                                 <span v-if="r.user">{{ r.user.name }}</span>
                                 <span v-else class="text-muted">—</span>
                             </td>
                             <td>
-                                <span v-if="r.date_time_received">{{ r.date_time_received }}</span>
+                                <span v-if="r.incident_date || r.date_time_received">{{ r.incident_date || r.date_time_received }}</span>
                                 <span v-else class="text-muted">—</span>
                             </td>
                             <td class="text-nowrap no-print">

@@ -12,6 +12,8 @@ class SituationalIncidentReport extends Model
     use HasFactory;
     use SoftDeletes;
 
+    public const FORM_VERSION_RUN_SHEET = 2;
+
     protected $fillable = [
         'user_id',
         'incident_type',
@@ -43,6 +45,56 @@ class SituationalIncidentReport extends Model
         'name_of_hospital',
         'name_of_responders',
         'name_of_response_vehicle',
+        'form_version',
+        'incident_no',
+        'incident_date',
+        'response_team',
+        'time_informed',
+        'time_arrival_at_scene',
+        'time_departure_from_scene',
+        'time_arrival_at_hospital',
+        'time_back_in_service',
+        'incident_types',
+        'incident_type_others',
+        'airway',
+        'blood_type',
+        'skin',
+        'skin_others',
+        'address_of_incident',
+        'victim_name',
+        'victim_age',
+        'victim_sex',
+        'victim_status',
+        'victim_address',
+        'consciousness',
+        'blood_pressure',
+        'pupils',
+        'pupil_left',
+        'pupil_right',
+        'transport_vehicle',
+        'patient_disposition',
+        'is_work_related',
+        'suspected_alcohol_use',
+        'suspected_drug_use',
+        'patient_refused_care',
+        'patient_refused_transport',
+        'injury_natures',
+        'injury_nature_others',
+        'actions_taken',
+        'actions_taken_others',
+        'sample_signs_symptoms',
+        'sample_allergies',
+        'sample_medications',
+        'sample_past_history',
+        'sample_last_intake',
+        'sample_events',
+        'equipment_used',
+        'equipment_others',
+        'responders',
+        'patient_belongings',
+        'team_leader_name',
+        'recorder_name',
+        'received_by',
     ];
 
     /**
@@ -66,6 +118,21 @@ class SituationalIncidentReport extends Model
             'has_tenderness' => 'boolean',
             'has_laceration' => 'boolean',
             'has_swelling' => 'boolean',
+            'form_version' => 'integer',
+            'incident_date' => 'date:Y-m-d',
+            'incident_types' => 'array',
+            'skin' => 'array',
+            'injury_natures' => 'array',
+            'actions_taken' => 'array',
+            'equipment_used' => 'array',
+            'responders' => 'array',
+            'pupil_left' => 'boolean',
+            'pupil_right' => 'boolean',
+            'is_work_related' => 'boolean',
+            'suspected_alcohol_use' => 'boolean',
+            'suspected_drug_use' => 'boolean',
+            'patient_refused_care' => 'boolean',
+            'patient_refused_transport' => 'boolean',
         ];
     }
 
@@ -77,6 +144,11 @@ class SituationalIncidentReport extends Model
         return $this->injury_diagram_path
             ? asset('storage/'.$this->injury_diagram_path)
             : null;
+    }
+
+    public function isRunSheet(): bool
+    {
+        return (int) $this->form_version === self::FORM_VERSION_RUN_SHEET;
     }
 
     public function user(): BelongsTo
