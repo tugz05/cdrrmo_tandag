@@ -46,7 +46,6 @@ class SituationalIncidentReport extends Model
         'name_of_responders',
         'name_of_response_vehicle',
         'form_version',
-        'incident_no',
         'incident_date',
         'response_team',
         'time_informed',

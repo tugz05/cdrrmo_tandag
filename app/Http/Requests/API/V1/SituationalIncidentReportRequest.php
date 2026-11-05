@@ -63,7 +63,7 @@ class SituationalIncidentReportRequest extends FormRequest
 
             // Run sheet (form version 2). Apps that omit form_version stay on version 1.
             'form_version' => ['sometimes', 'integer', Rule::in([1, 2])],
-            'incident_no' => ['nullable', 'string', 'max:100'],
+            // incident_no has no rule on purpose: the server assigns it, and older apps still send one.
             'incident_date' => ['nullable', 'date'],
             'response_team' => ['nullable', 'string', Rule::in($this->optionKeys('teams'))],
             'time_informed' => ['nullable', 'string', 'max:20'],

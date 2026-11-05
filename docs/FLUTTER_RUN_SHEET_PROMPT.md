@@ -20,6 +20,7 @@ Replace the app's existing Situational Incident Report (SIR) form with the new E
 - Do not delete the old report display. Reports with `form_version` 1 (or missing) must still open read-only with their old fields. Only new reports use the new form.
 - Do not hard-code teams or rosters. Load them from the options endpoint below, and cache the last good response so the form still opens with a weak signal.
 - Keep the existing save and error behaviour. A responder in the field must never lose what they typed: if saving fails, keep the form filled in and show the reason.
+- **The server assigns `incident_no`** (for example `INC-2026-0001`) when a new run sheet is saved. Never generate, reserve or send one, and never let anyone edit it. Read it from `data.incident_no` in the save reply and show it to the responder straight away. A form must still open with no signal, because no number is needed until it saves.
 - The server treats all fields as optional. Do not add required fields that could block a responder from saving during an emergency.
 
 ## Load the choices
@@ -31,6 +32,7 @@ Replace the app's existing Situational Incident Report (SIR) form with the new E
 - `teams`: an object keyed by `ALPHA`, `BRAVO`, `CHARLIE`, `DELTA`. Each has `members` (names), `team_leader` and `recorder`.
 - `officers`: names under "MDRRM OFFICER/STAFF".
 - `incident_types`, `airway`, `skin`, `sex`, `consciousness`, `pupils`, `transport_vehicles`, `dispositions`, `actions_taken`, `equipment`: objects of `key: label`. Send the key and show the label.
+- `victim_statuses`: a plain list of text (`Single`, `Married`, `Widowed`, `Separated`), not `key: label`.
 - `injury_natures`: an object with keys `"1"` to `"15"`. Send these as integers.
 
 ## Form layout, top to bottom
@@ -42,7 +44,7 @@ Use a scrolling mobile form with these sections, in this order and with these la
 | Label | Field | Input |
 |---|---|---|
 | Team | `response_team` | Single choice from `teams`. Selecting a team fills in its roster, team leader and recorder |
-| Incident no. | `incident_no` | Text, up to 100 characters |
+| Incident no. | `incident_no` | Read-only, never sent. Before the first save, show "Assigned when saved" |
 | Date | `incident_date` | Date picker, sent as `YYYY-MM-DD` |
 
 **Event times.** Time pickers, sent as 24-hour `HH:mm`, with a "Now" button on each.
@@ -66,7 +68,7 @@ Use a scrolling mobile form with these sections, in this order and with these la
 | Victim's name | `victim_name` | Text |
 | Age | `victim_age` | Text, up to 20 characters, so "8 months" works |
 | Sex | `victim_sex` | Single choice |
-| Status | `victim_status` | Text, up to 50 characters |
+| Status | `victim_status` | Dropdown from `victim_statuses`. Send the text itself. If an existing report holds a value not in the list, keep it and show it as selected |
 | Address | `victim_address` | Multi-line text |
 | Conscious / Unconscious | `consciousness` | Single choice |
 | B.P. | `blood_pressure` | Text such as `120/80`, up to 20 characters |
@@ -120,7 +122,6 @@ Use a scrolling mobile form with these sections, in this order and with these la
 {
   "form_version": 2,
   "response_team": "BRAVO",
-  "incident_no": "INC-2026-014",
   "incident_date": "2026-11-06",
   "time_informed": "08:15",
   "time_arrival_at_scene": "08:27",
@@ -164,7 +165,7 @@ Login, voice calling, message reports, location sharing and the existing body di
 
 Confirm you tested these, and show the results:
 
-1. Creating a run sheet with every section filled in, then reopening it and seeing the same values.
+1. Creating a run sheet with every section filled in, then reopening it and seeing the same values, with the assigned incident number shown after saving.
 2. Saving with most fields empty.
 3. Opening an older report, which still displays with its old fields.
 4. Changing the team, which updates the roster, team leader and recorder.

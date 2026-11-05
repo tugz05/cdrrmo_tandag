@@ -51,6 +51,10 @@ return [
     ],
 
     'sex' => ['male' => 'Male', 'female' => 'Female'],
+
+    /** A plain list, unlike the others: the app sends the text itself, and older typed values still save. */
+    'victim_statuses' => ['Single', 'Married', 'Widowed', 'Separated'],
+
     'consciousness' => ['conscious' => 'CONSCIOUS', 'unconscious' => 'UNCONSCIOUSS'],
     'pupils' => ['reactive' => 'REACTIVE', 'non_reactive' => 'NON-REACTIVE'],
 

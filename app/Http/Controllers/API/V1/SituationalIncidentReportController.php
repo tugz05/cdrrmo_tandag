@@ -5,9 +5,11 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\V1\SituationalIncidentReportRequest;
 use App\Models\SituationalIncidentReport;
+use App\Services\IncidentNumberGenerator;
 use App\Traits\JResponseApiTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +17,8 @@ use Symfony\Component\HttpFoundation\Response;
 class SituationalIncidentReportController extends Controller
 {
     use JResponseApiTrait;
+
+    public function __construct(private IncidentNumberGenerator $incidentNumbers) {}
 
     /**
      * All situational incident reports (staff / admin / super_admin app). Citizens use {@see history}.
@@ -70,7 +74,7 @@ class SituationalIncidentReportController extends Controller
         $data['user_id'] = $request->user()->id;
 
         $diagram = $this->pullInjuryDiagram($data);
-        $report = SituationalIncidentReport::query()->create($data);
+        $report = $this->createReport($data);
         $this->applyInjuryDiagram($report, $diagram, $data);
 
         return $this->responseOK($report->fresh(), 'Situational incident report created.', Response::HTTP_CREATED);
@@ -102,6 +106,27 @@ class SituationalIncidentReportController extends Controller
         $situationalIncidentReport->delete();
 
         return $this->responseOK([], 'Situational incident report deleted.');
+    }
+
+    /**
+     * The number and the report commit together, so a failed save uses up no number.
+     * Retries cover a deadlock between saves competing for the same year's counter.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function createReport(array $data): SituationalIncidentReport
+    {
+        return DB::transaction(function () use ($data) {
+            $report = new SituationalIncidentReport($data);
+
+            if ((int) ($data['form_version'] ?? 1) === SituationalIncidentReport::FORM_VERSION_RUN_SHEET) {
+                $report->incident_no = $this->incidentNumbers->next();
+            }
+
+            $report->save();
+
+            return $report;
+        }, 3);
     }
 
     /**
