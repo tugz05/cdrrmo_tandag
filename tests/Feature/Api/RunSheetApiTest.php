@@ -426,4 +426,49 @@ class RunSheetApiTest extends TestCase
         $this->assertFalse(Schema::hasIndex('situational_incident_reports', 'sir_incident_no_unique'));
         $this->assertSame('INC-2026-0001', $this->numberOf($id));
     }
+
+    private function printRunSheet(array $attributes)
+    {
+        $report = SituationalIncidentReport::query()->create($this->runSheet(array_merge(
+            ['user_id' => $this->userWithRole('staff')->id],
+            $attributes,
+        )));
+
+        return $this->actingAs($this->userWithRole('admin'))
+            ->get("/admin/situational-incident-reports/{$report->id}/print")
+            ->assertOk();
+    }
+
+    public function test_times_print_in_twelve_hour_format(): void
+    {
+        $this->printRunSheet([
+            'time_informed' => '08:15',
+            'time_arrival_at_scene' => '13:05',
+            'time_departure_from_scene' => '00:30',
+            'time_arrival_at_hospital' => '12:00',
+            'time_back_in_service' => '9:40 pm',
+        ])
+            ->assertSeeInOrder(['8:15 AM', '1:05 PM', '12:30 AM', '12:00 PM', '9:40 PM']);
+    }
+
+    public function test_values_that_are_not_times_print_as_written(): void
+    {
+        $this->printRunSheet(['time_informed' => 'around noon', 'time_arrival_at_scene' => '25:99'])
+            ->assertSee('around noon')
+            ->assertSee('25:99');
+    }
+
+    public function test_only_selected_injury_natures_are_circled(): void
+    {
+        $response = $this->printRunSheet(['injury_natures' => [1, 13]]);
+
+        $this->assertSame(2, substr_count($response->getContent(), 'class="nature-selected"'));
+        $response->assertSeeInOrder(['class="nature-selected"', '1. ABRASION', 'class="nature-selected"', '13. LACERATION'], false);
+    }
+
+    public function test_date_prints_with_the_full_month_name(): void
+    {
+        $this->printRunSheet(['incident_date' => '2026-11-26'])
+            ->assertSee('November 26, 2026');
+    }
 }

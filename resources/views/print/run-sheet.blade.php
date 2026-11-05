@@ -20,6 +20,21 @@
         15, 20.1, 15.95, 15.95, 9, 24, 23.1,
     ];
 
+    // Times are stored as the app sent them; anything that isn't a time prints as written.
+    $time12 = function (?string $value): ?string {
+        $value = trim((string) $value);
+
+        if (! preg_match('/^\d{1,2}:\d{2}(:\d{2})?(\s?[ap]m)?$/i', $value)) {
+            return $value;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($value)->format('g:i A');
+        } catch (\Exception) {
+            return $value;
+        }
+    };
+
     $has = fn (?array $selected, $key): bool => in_array($key, $selected ?? [], false);
 
     $team = $report->response_team ? config("run_sheet.teams.{$report->response_team}") : null;
@@ -196,7 +211,14 @@
         .responder { font-size: 9.2pt; font-weight: 700; }
         .team-name { justify-content: center; font-size: 9.2pt; font-weight: 700; }
         .officer-head { background: #a6a6a6; font-size: 9.2pt; font-weight: 700; color: #fff; }
-        .selected { text-decoration: underline; }
+        .nature-selected {
+            margin-left: -1.5pt;
+            padding: 0 3pt;
+            border: 0.9pt solid #000;
+            border-radius: 999px;
+            background: #ffe45c;
+            line-height: 1;
+        }
         .list-row { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 9.3pt; white-space: nowrap; }
         .signature-name { font-size: 10.6pt; font-weight: 700; justify-content: center; align-items: flex-end; border: 0; }
         .signature-label { font-size: 7.3pt; font-weight: 700; justify-content: center; border: 0; border-top: 0.6pt solid #000; align-items: flex-start; padding-top: 1pt; }
@@ -226,7 +248,7 @@
 
     <div class="c bold" style="grid-column: 1 / 8; grid-row: 6; font-size: 7.8pt;">NAME OF SERVICE: MDRRMO/<span style="color:#e00000">SERTSS TAGO</span></div>
     <div class="c bold" style="grid-column: 8 / 11; grid-row: 6; font-size: 7.8pt;">INCIDENT NO:&nbsp;<span class="value">{{ $report->incident_no }}</span></div>
-    <div class="c bold" style="grid-column: 11 / 15; grid-row: 6; font-size: 7.8pt;">DATE:&nbsp;<span class="value">{{ $report->incident_date?->format('m/d/Y') }}</span></div>
+    <div class="c bold" style="grid-column: 11 / 15; grid-row: 6; font-size: 7.8pt;">DATE:&nbsp;<span class="value">{{ $report->incident_date?->format('F j, Y') }}</span></div>
 
     {{-- Times, incident type, airway, skin --}}
     <div class="c head" style="grid-column: 1 / 4; grid-row: 7;">EVENT</div>
@@ -245,7 +267,7 @@
         ['BACK IN SERVICE', 'time_back_in_service'],
     ] as $i => [$label, $field])
         <div class="c bold" style="grid-column: 1 / 4; grid-row: {{ 8 + $i }};">{{ $label }}</div>
-        <div class="c center value" style="grid-column: 4 / 6; grid-row: {{ 8 + $i }};">{{ $report->{$field} }}</div>
+        <div class="c center value" style="grid-column: 4 / 6; grid-row: {{ 8 + $i }};">{{ $time12($report->{$field}) }}</div>
     @endforeach
 
     @foreach (['vehicular', 'fire', 'maritime', 'immediate_transport'] as $i => $key)
@@ -353,7 +375,7 @@
         <div class="list-row">&nbsp;NATURE OF INJURY:</div>
         @foreach (config('run_sheet.injury_natures') as $number => $label)
             <div class="list-row" style="justify-content: flex-start;">
-                <span @class(['selected' => $has($report->injury_natures, $number)])>{{ $number }}. {{ $label }}@if ($number === 15):@endif</span>
+                <span @class(['nature-selected' => $has($report->injury_natures, $number)])>{{ $number }}. {{ $label }}@if ($number === 15):@endif</span>
                 @if ($number === 15)
                     @if ($report->injury_nature_others)
                         <span class="value" style="margin-left: 2pt; overflow: hidden;">{{ $report->injury_nature_others }}</span>

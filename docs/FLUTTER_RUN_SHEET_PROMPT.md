@@ -45,9 +45,9 @@ Use a scrolling mobile form with these sections, in this order and with these la
 |---|---|---|
 | Team | `response_team` | Single choice from `teams`. Selecting a team fills in its roster, team leader and recorder |
 | Incident no. | `incident_no` | Read-only, never sent. Before the first save, show "Assigned when saved" |
-| Date | `incident_date` | Date picker, sent as `YYYY-MM-DD` |
+| Date | `incident_date` | Date picker that shows the date like `November 26, 2026`, sent as `YYYY-MM-DD` |
 
-**Event times.** Time pickers, sent as 24-hour `HH:mm`, with a "Now" button on each.
+**Event times.** Time pickers that show 12-hour time (for example `8:15 AM`), with a "Now" button on each. Still send them as 24-hour `HH:mm`; the server prints them in 12-hour time.
 
 `time_informed`, `time_arrival_at_scene`, `time_departure_from_scene`, `time_arrival_at_hospital`, `time_back_in_service`
 
