@@ -4,7 +4,7 @@ const props = defineProps({
 })
 </script>
 <template>
-<h6 class="py-2 d-block opacity-50 fw-bold" style="font-size: 0.8rem; letter-spacing: 0.07rem; text-transform:uppercase;">
+<h6 class="py-2 d-block fw-bold text-body-secondary" style="font-size: 1rem;">
     <slot>
         {{ props.title }}
     </slot>

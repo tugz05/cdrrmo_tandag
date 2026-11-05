@@ -23,8 +23,8 @@ const effectiveDate = 'June 2, 2026';
                 <Link href="/" class="welcome-brand">
                     <JLogo size="42px" />
                     <span class="welcome-brand__text">
-                        <span class="welcome-brand__title">MDRRMO</span>
-                        <span class="welcome-brand__sub">Municipality of Tago</span>
+                        <span class="welcome-brand__title">MDRRMO Tago</span>
+                        <span class="welcome-brand__sub">Surigao del Sur</span>
                     </span>
                 </Link>
                 <Link href="/" class="pp-back-link">
@@ -37,11 +37,9 @@ const effectiveDate = 'June 2, 2026';
         <!-- Hero -->
         <section class="pp-hero">
             <div class="container-xl pp-hero__inner">
-                <p class="welcome-eyebrow">MDRRMO · Municipality of Tago</p>
                 <h1 class="pp-hero__title">Privacy Policy</h1>
                 <p class="pp-hero__meta">Effective {{ effectiveDate }}</p>
             </div>
-            <div class="pp-hero__slant" aria-hidden="true" />
         </section>
 
         <!-- Content -->
@@ -150,8 +148,8 @@ const effectiveDate = 'June 2, 2026';
 <style scoped>
 .pp-root {
     min-height: 100vh;
-    background: var(--mdrrmo-surface, #f0f9ff);
-    color: var(--mdrrmo-ink, #0c4a6e);
+    background: var(--mdrrmo-surface, #f1f4fb);
+    color: var(--mdrrmo-ink, #0a1c58);
 }
 
 .pp-back-link {
@@ -160,28 +158,23 @@ const effectiveDate = 'June 2, 2026';
     font-size: 0.88rem;
     font-weight: 700;
     text-decoration: none;
-    color: var(--mdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #1f3570);
     padding: 0.4rem 0.85rem;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--mdrrmo-700, #0369a1) 22%, transparent);
+    border-radius: var(--mdrrmo-radius-sm);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-700, #1f3570) 22%, transparent);
     background: var(--mdrrmo-surface-raised, #fff);
     transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .pp-back-link:hover {
-    border-color: var(--mdrrmo-primary, #0284c7);
-    color: var(--mdrrmo-700, #0369a1);
+    border-color: var(--mdrrmo-primary, #2b4481);
+    color: var(--mdrrmo-700, #1f3570);
 }
 
 .pp-hero {
     position: relative;
     padding-bottom: 0;
-    background: linear-gradient(
-        155deg,
-        var(--mdrrmo-900, #0c4a6e) 0%,
-        var(--mdrrmo-700, #0369a1) 38%,
-        var(--mdrrmo-500, #0ea5e9) 100%
-    );
+    background: var(--mdrrmo-900, #0a1c58);
     color: #fff;
 }
 
@@ -191,8 +184,7 @@ const effectiveDate = 'June 2, 2026';
 
 .pp-hero__title {
     font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 900;
-    letter-spacing: -0.03em;
+    font-weight: 700;
     line-height: 1.1;
     margin: 0.5rem 0 0.75rem;
 }
@@ -203,13 +195,6 @@ const effectiveDate = 'June 2, 2026';
     margin: 0;
 }
 
-.pp-hero__slant {
-    height: 60px;
-    background: var(--mdrrmo-surface, #f0f9ff);
-    clip-path: polygon(0 48%, 100% 0, 100% 100%, 0 100%);
-    margin-top: -1px;
-}
-
 .pp-content-wrap {
     padding: 2.5rem 1rem 5rem;
 }
@@ -218,10 +203,10 @@ const effectiveDate = 'June 2, 2026';
     max-width: 680px;
     margin: 0 auto;
     background: #fff;
-    border-radius: 1.35rem;
+    border-radius: var(--mdrrmo-radius);
     padding: 2.5rem 2.5rem 3rem;
-    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 12%, transparent);
-    box-shadow: 0 16px 42px color-mix(in srgb, var(--mdrrmo-800, #075985) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #2b4481) 12%, transparent);
+    box-shadow: 0 16px 42px color-mix(in srgb, var(--mdrrmo-800, #142762) 7%, transparent);
 }
 
 .pp-section {
@@ -234,17 +219,17 @@ const effectiveDate = 'June 2, 2026';
 
 .pp-h2 {
     font-size: 1.2rem;
-    font-weight: 900;
-    color: var(--mdrrmo-900, #0c4a6e);
+    font-weight: 700;
+    color: var(--mdrrmo-900, #0a1c58);
     margin-bottom: 0.65rem;
     padding-bottom: 0.4rem;
-    border-bottom: 2px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 35%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--mdrrmo-400, #5c78bd) 35%, transparent);
 }
 
 .pp-h3 {
     font-size: 1rem;
     font-weight: 800;
-    color: var(--mdrrmo-800, #075985);
+    color: var(--mdrrmo-800, #142762);
     margin-top: 1.15rem;
     margin-bottom: 0.4rem;
 }
@@ -253,7 +238,7 @@ const effectiveDate = 'June 2, 2026';
 .pp-content address {
     font-size: 0.95rem;
     line-height: 1.75;
-    color: #334155;
+    color: #2c3761;
     margin-bottom: 0.85rem;
 }
 
@@ -264,7 +249,7 @@ const effectiveDate = 'June 2, 2026';
 .pp-list {
     font-size: 0.95rem;
     line-height: 1.75;
-    color: #334155;
+    color: #2c3761;
     padding-left: 1.35rem;
     margin-bottom: 0.85rem;
 }
@@ -275,19 +260,19 @@ const effectiveDate = 'June 2, 2026';
 
 .pp-address {
     font-style: normal;
-    background: var(--mdrrmo-50, #f0f9ff);
-    border-radius: 0.75rem;
+    background: var(--mdrrmo-50, #f1f4fb);
+    border-radius: var(--mdrrmo-radius);
     padding: 1rem 1.25rem;
-    border: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 25%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-400, #5c78bd) 25%, transparent);
 }
 
 .pp-link {
-    color: var(--mdrrmo-700, #0369a1);
+    color: var(--mdrrmo-700, #1f3570);
     font-weight: 600;
 }
 
 .pp-link:hover {
-    color: var(--mdrrmo-900, #0c4a6e);
+    color: var(--mdrrmo-900, #0a1c58);
 }
 
 @media (max-width: 575.98px) {
@@ -305,8 +290,8 @@ const effectiveDate = 'June 2, 2026';
     top: 0;
     z-index: 100;
     backdrop-filter: blur(16px);
-    background: color-mix(in srgb, var(--mdrrmo-surface, #f0f9ff) 88%, white);
-    border-bottom: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 16%, transparent);
+    background: color-mix(in srgb, var(--mdrrmo-surface, #f1f4fb) 88%, white);
+    border-bottom: 1px solid color-mix(in srgb, var(--mdrrmo-600, #2b4481) 16%, transparent);
 }
 
 .pp-root .welcome-nav__inner {
@@ -327,32 +312,27 @@ const effectiveDate = 'June 2, 2026';
 
 .pp-root .welcome-brand__title {
     font-weight: 800;
-    letter-spacing: 0.04em;
     display: block;
     line-height: 1.15;
 }
 
 .pp-root .welcome-brand__sub {
     font-size: 0.72rem;
-    color: var(--mdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #56617f);
     display: block;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
 }
 
 .pp-root .welcome-footer {
-    background: var(--mdrrmo-950, #082f49);
-    color: var(--mdrrmo-200, #bae6fd);
-    border-top: 1px solid color-mix(in srgb, var(--mdrrmo-400, #38bdf8) 24%, transparent);
+    background: var(--mdrrmo-950, #06123b);
+    color: var(--mdrrmo-200, #bdcae8);
+    border-top: 1px solid color-mix(in srgb, var(--mdrrmo-400, #5c78bd) 24%, transparent);
 }
 
 .pp-root .welcome-footer__muted {
-    color: color-mix(in srgb, var(--mdrrmo-200, #bae6fd) 88%, transparent);
+    color: color-mix(in srgb, var(--mdrrmo-200, #bdcae8) 88%, transparent);
 }
 
 .pp-root .welcome-eyebrow {
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
     font-size: 0.68rem;
     color: rgba(255, 255, 255, 0.58);
     margin-bottom: 1rem;

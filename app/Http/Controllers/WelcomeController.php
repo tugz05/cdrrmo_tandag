@@ -34,7 +34,7 @@ class WelcomeController extends Controller
     }
 
     /**
-     * @return array<int, array{id:int, title:string, excerpt:string, type:string, href:string}>
+     * @return array<int, array{id:int, title:string, excerpt:string, type:string, image:?string, href:string}>
      */
     private function latestPosts(string $type, int $limit = 5): array
     {
@@ -52,6 +52,7 @@ class WelcomeController extends Controller
                     150
                 ),
                 'type' => $post->type,
+                'image' => $post->bg_image ? asset($post->bg_image) : null,
                 'href' => $this->guestHref($post),
             ])
             ->values()

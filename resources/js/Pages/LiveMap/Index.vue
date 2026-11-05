@@ -17,11 +17,11 @@ const REFRESH_DELAY_MS = 500;
 const CHANNEL = 'admin.live-map';
 const FALLBACK_CENTER = [9.0195, 126.2331];
 const GRAY = '#94a3b8';
-const INCIDENT_COLOR = '#dc2626';
+const INCIDENT_COLOR = '#c81e1e';
 const RESCUER_STATES = {
-    en_route: { label: 'En route', color: '#0369a1', badge: 'text-bg-primary' },
+    en_route: { label: 'En route', color: '#b45309', badge: 'text-bg-warning' },
     arrived: { label: 'On scene', color: '#15803d', badge: 'text-bg-success' },
-    available: { label: 'Available', color: '#0f766e', badge: 'text-bg-info' },
+    available: { label: 'Available', color: '#2b4481', badge: 'text-bg-primary' },
     no_location: { label: 'No location', color: GRAY, badge: 'text-bg-secondary' },
 };
 const INCIDENT_LABELS = {
@@ -169,7 +169,7 @@ function drawLine(rescuer, from, seen) {
     if (line) {
         line.setLatLngs([from, to]);
     } else {
-        lines.set(key, L.polyline([from, to], { color: '#0369a1', weight: 2, opacity: 0.7, dashArray: '6 8' }).addTo(map));
+        lines.set(key, L.polyline([from, to], { color: '#b45309', weight: 2, opacity: 0.7, dashArray: '6 8' }).addTo(map));
     }
 }
 
@@ -455,38 +455,38 @@ onUnmounted(() => {
         </div>
 
         <div class="row g-2 mb-3">
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card h-100"><div class="card-body py-2">
+            <div class="col-4 col-xl-2">
+                <div class="card h-100"><div class="card-body live-stat">
                     <div class="small text-muted">Open incidents</div>
                     <div class="fs-4 fw-semibold">{{ incidentsTotal }}</div>
                 </div></div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card h-100"><div class="card-body py-2">
+            <div class="col-4 col-xl-2">
+                <div class="card h-100"><div class="card-body live-stat">
                     <div class="small text-muted">Waiting for a rescuer</div>
                     <div class="fs-4 fw-semibold text-danger">{{ counts.waiting }}</div>
                 </div></div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card h-100"><div class="card-body py-2">
+            <div class="col-4 col-xl-2">
+                <div class="card h-100"><div class="card-body live-stat">
                     <div class="small text-muted">En route</div>
                     <div class="fs-4 fw-semibold">{{ counts.enRoute }}</div>
                 </div></div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card h-100"><div class="card-body py-2">
+            <div class="col-4 col-xl-2">
+                <div class="card h-100"><div class="card-body live-stat">
                     <div class="small text-muted">On scene</div>
                     <div class="fs-4 fw-semibold">{{ counts.arrived }}</div>
                 </div></div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card h-100"><div class="card-body py-2">
+            <div class="col-4 col-xl-2">
+                <div class="card h-100"><div class="card-body live-stat">
                     <div class="small text-muted">Available</div>
                     <div class="fs-4 fw-semibold">{{ counts.available }}</div>
                 </div></div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card h-100"><div class="card-body py-2">
+            <div class="col-4 col-xl-2">
+                <div class="card h-100"><div class="card-body live-stat">
                     <div class="small text-muted">No location</div>
                     <div class="fs-4 fw-semibold">{{ counts.noLocation }}</div>
                 </div></div>
@@ -500,7 +500,9 @@ onUnmounted(() => {
                         <span v-if="live" class="badge text-bg-success">Live</span>
                         <span><i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>Reported location</span>
                         <span><i class="bi bi-person-fill text-danger me-1"></i>Resident sharing</span>
-                        <span><i class="bi bi-truck-front-fill me-1" style="color: #0369a1"></i>Rescuer</span>
+                        <span><i class="bi bi-truck-front-fill me-1" style="color: #b45309"></i>En route</span>
+                        <span><i class="bi bi-truck-front-fill me-1" style="color: #15803d"></i>On scene</span>
+                        <span><i class="bi bi-truck-front-fill me-1" style="color: #2b4481"></i>Available</span>
                         <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" @click="fitAll">
                             <i class="bi bi-arrows-fullscreen me-1"></i>Show all
                         </button>
@@ -595,8 +597,27 @@ onUnmounted(() => {
     min-height: 360px;
 }
 
+.live-stat {
+    padding: 0.5rem 0.75rem;
+}
+
 .live-overview-list {
     max-height: 34vh;
     overflow-y: auto;
+}
+
+@media (max-width: 767.98px) {
+    .live-overview-map {
+        height: 58vh;
+    }
+
+    .live-stat {
+        padding: 0.375rem 0.5rem;
+    }
+
+    .live-stat .small {
+        font-size: 0.75rem;
+        line-height: 1.15;
+    }
 }
 </style>

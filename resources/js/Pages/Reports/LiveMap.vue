@@ -22,7 +22,7 @@ const STATUS_LABELS = {
 };
 const PEOPLE = [
     { role: 'resident', label: 'Resident', icon: 'person-fill', color: '#dc2626' },
-    { role: 'rescuer', label: 'Rescuer', icon: 'truck-front-fill', color: '#0369a1' },
+    { role: 'rescuer', label: 'Rescuer', icon: 'truck-front-fill', color: '#1f3570' },
 ];
 
 const page = usePage();
@@ -282,7 +282,7 @@ onUnmounted(() => {
         <Link
             v-if="canAccessAdmin"
             :href="route('reports.index', { type: 'All' })"
-            class="btn btn-outline-secondary btn-sm mb-3"
+            class="btn btn-outline-secondary btn-sm mb-3 align-self-start"
         >
             <i class="bi bi-arrow-left me-1"></i>Back to reports
         </Link>

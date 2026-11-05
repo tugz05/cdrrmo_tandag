@@ -198,9 +198,9 @@ const formatDateTime = (datetime) => {
             </div>
         </div> -->
 
-        <div class="no-print d-flex justify-content-between gap-4 align-items-center mb-10">
-            <div class="d-flex gap-5">
-                <div class="btn-group text-nowrap" role="group" aria-label="Basic example">
+        <div class="no-print toolbar">
+            <div class="toolbar__filters">
+                <div class="btn-group text-nowrap" role="group" aria-label="Filter reports">
                     <button @click="filter_type = 'All'" type="button" class="btn btn-default" :class="{'active' : active_type === 'All'}">
                         <span class="badge text-bg-secondary">{{ stats.type.all }}</span> All</button>
                     <button @click="filter_type = 'Message'" type="button" class="btn btn-default" :class="{'active' : active_type === 'Message'}">
@@ -208,7 +208,7 @@ const formatDateTime = (datetime) => {
                     <button @click="filter_type = 'Call'" type="button" class="btn btn-default" :class="{'active' : active_type === 'Call'}">
                         <span class="badge text-bg-secondary">{{ stats.type.calls }}</span> Calls</button>
                 </div>
-                <div class="btn-group text-nowrap" role="group" aria-label="Basic example">
+                <div class="btn-group text-nowrap" role="group" aria-label="Filter reports">
                     <button @click="filter_status = null" class="btn btn-default" :class="{'active' : active_status == null}" type="button">
                         <span class="badge text-bg-secondary">{{ stats.status.all }}</span> All</button>
                     <button @click="filter_status = 'Pending'" class="btn btn-default" :class="{'active' : active_status == 'Pending'}" type="button">
@@ -225,7 +225,7 @@ const formatDateTime = (datetime) => {
 
         <div class="print-root">
             <div class="table-responsive">
-                <table class="table table-stripe bg-transparent datatable-users">
+                <table class="table table-stripe bg-transparent datatable-users table-stack">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -238,7 +238,7 @@ const formatDateTime = (datetime) => {
                     </thead>
                     <tbody>
                         <tr v-for="(report, i) in reports" :key="i">
-                            <td>{{ i + 1 }}</td>
+                            <td class="table-stack__hide">{{ i + 1 }}</td>
                             <td>
                                 <div class="d-flex gap-4 align-items-center">
                                     <div style="width: 1em;">

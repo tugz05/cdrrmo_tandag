@@ -228,7 +228,7 @@ const mountDataTable = () => {
 
         <div class="print-root">
             <div class="table-responsive">
-                <table class="table table-stripe table-hover table-striped bg-transparent datatable-users">
+                <table class="table table-stripe table-hover table-striped bg-transparent datatable-users table-stack">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -242,7 +242,7 @@ const mountDataTable = () => {
                     </thead>
                     <tbody>
                         <tr v-for="(user, i) in users" :key="user.id">
-                            <td>{{ i + 1 }}</td>
+                            <td class="table-stack__hide">{{ i + 1 }}</td>
                             <td>
                                 <b>{{ user.fullname }}</b>
                                 <div class="opacity-50" style="font-size:small">{{ user.email }}</div>

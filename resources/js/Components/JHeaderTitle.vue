@@ -36,14 +36,14 @@ const isItemNotActive = itemIndex =>
     >
         <hgroup>
             <h6 v-if="subtitle" class="fw-normal text-muted" style="text-transform:capitalize;">{{ subtitle }}</h6>
-            <h2 class="fw-bold m-0 mb-2">
+            <h2 class="j-header-title__heading m-0">
                 <slot>
                     <nav style="--bs-breadcrumb-divider: url(&#34;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%236c757d'/%3E%3C/svg%3E&#34;);" aria-label="breadcrumb">
                         <ol class="breadcrumb m-0">
                             <!-- <li class="breadcrumb-item"><Link :href="route('dashboard.index')">Home</Link></li> -->
                             <li v-for="item, index in props.breadcrumbItems" 
                                 :key="index" 
-                                style="max-width:15em; font-weight:400;"
+                                style="max-width:15em;"
                                 :class="isItemNotActive(index)
                                     ? 'breadcrumb-item text-truncate' 
                                     : 'breadcrumb-item text-truncate active text-reset'" 
@@ -73,8 +73,8 @@ const isItemNotActive = itemIndex =>
 
 <style scoped>
 .j-header-title--default {
-    margin-top: clamp(2.5rem, 6vw, 4.5rem);
-    margin-bottom: clamp(1.75rem, 4vw, 3.25rem);
+    margin-top: clamp(1.25rem, 3vw, 2.25rem);
+    margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
     gap: 1.25rem;
 }
 

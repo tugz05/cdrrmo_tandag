@@ -1,19 +1,19 @@
 /* Shared look for the real-time emergency alerts (message reports and incoming calls). */
 .emergency-alert__content {
     border: 0;
-    border-radius: 14px;
+    border-radius: var(--mdrrmo-radius);
     overflow: hidden;
-    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.25), 0 20px 50px rgba(15, 23, 42, 0.35);
+    box-shadow: 0 0 0 4px rgba(200, 30, 30, 0.3), 0 20px 50px rgba(11, 26, 69, 0.35);
     animation: emergency-alert-ring 1.6s ease-in-out infinite;
 }
 
 .emergency-alert__content--active {
-    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.25), 0 20px 50px rgba(15, 23, 42, 0.35);
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.25), 0 20px 50px rgba(11, 26, 69, 0.35);
     animation: none;
 }
 
 .emergency-alert__content--active .emergency-alert__header {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    background: #15803d;
 }
 
 .emergency-alert__content--active .emergency-alert__pulse::after {
@@ -26,7 +26,7 @@
     align-items: center;
     gap: 0.85rem;
     padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    background: var(--mdrrmo-alarm);
     color: #fff;
 }
 
@@ -53,10 +53,8 @@
 }
 
 .emergency-alert__eyebrow {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.875rem;
+    font-weight: 500;
     opacity: 0.85;
 }
 
@@ -75,7 +73,7 @@
 
 .emergency-alert__facts dt {
     font-weight: 500;
-    color: var(--mdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #56617f);
 }
 
 .emergency-alert__facts dt i {
@@ -84,7 +82,7 @@
 
 .emergency-alert__facts dd {
     margin: 0;
-    color: var(--mdrrmo-ink, #0c4a6e);
+    color: var(--mdrrmo-ink, #0a1c58);
     word-break: break-word;
 }
 
@@ -105,8 +103,8 @@
 }
 
 @keyframes emergency-alert-ring {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.25), 0 20px 50px rgba(15, 23, 42, 0.35); }
-    50% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0.12), 0 20px 50px rgba(15, 23, 42, 0.35); }
+    0%, 100% { box-shadow: 0 0 0 4px rgba(200, 30, 30, 0.3), 0 20px 50px rgba(11, 26, 69, 0.35); }
+    50% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0.12), 0 20px 50px rgba(11, 26, 69, 0.35); }
 }
 
 @media (prefers-reduced-motion: reduce) {

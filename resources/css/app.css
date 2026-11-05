@@ -1,22 +1,22 @@
 /**
- * MDRRMO global palette — light blue system colors.
- * Use var(--mdrrmo-*) or semantic aliases in components and public CSS.
+ * MDRRMO global palette: the E-Response app's navy family (#0a1c58, #2b4481) with gauge yellow.
+ * Alarm red is reserved for emergencies; do not use it for branding or ordinary actions.
  */
 @import './print.css';
 
 :root {
-    /* Scale (sky / light blue) */
-    --mdrrmo-50: #f0f9ff;
-    --mdrrmo-100: #e0f2fe;
-    --mdrrmo-200: #bae6fd;
-    --mdrrmo-300: #7dd3fc;
-    --mdrrmo-400: #38bdf8;
-    --mdrrmo-500: #0ea5e9;
-    --mdrrmo-600: #0284c7;
-    --mdrrmo-700: #0369a1;
-    --mdrrmo-800: #075985;
-    --mdrrmo-900: #0c4a6e;
-    --mdrrmo-950: #082f49;
+    /* Scale (E-Response navy) */
+    --mdrrmo-50: #f1f4fb;
+    --mdrrmo-100: #dfe6f5;
+    --mdrrmo-200: #bdcae8;
+    --mdrrmo-300: #8fa3d6;
+    --mdrrmo-400: #5c78bd;
+    --mdrrmo-500: #3a5aa6;
+    --mdrrmo-600: #2b4481;
+    --mdrrmo-700: #1f3570;
+    --mdrrmo-800: #142762;
+    --mdrrmo-900: #0a1c58;
+    --mdrrmo-950: #06123b;
 
     /* Semantic */
     --mdrrmo-primary: var(--mdrrmo-600);
@@ -24,27 +24,47 @@
     --mdrrmo-primary-muted: var(--mdrrmo-100);
     --mdrrmo-accent: var(--mdrrmo-500);
     --mdrrmo-accent-soft: var(--mdrrmo-200);
-    --mdrrmo-surface: var(--mdrrmo-50);
+    --mdrrmo-surface: #f3f5fa;
     --mdrrmo-surface-raised: #ffffff;
     --mdrrmo-border: color-mix(in srgb, var(--mdrrmo-600) 12%, transparent);
-    --mdrrmo-ink: var(--mdrrmo-900);
-    --mdrrmo-ink-muted: #64748b;
-    --mdrrmo-sidebar: linear-gradient(180deg, var(--mdrrmo-800) 0%, var(--mdrrmo-900) 100%);
+    --mdrrmo-ink: #0b1a45;
+    --mdrrmo-ink-muted: #56617f;
+    --mdrrmo-sidebar: var(--mdrrmo-900);
     --mdrrmo-sidebar-border: var(--mdrrmo-600);
     --mdrrmo-on-primary: #ffffff;
+    --mdrrmo-gauge: #f4b400;
+    --mdrrmo-gauge-deep: #b45309;
+    --mdrrmo-alarm: #c81e1e;
+    --mdrrmo-font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mdrrmo-font-display: 'Barlow Condensed', 'Arial Narrow', 'Barlow', system-ui, sans-serif;
+    --mdrrmo-radius-sm: 4px;
+    --mdrrmo-radius: 6px;
+    --mdrrmo-line: #d6dcea;
 }
 
-/* Bootstrap 5.3+ theme tokens (primary = light blue) */
+/* Bootstrap 5.3+ theme tokens */
 :root,
 [data-bs-theme="light"] {
-    --bs-primary: #0284c7;
-    --bs-primary-rgb: 2, 132, 199;
-    --bs-link-color: #0369a1;
-    --bs-link-hover-color: #075985;
-    --bs-body-bg: var(--mdrrmo-50);
-    --bs-body-color: var(--mdrrmo-900);
-    --bs-border-color: #cbd5e1;
-    --bs-secondary-color: #64748b;
+    --bs-primary: #2b4481;
+    --bs-primary-rgb: 43, 68, 129;
+    --bs-link-color: #1f3570;
+    --bs-link-color-rgb: 31, 53, 112;
+    --bs-link-hover-color-rgb: 20, 39, 98;
+    --bs-link-hover-color: #142762;
+    --bs-body-bg: var(--mdrrmo-surface);
+    --bs-body-color: var(--mdrrmo-ink);
+    --bs-body-font-family: var(--mdrrmo-font-body);
+    --bs-font-sans-serif: var(--mdrrmo-font-body);
+    --bs-danger: #c81e1e;
+    --bs-danger-rgb: 200, 30, 30;
+    --bs-warning: #f4b400;
+    --bs-warning-rgb: 244, 180, 0;
+    --bs-info: #3a5aa6;
+    --bs-info-rgb: 58, 90, 166;
+    --bs-success: #15803d;
+    --bs-success-rgb: 21, 128, 61;
+    --bs-border-color: var(--mdrrmo-line);
+    --bs-secondary-color: #56617f;
 }
 
 html {

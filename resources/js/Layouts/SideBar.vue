@@ -3,10 +3,46 @@ import JDropdownDivider from '@/Components/JDropdownDivider.vue';
 import JDropdownItem from '@/Components/JDropdownItem.vue';
 import JDropdownMenu from '@/Components/JDropdownMenu.vue';
 import JLogo from '@/Components/JLogo.vue';
-import { Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const page = usePage();
+
+const menuOpen = ref(false);
+const menuButton = ref(null);
+const closeButton = ref(null);
+let removeNavigationListener = null;
+
+function closeMenu() {
+    menuOpen.value = false;
+}
+
+function onKeydown(event) {
+    if (event.key === 'Escape' && menuOpen.value) {
+        closeMenu();
+    }
+}
+
+watch(menuOpen, async (open, wasOpen) => {
+    document.body.classList.toggle('nav-open', open);
+    await nextTick();
+    if (open) {
+        closeButton.value?.focus();
+    } else if (wasOpen) {
+        menuButton.value?.focus();
+    }
+});
+
+onMounted(() => {
+    window.addEventListener('keydown', onKeydown);
+    removeNavigationListener = router.on('start', closeMenu);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', onKeydown);
+    removeNavigationListener?.();
+    document.body.classList.remove('nav-open');
+});
 
 const baseNavLinks = [
     {
@@ -105,22 +141,47 @@ function isNavItemActive(nav) {
 }
 </script>
 <template>
-    <div class="navigation">
+    <div class="mobile-bar no-print">
+        <button
+            ref="menuButton"
+            type="button"
+            class="mobile-bar__menu"
+            aria-label="Open menu"
+            aria-controls="app-navigation"
+            :aria-expanded="menuOpen"
+            @click="menuOpen = true"
+        >
+            <i class="bi bi-list" aria-hidden="true"></i>
+        </button>
+        <JLogo size="32px" />
+        <span class="mobile-bar__name">MDRRMO Tago</span>
+    </div>
 
-        <!-- Brand -->
-        <div class="nav-brand d-flex align-items-center gap-3 px-4 py-4">
-            <JLogo size="38px" />
+    <button
+        v-if="menuOpen"
+        type="button"
+        class="nav-backdrop"
+        aria-label="Close menu"
+        tabindex="-1"
+        @click="closeMenu"
+    ></button>
+
+    <nav id="app-navigation" class="navigation no-print" :class="{ 'is-open': menuOpen }" aria-label="Main">
+        <div class="nav-brand">
+            <JLogo size="40px" />
             <div>
-                <div class="nav-brand__name">MDRRMO</div>
+                <div class="nav-brand__name">MDRRMO Tago</div>
                 <div class="nav-brand__tagline">Operations</div>
             </div>
+            <button ref="closeButton" type="button" class="nav-close" aria-label="Close menu" @click="closeMenu">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
         </div>
 
-        <!-- User profile -->
-        <div class="nav-user px-3 py-3">
+        <div class="nav-user">
             <div class="dropdown">
                 <button class="btn p-0 border-0 w-100 text-start" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div class="nav-user__trigger d-flex align-items-center gap-2 rounded-3 px-2 py-2">
+                    <div class="nav-user__trigger d-flex align-items-center gap-2 rounded-1 px-2 py-2">
                         <div class="avatar-sidebar">{{ $page.props.auth.user.name.charAt(0).toUpperCase() }}</div>
                         <div class="flex-fill overflow-hidden">
                             <div class="nav-user__name text-truncate">{{ $page.props.auth.user.name }}</div>
@@ -132,7 +193,7 @@ function isNavItemActive(nav) {
                 <JDropdownMenu class="py-2">
                     <div class="px-3 py-2 border-bottom mb-2">
                         <div class="fw-semibold small text-dark">{{ $page.props.auth.user.name }}</div>
-                        <div class="text-muted" style="font-size: 0.72rem">{{ $page.props.auth.user.email }}</div>
+                        <div class="text-muted small">{{ $page.props.auth.user.email }}</div>
                     </div>
                     <Link class="dropdown-item text-dark fw-normal" :href="route('profile.edit')">
                         <i class="bi bi-person me-3"></i> Profile
@@ -145,23 +206,18 @@ function isNavItemActive(nav) {
             </div>
         </div>
 
-        <!-- Separator -->
-        <div class="nav-sep mx-3"></div>
-
-        <!-- Section label -->
-        <div class="nav-label px-4 pt-3 pb-1">Menu</div>
-
-        <!-- Nav links -->
-        <ul v-if="$page.props.auth.canAccessAdmin">
+        <ul v-if="$page.props.auth.canAccessAdmin" class="nav-links">
             <li v-for="nav in navlinks" :key="nav.route">
-                <div :class="`list ${isNavItemActive(nav) ? 'active' : ''}`">
-                    <Link :href="route(nav.route, nav.param)">
-                        <span class="icon"><i :class="`bi bi-${nav.icon}`"></i></span>
-                        <span class="title">{{ nav.title }}</span>
-                    </Link>
-                </div>
+                <Link
+                    :href="route(nav.route, nav.param)"
+                    class="nav-links__link"
+                    :class="{ active: isNavItemActive(nav) }"
+                    :aria-current="isNavItemActive(nav) ? 'page' : undefined"
+                >
+                    <span class="icon"><i :class="`bi bi-${nav.icon}`" aria-hidden="true"></i></span>
+                    <span class="title">{{ nav.title }}</span>
+                </Link>
             </li>
         </ul>
-
-    </div>
+    </nav>
 </template>

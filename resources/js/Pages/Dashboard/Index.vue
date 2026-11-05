@@ -51,9 +51,9 @@ const kpis = computed(() => {
             hint: `Year ${props.year}`,
             tone: 'primary',
             icon: 'clipboard2-pulse',
-            iconBg: 'rgba(2, 132, 199, 0.1)',
-            iconColor: '#0284c7',
-            accentColor: '#0284c7',
+            iconBg: 'rgba(43, 68, 129, 0.1)',
+            iconColor: '#2b4481',
+            accentColor: '#2b4481',
         },
         {
             title: 'Pending',
@@ -62,8 +62,8 @@ const kpis = computed(() => {
             tone: 'warning',
             icon: 'hourglass-split',
             iconBg: 'rgba(217, 119, 6, 0.1)',
-            iconColor: '#d97706',
-            accentColor: '#f59e0b',
+            iconColor: '#b45309',
+            accentColor: '#f4b400',
         },
         {
             title: 'In progress',
@@ -72,8 +72,8 @@ const kpis = computed(() => {
             tone: 'info',
             icon: 'arrow-clockwise',
             iconBg: 'rgba(8, 145, 178, 0.1)',
-            iconColor: '#0891b2',
-            accentColor: '#06b6d4',
+            iconColor: '#3a5aa6',
+            accentColor: '#3a5aa6',
         },
         {
             title: 'Rescued',
@@ -82,8 +82,8 @@ const kpis = computed(() => {
             tone: 'success',
             icon: 'check-circle-fill',
             iconBg: 'rgba(22, 163, 74, 0.1)',
-            iconColor: '#16a34a',
-            accentColor: '#22c55e',
+            iconColor: '#15803d',
+            accentColor: '#15803d',
         },
     ];
 });
@@ -105,7 +105,7 @@ function changeYear() {
 
 const apexCommon = {
     chart: {
-        fontFamily: 'system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+        fontFamily: "Barlow, system-ui, 'Segoe UI', Roboto, sans-serif",
         toolbar: { show: false },
         zoom: { enabled: false },
     },
@@ -114,7 +114,7 @@ const apexCommon = {
     grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
     legend: { fontSize: '13px' },
     theme: { mode: 'light' },
-    colors: ['#0284c7', '#0ea5e9', '#0369a1', '#38bdf8'],
+    colors: ['#2b4481', '#f4b400', '#1f3570', '#5c78bd'],
 };
 
 function destroyCharts() {
@@ -149,9 +149,9 @@ function mountCharts() {
             title: {
                 text: 'Volume by channel',
                 align: 'left',
-                style: { fontSize: '15px', fontWeight: 600, color: '#0f172a' },
+                style: { fontSize: '15px', fontWeight: 600, color: '#0b1a45' },
             },
-            colors: ['#0284c7', '#0ea5e9'],
+            colors: ['#2b4481', '#f4b400'],
         });
         ch.render();
         chartInstances.push(ch);
@@ -170,7 +170,7 @@ function mountCharts() {
             title: {
                 text: 'Status mix',
                 align: 'left',
-                style: { fontSize: '15px', fontWeight: 600, color: '#0f172a' },
+                style: { fontSize: '15px', fontWeight: 600, color: '#0b1a45' },
             },
             plotOptions: {
                 pie: {
@@ -180,7 +180,7 @@ function mountCharts() {
                             show: true,
                             total: {
                                 show: true,
-                                label: 'Active queue',
+                                label: 'Total',
                                 formatter: () =>
                                     String((pending + prog + rescued).toLocaleString()),
                             },
@@ -188,7 +188,7 @@ function mountCharts() {
                     },
                 },
             },
-            colors: ['#0369a1', '#f59e0b', '#16a34a'],
+            colors: ['#2b4481', '#f4b400', '#15803d'],
         });
         d1.render();
         chartInstances.push(d1);
@@ -203,7 +203,7 @@ function mountCharts() {
             title: {
                 text: 'Channel share',
                 align: 'left',
-                style: { fontSize: '15px', fontWeight: 600, color: '#0f172a' },
+                style: { fontSize: '15px', fontWeight: 600, color: '#0b1a45' },
             },
             plotOptions: {
                 pie: {
@@ -221,7 +221,7 @@ function mountCharts() {
                     },
                 },
             },
-            colors: ['#0284c7', '#7dd3fc'],
+            colors: ['#2b4481', '#f4b400'],
         });
         d2.render();
         chartInstances.push(d2);
@@ -249,9 +249,9 @@ function mountCharts() {
             title: {
                 text: `Monthly intake (${props.year})`,
                 align: 'left',
-                style: { fontSize: '15px', fontWeight: 600, color: '#0f172a' },
+                style: { fontSize: '15px', fontWeight: 600, color: '#0b1a45' },
             },
-            colors: ['#0284c7'],
+            colors: ['#2b4481'],
         });
         line.render();
         chartInstances.push(line);
@@ -332,7 +332,7 @@ async function mountHeatmap() {
             max: maxW,
             minOpacity: 0.4,
             gradient: {
-                0.2: '#38bdf8',
+                0.2: '#5c78bd',
                 0.45: '#22d3ee',
                 0.65: '#fbbf24',
                 0.85: '#fb923c',
@@ -401,7 +401,7 @@ watch(
     <div class="no-print d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <PagePrintBar label="Print Report Summary" />
         <div class="d-flex align-items-center gap-2">
-            <label class="form-label m-0 small text-muted" for="dash-year">Reporting year</label>
+            <label class="form-label m-0 small text-muted text-nowrap" for="dash-year">Reporting year</label>
             <select
                 id="dash-year"
                 v-model.number="localYear"
@@ -425,7 +425,7 @@ watch(
                     }"
                 >
                     <div class="d-flex align-items-start justify-content-between mb-2">
-                        <div class="small text-uppercase text-muted fw-semibold letter-spacing" style="font-size: 0.68rem !important; padding-top: 2px">
+                        <div class="small text-muted fw-semibold">
                             {{ k.title }}
                         </div>
                         <div

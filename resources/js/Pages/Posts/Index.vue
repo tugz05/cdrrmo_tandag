@@ -150,7 +150,6 @@ const emptyMessage = computed(() => {
                 <div class="posts-index__panel-head">
                     <div class="row g-3 g-lg-4 align-items-center">
                         <div class="col-xl-8">
-                            <p class="posts-index__eyebrow text-uppercase mb-1">Content library</p>
                             <h2 id="posts-library-heading" class="posts-index__title h4 fw-bold text-body mb-1">
                                 News, safety tips &amp; preparedness
                             </h2>
@@ -344,12 +343,12 @@ const emptyMessage = computed(() => {
 }
 
 .posts-index__panel {
-    border-radius: 0.875rem;
+    border-radius: var(--mdrrmo-radius);
     background: var(--mdrrmo-surface-raised, #fff);
     box-shadow:
         0 1px 0 rgba(255, 255, 255, 0.7) inset,
-        0 4px 28px rgba(8, 47, 73, 0.08),
-        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 8%, transparent);
+        0 4px 28px rgba(6, 18, 59, 0.08),
+        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #2b4481) 8%, transparent);
 }
 
 .posts-index__panel-head {
@@ -365,12 +364,10 @@ const emptyMessage = computed(() => {
 .posts-index__eyebrow {
     font-size: 0.68rem;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--mdrrmo-primary, #0284c7);
+    color: var(--mdrrmo-primary, #2b4481);
 }
 
 .posts-index__title {
-    letter-spacing: -0.02em;
     line-height: 1.25;
 }
 
@@ -382,17 +379,11 @@ const emptyMessage = computed(() => {
 
 .posts-index__panel-divider {
     height: 1px;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent) 12%,
-        color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent) 88%,
-        transparent
-    );
+    background: var(--mdrrmo-600, #2b4481);
 }
 
 .posts-index__panel-nav {
-    background: color-mix(in srgb, var(--mdrrmo-50, #f0f9ff) 55%, #fff);
+    background: color-mix(in srgb, var(--mdrrmo-50, #f1f4fb) 55%, #fff);
 }
 
 .posts-index__tabs {
@@ -406,23 +397,23 @@ const emptyMessage = computed(() => {
 .posts-index__tab {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--mdrrmo-ink-muted, #64748b);
+    color: var(--mdrrmo-ink-muted, #56617f);
     background: #fff;
-    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #2b4481) 14%, transparent);
     padding-inline: 1rem;
     white-space: nowrap;
 }
 
 .posts-index__tab:hover {
-    color: var(--mdrrmo-ink, #0c4a6e);
-    background: var(--mdrrmo-50, #f0f9ff);
+    color: var(--mdrrmo-ink, #0a1c58);
+    background: var(--mdrrmo-50, #f1f4fb);
 }
 
 .posts-index__tab--active {
     color: #fff !important;
-    background: var(--mdrrmo-primary, #0284c7) !important;
-    border-color: var(--mdrrmo-primary, #0284c7) !important;
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--mdrrmo-primary, #0284c7) 38%, transparent);
+    background: var(--mdrrmo-primary, #2b4481) !important;
+    border-color: var(--mdrrmo-primary, #2b4481) !important;
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--mdrrmo-primary, #2b4481) 38%, transparent);
 }
 
 .posts-index__context {
@@ -460,10 +451,10 @@ const emptyMessage = computed(() => {
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem 2.5rem;
-    border-radius: 0.875rem;
-    background: linear-gradient(165deg, #fff 0%, color-mix(in srgb, var(--mdrrmo-100, #e0f2fe) 45%, #fff) 100%);
-    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent);
-    box-shadow: 0 4px 24px rgba(8, 47, 73, 0.06);
+    border-radius: var(--mdrrmo-radius);
+    background: #fff;
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #2b4481) 10%, transparent);
+    box-shadow: 0 4px 24px rgba(6, 18, 59, 0.06);
 }
 
 .posts-index__empty-card {
@@ -479,16 +470,15 @@ const emptyMessage = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 1rem;
-    background: linear-gradient(145deg, var(--mdrrmo-100, #e0f2fe), #fff);
-    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #0284c7) 12%, transparent);
-    color: var(--mdrrmo-primary, #0284c7);
+    border-radius: var(--mdrrmo-radius);
+    background: var(--mdrrmo-100, #dfe6f5);
+    border: 1px solid color-mix(in srgb, var(--mdrrmo-600, #2b4481) 12%, transparent);
+    color: var(--mdrrmo-primary, #2b4481);
     font-size: 1.65rem;
-    box-shadow: 0 2px 10px rgba(8, 47, 73, 0.06);
+    box-shadow: 0 2px 10px rgba(6, 18, 59, 0.06);
 }
 
 .posts-index__empty-title {
-    letter-spacing: -0.02em;
 }
 
 .posts-index__empty-text {
@@ -497,11 +487,11 @@ const emptyMessage = computed(() => {
 }
 
 .posts-index__card {
-    border-radius: 0.75rem;
+    border-radius: var(--mdrrmo-radius);
     background: var(--mdrrmo-surface-raised, #fff);
     box-shadow:
-        0 2px 8px rgba(8, 47, 73, 0.06),
-        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 6%, transparent);
+        0 2px 8px rgba(6, 18, 59, 0.06),
+        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #2b4481) 6%, transparent);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
     display: flex;
     flex-direction: column;
@@ -510,8 +500,8 @@ const emptyMessage = computed(() => {
 
 .posts-index__card:hover {
     box-shadow:
-        0 12px 32px rgba(8, 47, 73, 0.1),
-        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #0284c7) 10%, transparent) !important;
+        0 12px 32px rgba(6, 18, 59, 0.1),
+        0 0 0 1px color-mix(in srgb, var(--mdrrmo-600, #2b4481) 10%, transparent) !important;
     transform: translateY(-3px);
 }
 
@@ -522,7 +512,7 @@ const emptyMessage = computed(() => {
     aspect-ratio: 4 / 3;
     overflow: hidden;
     isolation: isolate;
-    background: linear-gradient(135deg, var(--mdrrmo-100, #e0f2fe) 0%, var(--mdrrmo-200, #bae6fd) 100%);
+    background: var(--mdrrmo-100, #dfe6f5);
 }
 .posts-index__media-frame {
     position: absolute;
@@ -548,7 +538,7 @@ const emptyMessage = computed(() => {
     object-fit: contain;
     object-position: center center;
     padding: 0.45rem;
-    background: linear-gradient(180deg, var(--mdrrmo-50, #f0f9ff), var(--mdrrmo-100, #e0f2fe));
+    background: var(--mdrrmo-50, #f1f4fb);
 }
 
 .posts-index__placeholder {
@@ -557,12 +547,12 @@ const emptyMessage = computed(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(145deg, var(--mdrrmo-100, #e0f2fe), var(--mdrrmo-50, #f0f9ff));
+    background: var(--mdrrmo-100, #dfe6f5);
 }
 
 .posts-index__placeholder-icon {
     font-size: 2.5rem;
-    color: var(--mdrrmo-300, #7dd3fc);
+    color: var(--mdrrmo-300, #8fa3d6);
     opacity: 0.65;
 }
 
@@ -571,7 +561,7 @@ const emptyMessage = computed(() => {
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: linear-gradient(to top, rgba(8, 47, 73, 0.38) 0%, transparent 52%);
+    background: linear-gradient(to top, rgba(6, 18, 59, 0.38) 0%, transparent 52%);
 }
 
 .posts-index__media-top {
@@ -589,20 +579,17 @@ const emptyMessage = computed(() => {
     z-index: 2;
     font-weight: 600;
     font-size: 0.7rem;
-    letter-spacing: 0.02em;
 }
 
 .posts-index__type {
     font-size: 0.65rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
     border: 1px solid transparent;
 }
 
 .posts-index__type--news {
     background: rgba(255, 255, 255, 0.95);
-    color: var(--mdrrmo-800, #075985);
+    color: var(--mdrrmo-800, #142762);
     border-color: rgba(255, 255, 255, 0.5);
 }
 
@@ -621,7 +608,7 @@ const emptyMessage = computed(() => {
 .posts-index__kebab {
     --bs-btn-padding-x: 0.35rem;
     --bs-btn-padding-y: 0.25rem;
-    box-shadow: 0 1px 4px rgba(8, 47, 73, 0.08);
+    box-shadow: 0 1px 4px rgba(6, 18, 59, 0.08);
 }
 
 .posts-index__card .card-body {
@@ -637,6 +624,6 @@ const emptyMessage = computed(() => {
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.45;
-    color: var(--mdrrmo-ink, #0c4a6e);
+    color: var(--mdrrmo-ink, #0a1c58);
 }
 </style>

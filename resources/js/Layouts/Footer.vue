@@ -1,42 +1,31 @@
+<script setup>
+import { Link } from '@inertiajs/vue3';
+</script>
+
 <template>
-    <footer class="app-footer border-top bg-body">
-        <div
-            class="footer-inner d-flex flex-wrap justify-content-between align-items-center gap-3 text-muted py-4 px-0"
-        >
-            <nav class="d-flex flex-wrap gap-3 align-items-center" aria-label="Footer links">
-                <a href="#" class="app-footer__link text-decoration-none text-uppercase">About</a>
-                <a href="#" class="app-footer__link text-decoration-none text-uppercase">Privacy</a>
-                <a href="#" class="app-footer__link text-decoration-none text-uppercase">Terms</a>
-            </nav>
-            <div class="d-flex align-items-center gap-2">
-                <img src="../Partials/nemsu-logo.png" alt="NEMSU" height="28" width="auto" class="opacity-90" />
-                <div>
-                    <p class="m-0 text-uppercase letter-spacing-tight small text-secondary">Credit</p>
-                    <p class="m-0 fw-semibold small text-body-secondary">NEMSU</p>
-                </div>
-            </div>
+    <footer class="app-footer">
+        <Link :href="route('privacy-policy')" class="app-footer__link">Privacy policy</Link>
+        <div class="d-flex align-items-center gap-2">
+            <img src="../Partials/nemsu-logo.png" alt="" height="24" width="auto" />
+            <span>Developed with NEMSU</span>
         </div>
     </footer>
 </template>
 
 <style scoped>
 .app-footer {
-    --app-footer-link: var(--mdrrmo-ink-muted, #64748b);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--mdrrmo-line);
+    font-size: 0.875rem;
+    color: var(--mdrrmo-ink-muted);
 }
 
 .app-footer__link {
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: var(--app-footer-link);
-}
-
-.app-footer__link:hover {
-    color: var(--mdrrmo-primary, #0284c7);
-}
-
-.letter-spacing-tight {
-    letter-spacing: 0.04em;
-    font-size: 0.65rem;
+    color: inherit;
 }
 </style>

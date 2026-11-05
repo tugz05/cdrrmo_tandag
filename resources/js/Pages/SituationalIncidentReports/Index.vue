@@ -70,7 +70,7 @@ function printUrl(id) {
     <div class="print-root card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 align-middle">
+                <table class="table table-hover table-striped mb-0 align-middle table-stack">
                     <thead class="table-light">
                         <tr>
                             <th>ID</th>
@@ -81,6 +81,11 @@ function printUrl(id) {
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-if="filteredRows.length === 0">
+                            <td colspan="5" class="text-muted py-4">
+                                {{ filterText ? 'No reports match this filter. Clear the filter to see all reports.' : 'No situational incident reports yet.' }}
+                            </td>
+                        </tr>
                         <tr v-for="r in filteredRows" :key="r.id">
                             <td>{{ r.id }}</td>
                             <td>{{ r.incident_type || '—' }}</td>
@@ -92,7 +97,7 @@ function printUrl(id) {
                                 <span v-if="r.date_time_received">{{ r.date_time_received }}</span>
                                 <span v-else class="text-muted">—</span>
                             </td>
-                            <td class="text-end text-nowrap no-print">
+                            <td class="text-nowrap no-print">
                                 <Link
                                     :href="route('situational-incident-reports.show', { situational_incident_report: r.id })"
                                     class="btn btn-sm btn-outline-primary me-1"
