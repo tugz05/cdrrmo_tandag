@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Report;
+use App\Models\User;
 use App\Services\StaffPresenceService;
 use App\Support\TwilioClientIdentity;
 use Illuminate\Http\JsonResponse;
@@ -92,8 +94,9 @@ class TwilioVoiceController extends Controller
     /**
      * Mobile app (Flutter): JWT identity is the user id (sanitized); outbound {@code To} is {@code dial_to} —
      * a single voice-ready operator Client identity when only one is reachable, otherwise the ring-group token expanded
-     * on {@code /twilio/voice} to every voice-ready operator {@code <Client>}. Citizens get {@code incoming_allow} false;
-     * Laratrust staff / admin / super_admin get true so they can receive incoming Client legs (FCM + SDK).
+     * on {@code /twilio/voice} to every voice-ready operator {@code <Client>}. Every mobile user can receive calls:
+     * staff take emergency calls, residents take call-backs. The Push Credential for {@code ?platform=} lets Twilio
+     * ring the phone; older apps send no platform and get Android.
      */
     public function tokenForMobile(Request $request): JsonResponse
     {
@@ -121,11 +124,14 @@ class TwilioVoiceController extends Controller
         $legacyRaw = trim((string) config('services.twilio.admin_identity'));
         $legacyAdmin = $legacyRaw !== '' ? TwilioClientIdentity::sanitize($legacyRaw) : null;
         $note = $this->staffPresence->twilioDialContractNote();
-        $incomingAllow = $user->isVoiceDispatchOperator();
+        // Who may call a resident is decided in handleVoice, not by this grant.
+        $incomingAllow = $user->canAccessMobileApp();
+        $platform = strtolower(trim((string) $request->query('platform', ''))) === 'ios' ? 'ios' : 'android';
+        $pushCredentialSid = trim((string) config("services.twilio.push_credential_sid_{$platform}"));
 
         $payload = [
             'identity' => $identity,
-            'token' => $this->makeVoiceAccessToken($identity, $incomingAllow),
+            'token' => $this->makeVoiceAccessToken($identity, $incomingAllow, $pushCredentialSid),
             /** Same opaque value as GET /api/v1/call/availability `twilio_dial_identity` when both are read back-to-back. */
             'dial_to' => $dialTo,
             'twilio_dial_identity' => $dialTo,
@@ -133,8 +139,10 @@ class TwilioVoiceController extends Controller
             'voice_ready_operator_twilio_identities' => $this->staffPresence->voiceReadyOperatorIdentities(false),
             'legacy_admin_twilio_client_identity' => $legacyAdmin ?? '',
             'twilio_note' => $note,
-            /** When true, VoiceGrant allows incoming Client calls (dispatch staff / admins). Citizens should be false. */
+            /** True for every mobile user: staff receive emergency calls, residents receive staff call-backs. */
             'incoming_allow' => $incomingAllow,
+            /** False when this platform has no Push Credential configured: the phone can't ring for incoming calls. */
+            'push_enabled' => $pushCredentialSid !== '',
         ];
 
         $inner = array_merge($payload, [
@@ -195,9 +203,10 @@ class TwilioVoiceController extends Controller
     }
 
     /**
-     * @param  bool  $incomingAllow  false for citizens (outbound emergency calls only); true for dispatch staff receiving {@code <Client>} legs.
+     * @param  bool  $incomingAllow  whether this identity may receive {@code <Client>} legs.
+     * @param  string  $pushCredentialSid  mobile only; empty for the browser, which rings over its websocket.
      */
-    protected function makeVoiceAccessToken(string $identity, bool $incomingAllow = true): string
+    protected function makeVoiceAccessToken(string $identity, bool $incomingAllow = true, string $pushCredentialSid = ''): string
     {
         $region = config('services.twilio.voice_home_region');
         $region = is_string($region) && $region !== '' ? $region : null;
@@ -214,6 +223,9 @@ class TwilioVoiceController extends Controller
         $voiceGrant = new VoiceGrant;
         $voiceGrant->setOutgoingApplicationSid(config('services.twilio.twiml_app_sid'));
         $voiceGrant->setIncomingAllow($incomingAllow);
+        if ($pushCredentialSid !== '') {
+            $voiceGrant->setPushCredentialSid($pushCredentialSid);
+        }
         $token->addGrant($voiceGrant);
 
         return $token->toJWT();
@@ -324,6 +336,11 @@ class TwilioVoiceController extends Controller
     {
         if ($sigError = $this->validateTwilioWebhookSignature($request, '/twilio/voice')) {
             return $sigError;
+        }
+
+        // Before presence and busy checks: a call-back from staff must not depend on dispatch being free.
+        if (str_starts_with(strtolower(trim((string) $request->input('To', ''))), 'resident:')) {
+            return $this->handleStaffToResidentCall($request);
         }
 
         $presenceRequired = (bool) config('call.require_staff_presence_for_voice_twiml', true);
@@ -463,6 +480,86 @@ class TwilioVoiceController extends Controller
      * Dial status callback from Twilio.
      * Configured via {@code <Dial action="...">} in handleVoice().
      */
+    /**
+     * Staff call a resident back about one of their reports: {@code To=resident:{userId}} with a {@code report_id}.
+     * Only dispatch staff may place it, and only to the person who filed that report.
+     */
+    protected function handleStaffToResidentCall(Request $request): Response
+    {
+        $to = trim((string) $request->input('To', ''));
+        $from = trim((string) $request->input('From', ''));
+        $reportIdRaw = trim((string) $request->input('report_id', ''));
+
+        try {
+            $residentIdRaw = trim(substr($to, strlen('resident:')));
+            $callerIdRaw = str_starts_with(strtolower($from), 'client:') ? trim(substr($from, strlen('client:'))) : '';
+
+            $reason = match (true) {
+                ! $this->isPositiveId($residentIdRaw) => 'invalid_resident_id',
+                ! $this->isPositiveId($reportIdRaw) => 'invalid_report_id',
+                ! $this->isPositiveId($callerIdRaw) => 'invalid_caller',
+                default => null,
+            };
+
+            $caller = $reason === null ? User::query()->find((int) $callerIdRaw) : null;
+            $resident = $reason === null ? User::query()->find((int) $residentIdRaw) : null;
+
+            $reason ??= match (true) {
+                ! $caller?->isVoiceDispatchOperator() => 'caller_not_dispatch_staff',
+                $resident === null => 'resident_not_found',
+                ! Report::query()->whereKey((int) $reportIdRaw)->where('user_id', $resident->id)->exists() => 'report_not_owned_by_resident',
+                default => null,
+            };
+        } catch (Throwable $e) {
+            Log::error('Twilio staff-to-resident call failed', [
+                'CallSid' => $request->input('CallSid'),
+                'exception' => $e::class,
+            ]);
+            $reason = 'error';
+        }
+
+        if ($reason !== null) {
+            Log::warning('Twilio staff-to-resident call refused', [
+                'CallSid' => $request->input('CallSid'),
+                'From' => $from,
+                'To' => $to,
+                'report_id' => $reportIdRaw,
+                'reason' => $reason,
+            ]);
+
+            return $this->twimlResponse(function (VoiceResponse $twiml): void {
+                $twiml->say('This call is not allowed.', ['voice' => 'alice']);
+                $twiml->hangup();
+            });
+        }
+
+        $residentIdentity = TwilioClientIdentity::sanitize((string) $resident->id);
+        $reportId = (string) (int) $reportIdRaw;
+
+        Log::info('Twilio staff-to-resident call', [
+            'CallSid' => $request->input('CallSid'),
+            'From' => $from,
+            'To' => $to,
+            'report_id' => $reportId,
+        ]);
+
+        return $this->twimlResponse(function (VoiceResponse $twiml) use ($residentIdentity, $reportId): void {
+            // No action URL: dial-status would retry the dispatch operators, not the resident.
+            $dial = $twiml->dial('', [
+                'timeout' => 30,
+                'answerOnBridge' => true,
+            ]);
+            $client = $dial->client($residentIdentity);
+            $client->parameter(['name' => 'report_id', 'value' => $reportId]);
+            $client->parameter(['name' => 'call_type', 'value' => 'staff_to_resident']);
+        });
+    }
+
+    private function isPositiveId(string $value): bool
+    {
+        return $value !== '' && ctype_digit($value) && strlen($value) <= 18 && (int) $value > 0;
+    }
+
     public function dialStatus(Request $request): Response
     {
         if ($sigError = $this->validateTwilioWebhookSignature($request, '/twilio/voice/dial-status')) {

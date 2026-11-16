@@ -43,8 +43,8 @@ return [
     |   Voice URL = {TWILIO_WEBHOOK_PUBLIC_ORIGIN or APP_URL}/twilio/voice  (GET|POST; same host you set below)
     | Status callback URLs optional: .../twilio/voice/dial-status and .../twilio/voice/client-status
     |
-    | Android staff incoming (FCM): create a Push Credential in Twilio and attach to access tokens if you
-    | add push grants later; this Laravel app issues Voice JWT + Client identity for SDK register().
+    | Mobile incoming calls arrive only by push (FCM on Android, APNs VoIP on iOS). GET /api/v1/voice/token
+    | puts the matching Push Credential SID (CR...) in the Voice grant; without it, phones never ring.
     */
     'twilio' => [
         'sid' => env('TWILIO_ACCOUNT_SID'),
@@ -69,6 +69,9 @@ return [
          * (e.g. behind ngrok / reverse proxy). No trailing slash.
          */
         'webhook_public_origin' => env('TWILIO_WEBHOOK_PUBLIC_ORIGIN', ''),
+        /* Twilio Console → Voice → Credentials → Push credentials (CR...). Mobile tokens only. */
+        'push_credential_sid_android' => env('TWILIO_PUSH_CREDENTIAL_SID_ANDROID'),
+        'push_credential_sid_ios' => env('TWILIO_PUSH_CREDENTIAL_SID_IOS'),
     ],
 
     /*

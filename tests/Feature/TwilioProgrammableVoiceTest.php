@@ -56,7 +56,7 @@ class TwilioProgrammableVoiceTest extends TestCase
         ]));
     }
 
-    public function test_mobile_voice_token_citizen_has_outgoing_only_grant(): void
+    public function test_mobile_voice_token_citizen_can_receive_call_backs(): void
     {
         $user = User::factory()->create();
         $user->addRole('user');
@@ -65,13 +65,13 @@ class TwilioProgrammableVoiceTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('incoming_allow', false);
+            ->assertJsonPath('incoming_allow', true);
 
         $this->assertIsString($response->json('dial_to'));
         $jwt = $response->json('token');
         $this->assertIsString($jwt);
         $payload = $this->decodeJwtPayload($jwt);
-        $this->assertFalse($this->voiceGrantIncomingAllowed($payload));
+        $this->assertTrue($this->voiceGrantIncomingAllowed($payload));
         $this->assertSame(
             config('services.twilio.twiml_app_sid'),
             $payload['grants']['voice']['outgoing']['application_sid'] ?? null
