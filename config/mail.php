@@ -31,7 +31,7 @@ return [
     |
     | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
     |            "postmark", "resend", "log", "array",
-    |            "failover", "roundrobin"
+    |            "failover", "roundrobin", "gmail"
     |
     */
 
@@ -87,6 +87,11 @@ return [
 
         'array' => [
             'transport' => 'array',
+        ],
+
+        // Gmail API over HTTPS. Use when the server can't reach SMTP ports. Credentials: config/services.php.
+        'gmail' => [
+            'transport' => 'gmail',
         ],
 
         'failover' => [

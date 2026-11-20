@@ -84,4 +84,15 @@ return [
         'server_client_id' => env('GOOGLE_SERVER_CLIENT_ID'),
     ],
 
+    /*
+    | Gmail API mail transport (MAIL_MAILER=gmail). An OAuth client from Google Cloud plus a refresh
+    | token for the sending account, with the gmail.send scope only. MAIL_FROM_ADDRESS must be that
+    | account, or one of its "Send mail as" addresses.
+    */
+    'gmail' => [
+        'client_id' => env('GMAIL_CLIENT_ID'),
+        'client_secret' => env('GMAIL_CLIENT_SECRET'),
+        'refresh_token' => env('GMAIL_REFRESH_TOKEN'),
+    ],
+
 ];

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Channels\FirebaseChannel;
+use App\Mail\Transport\GmailApiTransport;
 use App\Models\Post;
 use App\Models\Report;
 use App\Models\User;
@@ -14,6 +15,7 @@ use App\Services\Otp\OtpService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\ChannelManager;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Contract\Messaging;
@@ -37,6 +39,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::extend('gmail', fn () => new GmailApiTransport(
+            (string) config('services.gmail.client_id'),
+            (string) config('services.gmail.client_secret'),
+            (string) config('services.gmail.refresh_token'),
+        ));
+
         $this->app->make(ChannelManager::class)->extend('firebase', function ($app) {
             return $app->make(FirebaseChannel::class);
         });
