@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ReportStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -37,14 +38,25 @@ class Report extends Model
         'rescue_arrived_at' => 'datetime',
     ];
 
-    // Mark call as started
+    // Mark call as started. Answering a call means someone is now handling the report.
     public function markCallStarted()
     {
-        $this->update([
-            'call_started_at' => now(),
-            'status' => 'in_progress' // Assuming you have this status
-        ]);
+        $this->call_started_at = now();
+        $this->moveToInProgress();
+        $this->save();
+
         return $this;
+    }
+
+    /**
+     * Pending reports become In Progress; a report already marked Rescued keeps that status.
+     * Accepts the lower-case values older code wrote, which the migration normalizes.
+     */
+    public function moveToInProgress(): void
+    {
+        if (in_array(strtolower(trim((string) $this->status)), ['', 'pending', 'in progress', 'in_progress'], true)) {
+            $this->status = ReportStatusEnum::IN_PROGRESS;
+        }
     }
 
     // Mark call as ended. Ending a call doesn't resolve the emergency, so the

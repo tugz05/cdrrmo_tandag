@@ -290,6 +290,12 @@ const formatDateTime = (datetime) => {
                                 ]">
                                     {{ report.status }}
                                 </span>
+                                <span
+                                    v-if="report.rescue_status === 'arrived' && report.status !== 'Rescued'"
+                                    class="badge text-bg-info ms-1"
+                                >
+                                    Rescuer on scene
+                                </span>
                             </td>
                             <td>
                                 {{ formatDateTime(report.created_at) }}

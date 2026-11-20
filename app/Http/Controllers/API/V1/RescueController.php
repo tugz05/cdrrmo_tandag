@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Enums\ReportStatusEnum;
 use App\Events\RescueStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Report;
@@ -21,11 +22,13 @@ class RescueController extends Controller
     {
         $this->authorize('update', $report);
 
-        $report->update([
+        $report->fill([
             'rescue_status'     => 'en_route',
             'rescuer_user_id'   => $request->user()->id,
             'rescue_started_at' => now(),
         ]);
+        $report->moveToInProgress();
+        $report->save();
 
         $residentNotified = $this->notifyResident($report, new RescueStartedNotification($report));
 
@@ -42,10 +45,13 @@ class RescueController extends Controller
     {
         $this->authorize('update', $report);
 
-        $report->update([
+        // Arrival isn't the end of the rescue: the report stays In Progress until it's completed.
+        $report->fill([
             'rescue_status'     => 'arrived',
             'rescue_arrived_at' => now(),
         ]);
+        $report->moveToInProgress();
+        $report->save();
 
         $residentNotified = $this->notifyResident($report, new RescueArrivedNotification($report));
 
@@ -64,7 +70,7 @@ class RescueController extends Controller
 
         $report->update([
             'rescue_status' => 'completed',
-            'status'        => 'completed',
+            'status'        => ReportStatusEnum::RESCUED,
         ]);
 
         $this->broadcastStatus($report);
