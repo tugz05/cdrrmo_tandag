@@ -633,8 +633,8 @@ class LiveLocationTest extends TestCase
         $this->postJson("/api/v1/reports/{$report->id}/rescue-arrived")->assertOk();
         Event::assertDispatched(RescueStatusUpdated::class, function (RescueStatusUpdated $event) {
             return $event->broadcastAs() === 'rescue-status.updated'
-                && $event->rescueStatus === 'arrived'
-                && $event->sessionActive === true;
+                && $event->rescueStatus === 'completed'
+                && $event->sessionActive === false;
         });
 
         $this->postJson("/api/v1/reports/{$report->id}/rescue-complete")->assertOk();
@@ -649,7 +649,7 @@ class LiveLocationTest extends TestCase
 
         $this->postJson("/api/v1/reports/{$report->id}/rescue-arrived")->assertOk();
 
-        $this->assertSame('arrived', $report->fresh()->rescue_status);
+        $this->assertSame('completed', $report->fresh()->rescue_status);
     }
 
     private function channelAuth(User $user, string $channel)

@@ -45,20 +45,19 @@ class RescueController extends Controller
     {
         $this->authorize('update', $report);
 
-        // Arrival isn't the end of the rescue: the report stays In Progress until it's completed.
-        $report->fill([
-            'rescue_status'     => 'arrived',
+        // MDRRMO counts arrival as the rescue: the report closes, the same as Mark as rescued.
+        $report->update([
+            'rescue_status'     => 'completed',
+            'status'            => ReportStatusEnum::RESCUED,
             'rescue_arrived_at' => now(),
         ]);
-        $report->moveToInProgress();
-        $report->save();
 
         $residentNotified = $this->notifyResident($report, new RescueArrivedNotification($report));
 
         $this->broadcastStatus($report);
 
         return response()->json([
-            'message'           => 'Arrival recorded.',
+            'message'           => 'Arrival recorded. Rescue completed.',
             'rescue_status'     => $report->rescue_status,
             'resident_notified' => $residentNotified,
         ]);

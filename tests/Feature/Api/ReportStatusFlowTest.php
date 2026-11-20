@@ -80,17 +80,37 @@ class ReportStatusFlowTest extends TestCase
         $this->assertSame('en_route', $report->rescue_status);
     }
 
-    public function test_arrival_keeps_in_progress_and_records_on_scene(): void
+    public function test_arrival_marks_the_report_rescued_and_closes_live_location(): void
     {
-        $report = $this->report('in_progress');
+        $report = $this->report('In Progress');
+        $this->asStaff();
+
+        $this->postJson("/api/v1/reports/{$report->id}/rescue-arrived")
+            ->assertOk()
+            ->assertJsonPath('rescue_status', 'completed');
+
+        $report->refresh();
+        $this->assertSame('Rescued', $report->status);
+        $this->assertSame('completed', $report->rescue_status);
+        $this->assertNotNull($report->rescue_arrived_at);
+
+        Sanctum::actingAs($report->user);
+        $this->postJson('/api/v1/live-location', [
+            'report_id' => $report->id,
+            'mode' => 'active_report',
+            'samples' => [['lat' => 9.0195, 'lng' => 126.2331, 'recorded_at' => now()->toIso8601String()]],
+        ])->assertOk()->assertJsonPath('data.session_active', false);
+    }
+
+    public function test_mark_as_rescued_after_arrival_still_works(): void
+    {
+        $report = $this->report();
         $this->asStaff();
 
         $this->postJson("/api/v1/reports/{$report->id}/rescue-arrived")->assertOk();
+        $this->postJson("/api/v1/reports/{$report->id}/rescue-complete")->assertOk();
 
-        $report->refresh();
-        $this->assertSame('In Progress', $report->status);
-        $this->assertSame('arrived', $report->rescue_status);
-        $this->assertNotNull($report->rescue_arrived_at);
+        $this->assertSame('Rescued', $report->fresh()->status);
     }
 
     public function test_completing_the_rescue_marks_it_rescued(): void
@@ -120,12 +140,12 @@ class ReportStatusFlowTest extends TestCase
 
         $this->postJson('/api/v1/call/started', ['report_id' => $report->id])->assertOk();
         $this->postJson("/api/v1/reports/{$report->id}/start-rescue")->assertOk();
-        $this->postJson("/api/v1/reports/{$report->id}/rescue-arrived")->assertOk();
 
         $this->assertSame(1, Report::query()->whereStatus('In Progress')->count());
 
-        $this->postJson("/api/v1/reports/{$report->id}/rescue-complete")->assertOk();
+        $this->postJson("/api/v1/reports/{$report->id}/rescue-arrived")->assertOk();
 
+        $this->assertSame(0, Report::query()->whereStatus('In Progress')->count());
         $this->assertSame(1, Report::query()->whereStatus('Rescued')->count());
     }
 

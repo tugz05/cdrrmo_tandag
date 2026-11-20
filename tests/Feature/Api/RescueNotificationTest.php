@@ -90,7 +90,7 @@ class RescueNotificationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('resident_notified', false);
 
-        $this->assertSame('arrived', $report->fresh()->rescue_status);
+        $this->assertSame('completed', $report->fresh()->rescue_status);
     }
 
     public function test_failed_notification_is_logged_without_device_tokens(): void
