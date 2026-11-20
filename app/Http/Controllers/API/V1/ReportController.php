@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Enums\AppMobileRole;
+use App\Enums\ReportStatusEnum;
 use App\Enums\ReportTypeEnum;
 use App\Events\MessageReportReceived;
 use App\Http\Controllers\Controller;
@@ -79,7 +80,7 @@ class ReportController extends Controller
     {
         $validatedData = $request->validated();
         $validatedData['user_id'] = $request->user()->id;
-        $validatedData['status'] = 'Pending';
+        $validatedData['status'] = ReportStatusEnum::PENDING;
 
         try {
             if (! empty($validatedData['id'])) {

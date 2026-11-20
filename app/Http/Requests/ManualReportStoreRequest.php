@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ReportStatusEnum;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ManualReportStoreRequest extends FormRequest
 {
@@ -24,7 +26,7 @@ class ManualReportStoreRequest extends FormRequest
         return [
             'id' => 'string|nullable',
             'details' => 'required|string|min:2|max:1000',
-            'status' => 'required|string',
+            'status' => ['required', 'string', Rule::in(ReportStatusEnum::all())],
             'created_at' => 'required|string',
             'address' => 'required|string|min:2|max:255',
             'reported_by' => 'string|nullable|min:2|max:255',

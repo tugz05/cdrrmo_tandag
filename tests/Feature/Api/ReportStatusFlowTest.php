@@ -103,6 +103,14 @@ class ReportStatusFlowTest extends TestCase
         $report->refresh();
         $this->assertSame('Rescued', $report->status);
         $this->assertSame('completed', $report->rescue_status);
+
+        // Live location for the report is closed: the resident's share is accepted but stops the session.
+        Sanctum::actingAs($report->user);
+        $this->postJson('/api/v1/live-location', [
+            'report_id' => $report->id,
+            'mode' => 'active_report',
+            'samples' => [['lat' => 9.0195, 'lng' => 126.2331, 'recorded_at' => now()->toIso8601String()]],
+        ])->assertOk()->assertJsonPath('data.session_active', false);
     }
 
     public function test_full_flow_counts_on_the_reports_page(): void
@@ -119,6 +127,43 @@ class ReportStatusFlowTest extends TestCase
         $this->postJson("/api/v1/reports/{$report->id}/rescue-complete")->assertOk();
 
         $this->assertSame(1, Report::query()->whereStatus('Rescued')->count());
+    }
+
+    public function test_second_migration_catches_the_remaining_spellings(): void
+    {
+        $reports = collect(['in_progress', 'IN PROGRESS', 'in progress', 'completed', 'Resolved', 'rescued', 'Pending', 'In Progress', 'Rescued'])
+            ->mapWithKeys(fn (string $status) => [$status => $this->report($status)]);
+
+        (require database_path('migrations/2026_11_20_130000_normalize_remaining_report_statuses.php'))->up();
+
+        $expected = [
+            'in_progress' => 'In Progress', 'IN PROGRESS' => 'In Progress', 'in progress' => 'In Progress',
+            'completed' => 'Rescued', 'Resolved' => 'Rescued', 'rescued' => 'Rescued',
+            'Pending' => 'Pending', 'In Progress' => 'In Progress', 'Rescued' => 'Rescued',
+        ];
+        foreach ($expected as $from => $to) {
+            $this->assertSame($to, DB::table('reports')->where('id', $reports[$from]->id)->value('status'), "from {$from}");
+        }
+    }
+
+    public function test_admin_cannot_set_a_status_outside_the_three(): void
+    {
+        $report = $this->report();
+
+        $this->actingAs($this->userWithRole('admin'))
+            ->putJson('/admin/reports/update-status', ['id' => $report->id, 'status' => 'in_progress'])
+            ->assertUnprocessable();
+
+        $this->assertSame('Pending', $report->fresh()->status);
+    }
+
+    public function test_app_reports_start_pending(): void
+    {
+        Sanctum::actingAs($this->userWithRole('user'));
+
+        $this->postJson('/api/v1/report', ['latitude' => '9.0195', 'longitude' => '126.2331', 'type' => 'Message'])->assertOk();
+
+        $this->assertSame('Pending', Report::query()->sole()->status);
     }
 
     public function test_migration_normalizes_old_values(): void

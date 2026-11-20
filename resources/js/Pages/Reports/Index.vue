@@ -165,6 +165,16 @@ const formatDateTime = (datetime) => {
     return date.toLocaleString('en-US', options)
                 .replace(/,/, ' at');
 }
+
+/** The rescue step shown beside the status, so dispatch sees progress without opening the map. */
+const RESCUE_STEPS = {
+    en_route: { label: 'Rescuer on the way', class: 'text-bg-primary', style: {} },
+    arrived: { label: 'Rescuer arrived', class: '', style: { backgroundColor: '#0f766e', color: '#fff' } },
+};
+
+function rescueStep(report) {
+    return report?.status === 'Rescued' ? null : RESCUE_STEPS[report?.rescue_status] ?? null;
+}
 </script>
 
 <template>
@@ -291,10 +301,12 @@ const formatDateTime = (datetime) => {
                                     {{ report.status }}
                                 </span>
                                 <span
-                                    v-if="report.rescue_status === 'arrived' && report.status !== 'Rescued'"
-                                    class="badge text-bg-info ms-1"
+                                    v-if="rescueStep(report)"
+                                    class="badge ms-1"
+                                    :class="rescueStep(report).class"
+                                    :style="rescueStep(report).style"
                                 >
-                                    Rescuer on scene
+                                    {{ rescueStep(report).label }}
                                 </span>
                             </td>
                             <td>
@@ -350,9 +362,19 @@ const formatDateTime = (datetime) => {
                     ]" style="font-size: 1rem">
                         {{ form.status }}
                     </span>
+                    <span
+                        v-if="rescueStep(form)"
+                        class="badge ms-1"
+                        :class="rescueStep(form).class"
+                        :style="{ fontSize: '1rem', ...rescueStep(form).style }"
+                    >
+                        {{ rescueStep(form).label }}
+                    </span>
                     <div class="fs-xsm text-muted mt-1">
                         <span v-if="form.status === 'Pending'">Waiting for rescue.</span>
-                        <span v-if="form.status === 'In Progress'">Rescue team is on the way.</span>
+                        <span v-if="form.status === 'In Progress' && !rescueStep(form)">Dispatch is handling this report.</span>
+                        <span v-if="form.status === 'In Progress' && form.rescue_status === 'en_route'">The rescue team is on the way.</span>
+                        <span v-if="form.status === 'In Progress' && form.rescue_status === 'arrived'">The rescue team is on scene.</span>
                         <span v-if="form.status === 'Rescued'">Already been rescued.</span>
                     </div>
                 </div>

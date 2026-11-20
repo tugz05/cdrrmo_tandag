@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ReportStatusEnum;
 use App\Http\Requests\ManualReportStoreRequest;
 use App\Models\Report;
 use App\Services\ReportService;
@@ -9,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class ReportController extends Controller
@@ -75,7 +77,7 @@ class ReportController extends Controller
     {
         $this->reportService->updateStatus($request->validate([
             'id' => 'required',
-            'status' => 'required|string',
+            'status' => ['required', 'string', Rule::in(ReportStatusEnum::all())],
         ]));
     }
 }
