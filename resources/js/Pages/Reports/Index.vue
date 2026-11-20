@@ -320,7 +320,7 @@ function rescueStep(report) {
                                             </JButton>
                                     </span>
                                     <div class="dropdown">
-                                        <JButton subtle icon="three-dots-vertical" data-bs-toggle="dropdown"/>
+                                        <JButton subtle icon="three-dots-vertical" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-label="Report actions"/>
                                         <JDropdownMenu>
                                             <JDropdownHeader text="Update Status"/>
                                             <JDropdownItem @click="updateStatus(report.id, 'Pending')" :disabled="report.status === 'Pending'">

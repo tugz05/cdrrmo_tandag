@@ -267,7 +267,7 @@ const mountDataTable = () => {
                             </td>
                             <td class="text-end">
                                 <div class="dropdown">
-                                    <JButton subtle icon="three-dots-vertical" data-bs-toggle="dropdown"/>
+                                    <JButton subtle icon="three-dots-vertical" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-label="User actions"/>
                                     <JDropdownMenu style="min-width:8rem">
                                         <JDropdownItem :is-danger="true" icon="trash3" text="Delete"/>
                                     </JDropdownMenu>
