@@ -72,6 +72,8 @@ return [
         /* Twilio Console → Voice → Credentials → Push credentials (CR...). Mobile tokens only. */
         'push_credential_sid_android' => env('TWILIO_PUSH_CREDENTIAL_SID_ANDROID'),
         'push_credential_sid_ios' => env('TWILIO_PUSH_CREDENTIAL_SID_IOS'),
+        /* Twilio Console → Verify → Services (VA...). Sends and checks sign-in codes by SMS. */
+        'verify_service_sid' => env('TWILIO_VERIFY_SERVICE_SID'),
     ],
 
     /*

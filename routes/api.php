@@ -11,7 +11,9 @@ use App\Http\Controllers\API\V1\Auth\VerificationCodeController;
 use App\Http\Controllers\API\V1\Auth\VerificationController;
 use App\Http\Controllers\API\V1\CallAvailabilityController;
 use App\Http\Controllers\API\V1\DeviceFcmTokenController;
+use App\Http\Controllers\API\V1\Auth\OtpAuthController;
 use App\Http\Controllers\API\V1\LiveLocationController;
+use App\Http\Controllers\API\V1\ProfileLocationController;
 use App\Http\Controllers\API\V1\ReportController;
 use App\Http\Controllers\API\V1\RescueController;
 use App\Http\Controllers\API\V1\SituationalIncidentReportController;
@@ -42,6 +44,11 @@ Route::prefix('v1')->group(function () {
         Route::post('code/verify', [VerificationCodeController::class, 'verify'])->name('api.verify-code')->middleware('throttle:6,1');
         Route::post('forgot-password', [ForgotPasswordController::class, 'store'])->middleware('throttle:6,1');
         Route::post('reset-password', [NewPasswordController::class, 'store']);
+
+        // Passwordless mobile sign-in: send limits are per destination and per IP inside the controller.
+        Route::post('otp/send', [OtpAuthController::class, 'send'])->name('api.otp.send');
+        Route::post('otp/verify', [OtpAuthController::class, 'verify'])->name('api.otp.verify')->middleware('throttle:10,1');
+        Route::post('otp/register', [OtpAuthController::class, 'register'])->name('api.otp.register')->middleware('throttle:10,1');
 
         // Route::middleware('auth:sanctum')->get('/twilio/token', [TwilioController::class, 'generateToken']);
     });
@@ -77,6 +84,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/call/ended', [CallerInfoController::class, 'callEnded']);
 
         Route::put('/profile', [UserController::class, 'updateProfile']);
+        Route::patch('/profile/location', [ProfileLocationController::class, 'update'])
+            ->middleware('throttle:30,60');
         Route::put('/password', [UserController::class, 'updatePassword']);
         Route::get('report-history/all', [ReportController::class, 'historyAll']);
         Route::get('report-history/{userId}', [ReportController::class, 'history'])->whereNumber('userId');

@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Observers\AdministratorObserver;
 use App\Observers\PostObserver;
 use App\Observers\ReportObserver;
+use App\Services\Otp\OtpSender;
+use App\Services\Otp\OtpService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\ChannelManager;
@@ -23,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(OtpSender::class, OtpService::class);
+
         $this->app->bind(FirebaseChannel::class, function ($app) {
             return new FirebaseChannel($app->make(Messaging::class));
         });

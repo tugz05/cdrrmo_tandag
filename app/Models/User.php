@@ -6,12 +6,14 @@ namespace App\Models;
 use App\Enums\AppMobileRole;
 use App\Enums\ReportTypeEnum;
 use App\Enums\UserTypeEnum;
+use App\Support\PhilippineMobileNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laratrust\Traits\HasRolesAndPermissions;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -36,7 +38,43 @@ class User extends Authenticatable
         'image',
         'latitude',
         'longitude',
+        'birthdate',
+        'phone_verified_at',
+        'address_updated_at',
     ];
+
+    /**
+     * Code sign-in trusts a phone or email only once it's verified. Any edit to a different value,
+     * from the app or an admin page, drops that trust, so nobody can claim a stranger's sign-in by
+     * typing their number or address into a profile. Saving a newly verified value keeps it.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (User $user) {
+            if ($user->isDirty('phone')
+                && ! self::samePhone($user->getOriginal('phone'), $user->phone)
+                && ! ($user->isDirty('phone_verified_at') && $user->phone_verified_at !== null)) {
+                $user->phone_verified_at = null;
+                $user->legacy_phone_sign_in = false;
+            }
+
+            if ($user->isDirty('email')
+                && Str::lower(trim((string) $user->getOriginal('email'))) !== Str::lower(trim((string) $user->email))
+                && ! ($user->isDirty('email_verified_at') && $user->email_verified_at !== null)) {
+                $user->email_verified_at = null;
+                $user->legacy_email_sign_in = false;
+            }
+        });
+    }
+
+    private static function samePhone(?string $before, ?string $after): bool
+    {
+        $normalized = PhilippineMobileNumber::normalize($before);
+
+        return $normalized !== null
+            ? $normalized === PhilippineMobileNumber::normalize($after)
+            : trim((string) $before) === trim((string) $after);
+    }
 
     protected function fullName(): Attribute
     {
@@ -73,6 +111,11 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'birthdate' => 'date:Y-m-d',
+            'phone_verified_at' => 'datetime',
+            'legacy_phone_sign_in' => 'boolean',
+            'legacy_email_sign_in' => 'boolean',
+            'address_updated_at' => 'datetime',
             'password' => 'hashed',
             'app_role' => AppMobileRole::class,
         ];

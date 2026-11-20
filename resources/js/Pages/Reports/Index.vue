@@ -251,6 +251,7 @@ const formatDateTime = (datetime) => {
                                     </div>
                                     <div>
                                         <b v-if="report.user?.fname">{{ report.user?.fname ?? '--' }} {{ report.user?.mname }} {{ report.user?.lname }} {{ report.user?.suffix }}</b>
+                                        <span v-if="report.user && !report.user.confirmed_at" class="badge text-bg-warning ms-1">Unverified</span>
                                         <b v-if="report.reported_by">{{ report.reported_by ?? '--' }}</b>
                                         <div class="text-muted" style="font-size:x-small">{{ report.user?.email ?? '--' }}</div>
                                     </div>

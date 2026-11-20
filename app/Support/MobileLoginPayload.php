@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\AppMobileRole;
 use App\Helpers\JHelper;
 use App\Models\User;
+use App\Models\UserValidId;
 use DateTimeInterface;
 
 /**
@@ -58,7 +59,13 @@ final class MobileLoginPayload
      *     email_verified_at: string,
      *     confirmed_at: string,
      *     status: string,
-     *     token: string
+     *     token: string,
+     *     fname: string,
+     *     lname: string,
+     *     mname: string,
+     *     suffix: string,
+     *     birthdate: string,
+     *     missing_requirements: list<string>
      * }
      */
     public static function data(User $user, string $plainTextToken): array
@@ -76,7 +83,37 @@ final class MobileLoginPayload
             'confirmed_at' => self::dateOrEmpty($user->confirmed_at),
             'status' => self::accountStatus($user),
             'token' => $plainTextToken,
+            'fname' => (string) ($user->fname ?? ''),
+            'lname' => (string) ($user->lname ?? ''),
+            'mname' => (string) ($user->mname ?? ''),
+            'suffix' => (string) ($user->suffix ?? ''),
+            'birthdate' => $user->birthdate?->format('Y-m-d') ?? '',
+            'missing_requirements' => self::missingRequirements($user),
         ];
+    }
+
+    /**
+     * What the profile still asks for. The valid ID and the selfie are uploaded together into
+     * user_valid_ids (ID first), the same rows JHelper::getValidImages reads, so the count tells them apart.
+     *
+     * @return list<string>
+     */
+    public static function missingRequirements(User $user): array
+    {
+        if (! is_null($user->confirmed_at)) {
+            return [];
+        }
+
+        $uploads = UserValidId::query()->where('user_id', $user->id)->count();
+
+        return array_keys(array_filter([
+            'valid_id' => $uploads < 1,
+            'selfie' => $uploads < 2,
+            'phone' => trim((string) $user->phone) === '',
+            'email' => trim((string) $user->email) === '',
+            'birthdate' => $user->birthdate === null,
+            'address' => trim((string) $user->address) === '',
+        ]));
     }
 
     private static function dateOrEmpty(mixed $value): string
